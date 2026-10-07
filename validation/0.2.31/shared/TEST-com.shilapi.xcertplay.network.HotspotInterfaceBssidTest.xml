@@ -1,0 +1,14 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<testsuite name="com.shilapi.xcertplay.network.HotspotInterfaceBssidTest" tests="8" skipped="0" failures="0" errors="0" timestamp="2026-10-05T10:53:42.362Z" hostname="e7822a2ead4f" time="0.012">
+  <properties/>
+  <testcase name="decodesLocalAndUniversalMacs" classname="com.shilapi.xcertplay.network.HotspotInterfaceBssidTest" time="0.006"/>
+  <testcase name="requiresAnExplicitInterface" classname="com.shilapi.xcertplay.network.HotspotInterfaceBssidTest" time="0.0"/>
+  <testcase name="rejectsMaskedZeroAndMulticastMacs" classname="com.shilapi.xcertplay.network.HotspotInterfaceBssidTest" time="0.001"/>
+  <testcase name="decodesAddressCapturedFromARandomizedP2pGroup" classname="com.shilapi.xcertplay.network.HotspotInterfaceBssidTest" time="0.0"/>
+  <testcase name="refusesConflictingCandidatesAndIgnoresUnrelatedAddresses" classname="com.shilapi.xcertplay.network.HotspotInterfaceBssidTest" time="0.0"/>
+  <testcase name="decodesBydBuiltInHotspotAddress" classname="com.shilapi.xcertplay.network.HotspotInterfaceBssidTest" time="0.0"/>
+  <testcase name="rejectsOpaqueAndNonLinkLocalAddresses" classname="com.shilapi.xcertplay.network.HotspotInterfaceBssidTest" time="0.001"/>
+  <testcase name="describesWhyNothingWasRecovered" classname="com.shilapi.xcertplay.network.HotspotInterfaceBssidTest" time="0.0"/>
+  <system-out><![CDATA[]]></system-out>
+  <system-err><![CDATA[]]></system-err>
+</testsuite>

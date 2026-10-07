@@ -1,0 +1,11 @@
+{
+  "version": "0.2.28",
+  "status": "not_run",
+  "current_results": null,
+  "new_robolectric_tests": 6,
+  "reason": "JDK 25, Android SDK 37 and Gradle 9.5.0 unavailable; wrapper download failed with Network is unreachable.",
+  "baseline_results_file": "0.2.27-unit-tests.json",
+  "baseline_results_apply_to": "0.2.27 only",
+  "real_phone_tested": false,
+  "apk_produced": false
+}

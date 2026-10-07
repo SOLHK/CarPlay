@@ -1,0 +1,17 @@
+{
+  "version": "0.2.27",
+  "results": {
+    "common": {
+      "tests": 275,
+      "failures": 0,
+      "errors": 0
+    },
+    "shared": {
+      "tests": 507,
+      "failures": 0,
+      "errors": 0
+    }
+  },
+  "total_tests": 782,
+  "real_phone_tested": false
+}

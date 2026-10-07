@@ -1,0 +1,11 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<testsuite name="com.shilapi.xcertplay.AppLocaleTest" tests="5" skipped="0" failures="0" errors="0" timestamp="2026-10-05T01:03:50.191Z" hostname="06d2ee2f5f86" time="4.433">
+  <properties/>
+  <testcase name="oldPreferenceMigratesOnceAndCannotOverrideLaterSystemChanges" classname="com.shilapi.xcertplay.AppLocaleTest" time="1.904"/>
+  <testcase name="existingSystemChoiceWinsOverLegacyPreference" classname="com.shilapi.xcertplay.AppLocaleTest" time="0.045"/>
+  <testcase name="pickerAndSystemSettingsShareTheSamePreference" classname="com.shilapi.xcertplay.AppLocaleTest" time="0.024"/>
+  <testcase name="olderAndroidWrapsArabicAndReturnsToSystemWithoutChangingGlobalResources[28]" classname="com.shilapi.xcertplay.AppLocaleTest" time="0.883"/>
+  <testcase name="olderAndroidWrapsArabicAndReturnsToSystemWithoutChangingGlobalResources" classname="com.shilapi.xcertplay.AppLocaleTest" time="1.299"/>
+  <system-out><![CDATA[]]></system-out>
+  <system-err><![CDATA[]]></system-err>
+</testsuite>

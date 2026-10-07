@@ -1,0 +1,11 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<testsuite name="com.shilapi.xcertplay.CarHotspotFallbackTest" tests="5" skipped="0" failures="0" errors="0" timestamp="2026-10-05T01:04:10.396Z" hostname="06d2ee2f5f86" time="1.459">
+  <properties/>
+  <testcase name="cancelledStartupDoesNotFallBackEvenWhenApStateIsUnreadable" classname="com.shilapi.xcertplay.CarHotspotFallbackTest" time="1.146"/>
+  <testcase name="enabledHotspotStillAttachesWithoutControlPermission" classname="com.shilapi.xcertplay.CarHotspotFallbackTest" time="0.12"/>
+  <testcase name="knownOffHotspotWithUnsupportedControlDoesNotFallBack" classname="com.shilapi.xcertplay.CarHotspotFallbackTest" time="0.05"/>
+  <testcase name="missingControlPermissionIsStillReported" classname="com.shilapi.xcertplay.CarHotspotFallbackTest" time="0.036"/>
+  <testcase name="unreadableApStateAllowsManualAttachmentWithOrWithoutAutoStartup" classname="com.shilapi.xcertplay.CarHotspotFallbackTest" time="0.034"/>
+  <system-out><![CDATA[]]></system-out>
+  <system-err><![CDATA[]]></system-err>
+</testsuite>

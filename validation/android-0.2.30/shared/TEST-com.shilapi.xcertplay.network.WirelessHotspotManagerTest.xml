@@ -1,0 +1,12 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<testsuite name="com.shilapi.xcertplay.network.WirelessHotspotManagerTest" tests="6" skipped="0" failures="0" errors="0" timestamp="2026-10-05T00:56:40.192Z" hostname="06d2ee2f5f86" time="0.0">
+  <properties/>
+  <testcase name="legacyHotspotBandUsesItsOwnConstants" classname="com.shilapi.xcertplay.network.WirelessHotspotManagerTest" time="0.0"/>
+  <testcase name="convertsWifiP2pFrequencyToIap2Channel" classname="com.shilapi.xcertplay.network.WirelessHotspotManagerTest" time="0.0"/>
+  <testcase name="reportsOnlyAnObservedActiveChannel" classname="com.shilapi.xcertplay.network.WirelessHotspotManagerTest" time="0.0"/>
+  <testcase name="rejectsUnsupportedOrInvalidFrequencies" classname="com.shilapi.xcertplay.network.WirelessHotspotManagerTest" time="0.0"/>
+  <testcase name="convertsKnownChannelAndBandToFrequency" classname="com.shilapi.xcertplay.network.WirelessHotspotManagerTest" time="0.0"/>
+  <testcase name="doesNotReportDesiredChannelWhenAndroidDoesNotExposeOne" classname="com.shilapi.xcertplay.network.WirelessHotspotManagerTest" time="0.0"/>
+  <system-out><![CDATA[]]></system-out>
+  <system-err><![CDATA[]]></system-err>
+</testsuite>

@@ -1,0 +1,20 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<testsuite name="com.shilapi.xcertplay.CarHotspotSwitchTest" tests="14" skipped="0" failures="0" errors="0" timestamp="2026-10-05T00:08:32.927Z" hostname="06d2ee2f5f86" time="3.487">
+  <properties/>
+  <testcase name="enablingDirectlyRequestsPermissionWithoutAnotherDialog" classname="com.shilapi.xcertplay.CarHotspotSwitchTest" time="1.616"/>
+  <testcase name="unexpectedAdbFailureRestoresTheSameSwitch" classname="com.shilapi.xcertplay.CarHotspotSwitchTest" time="0.113"/>
+  <testcase name="aFailedBootGrantPreservesHotspotAndDoesNotEnableBootLaunch" classname="com.shilapi.xcertplay.CarHotspotSwitchTest" time="0.246"/>
+  <testcase name="anExistingPermissionStillWaitsForAdbBeforeEnabling" classname="com.shilapi.xcertplay.CarHotspotSwitchTest" time="0.115"/>
+  <testcase name="turningTheSwitchOffDoesNotRequestOrRevokePermissions" classname="com.shilapi.xcertplay.CarHotspotSwitchTest" time="0.065"/>
+  <testcase name="adbSuccessWithoutActualPermissionDoesNotEnableTheSwitch" classname="com.shilapi.xcertplay.CarHotspotSwitchTest" time="0.078"/>
+  <testcase name="incompleteBootPermissionKeepsTheHotspotSwitchOff" classname="com.shilapi.xcertplay.CarHotspotSwitchTest" time="0.175"/>
+  <testcase name="selectingBootFirstGrantsBothRequiredPermissionsFromTheHotspotSwitch" classname="com.shilapi.xcertplay.CarHotspotSwitchTest" time="0.105"/>
+  <testcase name="adbApprovalFailureLeavesTheSwitchOffAndShowsTheReason" classname="com.shilapi.xcertplay.CarHotspotSwitchTest" time="0.17"/>
+  <testcase name="anOutstandingVehicleCheckPreventsASecondAuthorizationFlow" classname="com.shilapi.xcertplay.CarHotspotSwitchTest" time="0.25"/>
+  <testcase name="vehicleControlsAreNotDuplicatedInTheHotspotPermissionCard" classname="com.shilapi.xcertplay.CarHotspotSwitchTest" time="0.064"/>
+  <testcase name="selectingBootLaterRequestsOnlyBootPermission" classname="com.shilapi.xcertplay.CarHotspotSwitchTest" time="0.13"/>
+  <testcase name="returningFromApprovalAfterCompletionKeepsThePage" classname="com.shilapi.xcertplay.CarHotspotSwitchTest" time="0.102"/>
+  <testcase name="returningFromApprovalBeforeCompletionKeepsThePage" classname="com.shilapi.xcertplay.CarHotspotSwitchTest" time="0.107"/>
+  <system-out><![CDATA[]]></system-out>
+  <system-err><![CDATA[]]></system-err>
+</testsuite>

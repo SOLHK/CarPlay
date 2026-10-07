@@ -1,0 +1,18 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<testsuite name="com.shilapi.xcertplay.LocationReportingSettingsTest" tests="6" skipped="0" failures="0" errors="0" timestamp="2026-10-05T00:08:51.082Z" hostname="06d2ee2f5f86" time="0.843">
+  <properties/>
+  <testcase name="precisePermissionResultEnablesReporting" classname="com.shilapi.xcertplay.LocationReportingSettingsTest" time="0.228"/>
+  <testcase name="eitherToggleDirectionStopsTheOldSessionAndOpensANewHostWithSavedSetting" classname="com.shilapi.xcertplay.LocationReportingSettingsTest" time="0.151"/>
+  <testcase name="enablingWaitsForPrecisePermissionAndRejectsApproximateOnly" classname="com.shilapi.xcertplay.LocationReportingSettingsTest" time="0.154"/>
+  <testcase name="savedDisabledSettingRemainsDisabled" classname="com.shilapi.xcertplay.LocationReportingSettingsTest" time="0.1"/>
+  <testcase name="steamProfileRequestsLocationByDefaultWithoutGrantingPermission" classname="com.shilapi.xcertplay.LocationReportingSettingsTest" time="0.015"/>
+  <testcase name="grantedSettingSurvivesRecreationAndCanBeDisabled" classname="com.shilapi.xcertplay.LocationReportingSettingsTest" time="0.192"/>
+  <system-out><![CDATA[]]></system-out>
+  <system-err><![CDATA[Invalid ID 0x00000000.
+Invalid ID 0x00000000.
+Invalid ID 0x00000000.
+Invalid ID 0x00000000.
+Invalid ID 0x00000000.
+Invalid ID 0x00000000.
+]]></system-err>
+</testsuite>

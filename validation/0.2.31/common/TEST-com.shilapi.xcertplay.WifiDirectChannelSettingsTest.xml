@@ -1,0 +1,10 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<testsuite name="com.shilapi.xcertplay.WifiDirectChannelSettingsTest" tests="4" skipped="0" failures="0" errors="0" timestamp="2026-10-05T10:55:59.965Z" hostname="e7822a2ead4f" time="0.202">
+  <properties/>
+  <testcase name="savedChannelSurvivesModeChangesAndCanBeResetToAuto" classname="com.shilapi.xcertplay.WifiDirectChannelSettingsTest" time="0.129"/>
+  <testcase name="hostRuntimeConfigReceivesSavedChannel" classname="com.shilapi.xcertplay.WifiDirectChannelSettingsTest" time="0.017"/>
+  <testcase name="defaultIsAutoAndCancelDoesNotSavePreviewedChannel" classname="com.shilapi.xcertplay.WifiDirectChannelSettingsTest" time="0.043"/>
+  <testcase name="invalidOrCorruptSavedChannelsUseAuto" classname="com.shilapi.xcertplay.WifiDirectChannelSettingsTest" time="0.012"/>
+  <system-out><![CDATA[]]></system-out>
+  <system-err><![CDATA[]]></system-err>
+</testsuite>

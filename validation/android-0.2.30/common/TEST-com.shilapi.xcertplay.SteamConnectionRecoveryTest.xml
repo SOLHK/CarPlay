@@ -1,0 +1,15 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<testsuite name="com.shilapi.xcertplay.SteamConnectionRecoveryTest" tests="9" skipped="0" failures="0" errors="0" timestamp="2026-10-05T01:04:26.864Z" hostname="06d2ee2f5f86" time="0.311">
+  <properties/>
+  <testcase name="aPermanentFailureCancelsAnAlreadyScheduledReconnect" classname="com.shilapi.xcertplay.SteamConnectionRecoveryTest" time="0.059"/>
+  <testcase name="rejectedCreationStopsTheHostRetryLoopAndShowsRecovery" classname="com.shilapi.xcertplay.SteamConnectionRecoveryTest" time="0.024"/>
+  <testcase name="aFormerOwnerCannotOverwriteTheCurrentConnectionFeedback" classname="com.shilapi.xcertplay.SteamConnectionRecoveryTest" time="0.024"/>
+  <testcase name="resetRequiredNeverRemovesAGroupWithoutTheExistingConfirmation" classname="com.shilapi.xcertplay.SteamConnectionRecoveryTest" time="0.021"/>
+  <testcase name="missingHotspotAndUnsupportedDriverOfferDifferentRecovery" classname="com.shilapi.xcertplay.SteamConnectionRecoveryTest" time="0.019"/>
+  <testcase name="returningHomeAfterFailureShowsTheCauseAndOffersARealReconnect" classname="com.shilapi.xcertplay.SteamConnectionRecoveryTest" time="0.042"/>
+  <testcase name="chineseLocaleShowsEachRealConnectionStage" classname="com.shilapi.xcertplay.SteamConnectionRecoveryTest" time="0.023"/>
+  <testcase name="permissionFailureTakesPrecedenceOverTheCreateGroupError" classname="com.shilapi.xcertplay.SteamConnectionRecoveryTest" time="0.025"/>
+  <testcase name="chosenChannelFailureProvidesAutomaticChannelRecovery" classname="com.shilapi.xcertplay.SteamConnectionRecoveryTest" time="0.066"/>
+  <system-out><![CDATA[]]></system-out>
+  <system-err><![CDATA[]]></system-err>
+</testsuite>

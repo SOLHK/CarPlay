@@ -1,0 +1,14 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<testsuite name="com.shilapi.xcertplay.IphoneResolvingDataSourceTest" tests="8" skipped="0" failures="0" errors="0" timestamp="2026-10-04T03:47:27.586Z" hostname="784f64faa022" time="0.063">
+  <properties/>
+  <testcase name="failedRedirectedHttpOpenAlsoAllowsRetry" classname="com.shilapi.xcertplay.IphoneResolvingDataSourceTest" time="0.015"/>
+  <testcase name="iphoneDataWithStatusZeroCanBeReadAndSeeked" classname="com.shilapi.xcertplay.IphoneResolvingDataSourceTest" time="0.009"/>
+  <testcase name="failedHttpOpenClosesTheSelectedDelegateAndAllowsRetry" classname="com.shilapi.xcertplay.IphoneResolvingDataSourceTest" time="0.006"/>
+  <testcase name="appRedirectsStayOnTheIphoneAndHttpRedirectsPreserveTheRange" classname="com.shilapi.xcertplay.IphoneResolvingDataSourceTest" time="0.006"/>
+  <testcase name="remoteMediaCannotOpenAnAppPrivateFile" classname="com.shilapi.xcertplay.IphoneResolvingDataSourceTest" time="0.008"/>
+  <testcase name="validatesEveryIphoneRedirectBeforeDelegating" classname="com.shilapi.xcertplay.IphoneResolvingDataSourceTest" time="0.006"/>
+  <testcase name="rejectsLocalAndSchemeLessPlaylistSourcesBeforeLoading" classname="com.shilapi.xcertplay.IphoneResolvingDataSourceTest" time="0.006"/>
+  <testcase name="redirectLoopsAreBounded" classname="com.shilapi.xcertplay.IphoneResolvingDataSourceTest" time="0.004"/>
+  <system-out><![CDATA[]]></system-out>
+  <system-err><![CDATA[]]></system-err>
+</testsuite>

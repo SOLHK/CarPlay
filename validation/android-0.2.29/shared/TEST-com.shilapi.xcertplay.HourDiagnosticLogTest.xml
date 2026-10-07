@@ -1,0 +1,7 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<testsuite name="com.shilapi.xcertplay.HourDiagnosticLogTest" tests="1" skipped="0" failures="0" errors="0" timestamp="2026-10-04T23:58:55.554Z" hostname="06d2ee2f5f86" time="16.759">
+  <properties/>
+  <testcase name="exportsRecentMultilineEntriesAndExcludesOldEntries" classname="com.shilapi.xcertplay.HourDiagnosticLogTest" time="1.291"/>
+  <system-out><![CDATA[]]></system-out>
+  <system-err><![CDATA[]]></system-err>
+</testsuite>

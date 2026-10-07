@@ -1,0 +1,11 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<testsuite name="com.shilapi.xcertplay.adb.LocalAdbTest" tests="5" skipped="0" failures="0" errors="0" timestamp="2026-10-04T03:32:05.464Z" hostname="784f64faa022" time="0.381">
+  <properties/>
+  <testcase name="packetsRoundTripWithChecksumAndMagic" classname="com.shilapi.xcertplay.adb.LocalAdbTest" time="0.057"/>
+  <testcase name="closedPortIsReportedAsUnreachable" classname="com.shilapi.xcertplay.adb.LocalAdbTest" time="0.094"/>
+  <testcase name="unknownKeyIsOfferedOnlyWhenAsking" classname="com.shilapi.xcertplay.adb.LocalAdbTest" time="0.121"/>
+  <testcase name="publicKeyUsesTheAdbdLayout" classname="com.shilapi.xcertplay.adb.LocalAdbTest" time="0.043"/>
+  <testcase name="knownKeyRunsShellCommands" classname="com.shilapi.xcertplay.adb.LocalAdbTest" time="0.065"/>
+  <system-out><![CDATA[]]></system-out>
+  <system-err><![CDATA[]]></system-err>
+</testsuite>

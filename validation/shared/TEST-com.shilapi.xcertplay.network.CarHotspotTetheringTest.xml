@@ -1,0 +1,19 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<testsuite name="com.shilapi.xcertplay.network.CarHotspotTetheringTest" tests="13" skipped="0" failures="0" errors="0" timestamp="2026-10-04T03:32:16.258Z" hostname="784f64faa022" time="0.369">
+  <properties/>
+  <testcase name="otherBinderFailureIsNotReportedAsPermissionReady" classname="com.shilapi.xcertplay.network.CarHotspotTetheringTest" time="0.013"/>
+  <testcase name="successfulRequestStillWaitsForActualHotspotState" classname="com.shilapi.xcertplay.network.CarHotspotTetheringTest" time="0.029"/>
+  <testcase name="actualEnabledStateCompletesStartup" classname="com.shilapi.xcertplay.network.CarHotspotTetheringTest" time="0.007"/>
+  <testcase name="unreadableStateIsUnsupportedWithoutStartingBlindly" classname="com.shilapi.xcertplay.network.CarHotspotTetheringTest" time="0.007"/>
+  <testcase name="binderPermissionFailureIsReportedSeparately" classname="com.shilapi.xcertplay.network.CarHotspotTetheringTest" time="0.005"/>
+  <testcase name="missingPermissionDoesNotTouchTheHotspot" classname="com.shilapi.xcertplay.network.CarHotspotTetheringTest" time="0.007"/>
+  <testcase name="cancelledRequestDoesNotStartTheHotspot" classname="com.shilapi.xcertplay.network.CarHotspotTetheringTest" time="0.005"/>
+  <testcase name="cancellationDuringStartupStopsWaitingWithoutAnotherRequest" classname="com.shilapi.xcertplay.network.CarHotspotTetheringTest" time="0.006"/>
+  <testcase name="missingBinderMethodIsUnsupported" classname="com.shilapi.xcertplay.network.CarHotspotTetheringTest" time="0.005"/>
+  <testcase name="existingHotspotNeedsNoGrantOrStartCall" classname="com.shilapi.xcertplay.network.CarHotspotTetheringTest" time="0.005"/>
+  <testcase name="asynchronousEnabledStateIsObserved" classname="com.shilapi.xcertplay.network.CarHotspotTetheringTest" time="0.257"/>
+  <testcase name="concurrentRequestsShareOneStartAndRecheckStateAfterWaiting" classname="com.shilapi.xcertplay.network.CarHotspotTetheringTest" time="0.013"/>
+  <testcase name="platformRejectionIsReported" classname="com.shilapi.xcertplay.network.CarHotspotTetheringTest" time="0.005"/>
+  <system-out><![CDATA[]]></system-out>
+  <system-err><![CDATA[]]></system-err>
+</testsuite>

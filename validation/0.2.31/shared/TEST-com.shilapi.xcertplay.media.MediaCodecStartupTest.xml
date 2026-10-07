@@ -1,0 +1,11 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<testsuite name="com.shilapi.xcertplay.media.MediaCodecStartupTest" tests="5" skipped="0" failures="0" errors="0" timestamp="2026-10-05T10:53:38.261Z" hostname="e7822a2ead4f" time="0.003">
+  <properties/>
+  <testcase name="creationFailureHasNoCandidateToRelease" classname="com.shilapi.xcertplay.media.MediaCodecStartupTest" time="0.001"/>
+  <testcase name="configureFailureReleasesExactlyOnceAndNeverStarts" classname="com.shilapi.xcertplay.media.MediaCodecStartupTest" time="0.001"/>
+  <testcase name="linkageErrorsStillPropagateAfterReleasingTheCandidate" classname="com.shilapi.xcertplay.media.MediaCodecStartupTest" time="0.0"/>
+  <testcase name="aWorkingCodecRemainsOwnedByTheRenderer" classname="com.shilapi.xcertplay.media.MediaCodecStartupTest" time="0.0"/>
+  <testcase name="startFailureIsPreservedEvenIfReleaseAlsoFails" classname="com.shilapi.xcertplay.media.MediaCodecStartupTest" time="0.001"/>
+  <system-out><![CDATA[]]></system-out>
+  <system-err><![CDATA[]]></system-err>
+</testsuite>

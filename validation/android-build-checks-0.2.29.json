@@ -1,0 +1,56 @@
+{
+  "version": "0.2.29",
+  "status": "passed",
+  "jdk": "25.0.4.1",
+  "gradle": "9.5.0",
+  "android_sdk": 37,
+  "android_unit_tests": {
+    "tests": 791,
+    "failures": 0,
+    "errors": 0,
+    "skipped": 0
+  },
+  "modules": {
+    "shared": {
+      "tests": 507,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0,
+      "classes": 106
+    },
+    "common": {
+      "tests": 284,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0,
+      "classes": 40
+    }
+  },
+  "settings_layout_tests": 9,
+  "lint_errors": 0,
+  "lint_warnings": 4,
+  "lint_issues": [
+    {
+      "id": "UnusedAttribute",
+      "severity": "Warning",
+      "message": "Attribute `localeConfig` is only used in API level 33 and higher (current min is 28)"
+    },
+    {
+      "id": "TrustAllX509TrustManager",
+      "severity": "Warning",
+      "message": "`checkClientTrusted` is empty, which could cause insecure network traffic due to trusting arbitrary TLS/SSL certificates presented by peers"
+    },
+    {
+      "id": "TrustAllX509TrustManager",
+      "severity": "Warning",
+      "message": "`checkServerTrusted` is empty, which could cause insecure network traffic due to trusting arbitrary TLS/SSL certificates presented by peers"
+    },
+    {
+      "id": "UnusedResources",
+      "severity": "Warning",
+      "message": "The resource `R.bool.config_advanced_audio_channel_mapping` appears to be unused"
+    }
+  ],
+  "release_apk_verified": true,
+  "physical_device_tested": false
+}

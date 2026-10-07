@@ -1,0 +1,15 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<testsuite name="com.shilapi.xcertplay.AudioChannelPersistenceTest" tests="9" skipped="0" failures="0" errors="0" timestamp="2026-10-05T01:03:54.690Z" hostname="06d2ee2f5f86" time="0.233">
+  <properties/>
+  <testcase name="explicitAutomaticRoutingTakesPrecedenceOverLegacySetting" classname="com.shilapi.xcertplay.AudioChannelPersistenceTest" time="0.029"/>
+  <testcase name="legacyNavigationChannelIsInheritedWithoutChangingMedia" classname="com.shilapi.xcertplay.AudioChannelPersistenceTest" time="0.022"/>
+  <testcase name="existingExtendedChannelsRemainAvailable" classname="com.shilapi.xcertplay.AudioChannelPersistenceTest" time="0.022"/>
+  <testcase name="invalidLegacyChannelUsesAutomaticRouting" classname="com.shilapi.xcertplay.AudioChannelPersistenceTest" time="0.027"/>
+  <testcase name="invalidSavedChannelsUseAutomaticRouting" classname="com.shilapi.xcertplay.AudioChannelPersistenceTest" time="0.026"/>
+  <testcase name="invalidStoredChannelsUseAutomaticRouting" classname="com.shilapi.xcertplay.AudioChannelPersistenceTest" time="0.022"/>
+  <testcase name="extendedChannelsCanBeSavedForMediaAndNavigation" classname="com.shilapi.xcertplay.AudioChannelPersistenceTest" time="0.035"/>
+  <testcase name="explicitNavigationChannelTakesPrecedenceOverLegacySetting" classname="com.shilapi.xcertplay.AudioChannelPersistenceTest" time="0.027"/>
+  <testcase name="freshInstallUsesAutomaticRouting" classname="com.shilapi.xcertplay.AudioChannelPersistenceTest" time="0.018"/>
+  <system-out><![CDATA[]]></system-out>
+  <system-err><![CDATA[]]></system-err>
+</testsuite>

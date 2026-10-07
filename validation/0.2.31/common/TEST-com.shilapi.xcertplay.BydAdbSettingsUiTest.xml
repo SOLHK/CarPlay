@@ -1,0 +1,11 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<testsuite name="com.shilapi.xcertplay.BydAdbSettingsUiTest" tests="5" skipped="0" failures="0" errors="0" timestamp="2026-10-05T10:55:30.363Z" hostname="e7822a2ead4f" time="1.45">
+  <properties/>
+  <testcase name="unavailableHotspotAdbDoesNotHideTheVehicleModeOrItsSavedSwitches" classname="com.shilapi.xcertplay.BydAdbSettingsUiTest" time="0.906"/>
+  <testcase name="hotspotAndVehicleSettingsHaveOneOwnerWithoutNavigationServices" classname="com.shilapi.xcertplay.BydAdbSettingsUiTest" time="0.128"/>
+  <testcase name="hotspotAuthorizationDisablesVehicleChoicesWithoutChangingPreferences" classname="com.shilapi.xcertplay.BydAdbSettingsUiTest" time="0.105"/>
+  <testcase name="unapprovedHotspotStillShowsItsOptInAndVehicleSettingsRemainAvailable" classname="com.shilapi.xcertplay.BydAdbSettingsUiTest" time="0.148"/>
+  <testcase name="changingHotspotModeHidesOnlyHotspotControlsAndPreservesTheSavedChoice" classname="com.shilapi.xcertplay.BydAdbSettingsUiTest" time="0.152"/>
+  <system-out><![CDATA[]]></system-out>
+  <system-err><![CDATA[]]></system-err>
+</testsuite>

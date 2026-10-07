@@ -1,0 +1,26 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="steam_connection">Connection</string>
+    <string name="steam_display">Display</string>
+    <string name="steam_audio">Audio</string>
+    <string name="steam_location">Location</string>
+    <string name="steam_tools">Tools</string>
+    <string name="steam_more">More</string>
+    <string name="steam_connection_hint">Choose a phone, set up wireless and manage automatic connection.</string>
+    <string name="steam_display_hint">Adjust size and clarity. Display changes reconnect an active CarPlay session.</string>
+    <string name="steam_audio_hint">Keep music and navigation channels together here, with a separate music buffer.</string>
+    <string name="steam_location_hint">View receiver GPS readings and manage vehicle data.</string>
+    <string name="steam_tools_hint">Save diagnostic reports or open system permissions.</string>
+    <string name="steam_more_hint">Android receiver features, language and version information.</string>
+    <string name="steam_preferences">Preferences</string>
+    <string name="steam_done">Done</string>
+    <string name="steam_screen_summary">%1$d fps · %2$d%% resolution</string>
+    <string name="steam_audio_summary">%1$d ms music buffer</string>
+    <string name="steam_audio_buffer">Music buffer</string>
+    <string name="steam_buffer_ms">%1$d ms</string>
+    <string name="steam_buffer_default">%1$d ms · Default</string>
+    <string name="steam_extensions">Phone receiver and extensions</string>
+    <string name="steam_location_summary">Receiver GPS · Live readings</string>
+    <string name="steam_diagnostics_summary">Diagnostics · Local export</string>
+    <string name="steam_brand_version">CarPlay · Steam · %1$s</string>
+</resources>

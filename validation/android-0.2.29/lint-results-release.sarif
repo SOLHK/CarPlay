@@ -1,0 +1,217 @@
+{
+    "$schema" : "https://docs.oasis-open.org/sarif/sarif/v2.1.0/errata01/os/schemas/sarif-schema-2.1.0.json",
+    "version" : "2.1.0",
+    "runs" : [
+        {
+            "tool": {
+                "driver": {
+                    "name": "Android Lint",
+                    "fullName": "Android Lint (in gradle)",
+                    "version": "9.3.0",
+                    "semanticVersion": "9.3.0",
+                    "organization": "Google",
+                    "informationUri": "https://developer.android.com/studio/write/lint",
+                    "fullDescription": {
+                        "text": "Static analysis originally for Android source code but now performing general analysis"
+                    },
+                    "language": "en-US",
+                    "rules": [
+                        {
+                            "id": "TrustAllX509TrustManager",
+                            "shortDescription": {
+                                "text": "Insecure TLS/SSL trust manager"
+                            },
+                            "fullDescription": {
+                                "text": "This check looks for X509TrustManager implementations whose checkServerTrusted or checkClientTrusted methods do nothing (thus trusting any certificate chain) which could result in insecure network traffic caused by trusting arbitrary TLS/SSL certificates presented by peers.",
+                                "markdown": "This check looks for X509TrustManager implementations whose `checkServerTrusted` or `checkClientTrusted` methods do nothing (thus trusting any certificate chain) which could result in insecure network traffic caused by trusting arbitrary TLS/SSL certificates presented by peers."
+                            },
+                            "defaultConfiguration": {
+                                "level": "warning",
+                                "rank": 50
+                            },
+                            "properties": {
+                                "tags": [
+                                    "Security"
+                                ]
+                            }
+                        },
+                        {
+                            "id": "UnusedAttribute",
+                            "shortDescription": {
+                                "text": "Attribute unused on older versions"
+                            },
+                            "fullDescription": {
+                                "text": "This check finds attributes set in XML files that were introduced in a version newer than the oldest version targeted by your application (with the minSdkVersion attribute).\n\nThis is not an error; the application will simply ignore the attribute. However, if the attribute is important to the appearance or functionality of your application, you should consider finding an alternative way to achieve the same result with only available attributes, and then you can optionally create a copy of the layout in a layout-vNN folder which will be used on API NN or higher where you can take advantage of the newer attribute.\n\nNote: This check does not only apply to attributes. For example, some tags can be unused too, such as the new <tag> element in layouts introduced in API 21.",
+                                "markdown": "This check finds attributes set in XML files that were introduced in a version newer than the oldest version targeted by your application (with the `minSdkVersion` attribute).\n\nThis is not an error; the application will simply ignore the attribute. However, if the attribute is important to the appearance or functionality of your application, you should consider finding an alternative way to achieve the same result with only available attributes, and then you can optionally create a copy of the layout in a layout-vNN folder which will be used on API NN or higher where you can take advantage of the newer attribute.\n\nNote: This check does not only apply to attributes. For example, some tags can be unused too, such as the new `<tag>` element in layouts introduced in API 21."
+                            },
+                            "defaultConfiguration": {
+                                "level": "warning",
+                                "rank": 50
+                            },
+                            "properties": {
+                                "tags": [
+                                    "Correctness"
+                                ]
+                            }
+                        },
+                        {
+                            "id": "UnusedResources",
+                            "shortDescription": {
+                                "text": "Unused resources"
+                            },
+                            "fullDescription": {
+                                "text": "Unused resources make applications larger and slow down builds.\n\n\nThe unused resource check can ignore tests. If you want to include resources that are only referenced from tests, consider packaging them in a test source set instead.\n\nYou can include test sources in the unused resource check by setting the system property lint.unused-resources.include-tests=true, and to exclude them (usually for performance reasons), use lint.unused-resources.exclude-tests=true.\n",
+                                "markdown": "Unused resources make applications larger and slow down builds.\n\n\nThe unused resource check can ignore tests. If you want to include resources that are only referenced from tests, consider packaging them in a test source set instead.\n\nYou can include test sources in the unused resource check by setting the system property `lint.unused-resources.include-tests=true`, and to exclude them (usually for performance reasons), use `lint.unused-resources.exclude-tests=true`.\n"
+                            },
+                            "defaultConfiguration": {
+                                "level": "warning",
+                                "rank": 80
+                            },
+                            "properties": {
+                                "tags": [
+                                    "Performance"
+                                ]
+                            }
+                        }
+                    ]
+                }
+            },
+            "originalUriBaseIds": {
+                "%SRCROOT%": {
+                    "uri": "file:///workspace/scratch/01ee2d361239/work/CarPlay-0.2.29/"
+                },
+                "USER_HOME": {
+                    "uri": "file:///workspace/scratch/01ee2d361239/work/CarPlay-0.2.29/"
+                }
+            },
+            "results": [
+                {
+                    "ruleId": "UnusedAttribute",
+                    "ruleIndex": 1,
+                    "message": {
+                        "text": "Attribute localeConfig is only used in API level 33 and higher (current min is 28)",
+                        "markdown": "Attribute `localeConfig` is only used in API level 33 and higher (current min is 28)"
+                    },
+                    "locations": [
+                        {
+                            "physicalLocation": {
+                                "artifactLocation": {
+                                    "uriBaseId": "%SRCROOT%",
+                                    "uri": "mobile/src/main/AndroidManifest.xml"
+                                },
+                                "region": {
+                                    "startLine": 11,
+                                    "startColumn": 9,
+                                    "endLine": 11,
+                                    "endColumn": 51,
+                                    "charOffset": 426,
+                                    "charLength": 42,
+                                    "snippet": {
+                                        "text": "android:localeConfig=\"@xml/locales_config\""
+                                    }
+                                },
+                                "contextRegion": {
+                                    "startLine": 9,
+                                    "endLine": 14,
+                                    "snippet": {
+                                        "text": "        android:icon=\"@drawable/ic_carplay\"\n        android:label=\"@string/app_name\"\n        android:localeConfig=\"@xml/locales_config\"\n        android:roundIcon=\"@drawable/ic_carplay\"\n        android:supportsRtl=\"true\"\n"
+                                    }
+                                }
+                            }
+                        }
+                    ],
+                    "fixes": [
+                    ],
+                    "partialFingerprints": {
+                        "sourceContext/v1": "043e8c24d3dc392e"
+                    }
+                },
+                {
+                    "ruleId": "TrustAllX509TrustManager",
+                    "ruleIndex": 0,
+                    "message": {
+                        "text": "checkClientTrusted is empty, which could cause insecure network traffic due to trusting arbitrary TLS/SSL certificates presented by peers",
+                        "markdown": "`checkClientTrusted` is empty, which could cause insecure network traffic due to trusting arbitrary TLS/SSL certificates presented by peers"
+                    },
+                    "locations": [
+                        {
+                            "physicalLocation": {
+                                "artifactLocation": {
+                                    "uriBaseId": "USER_HOME",
+                                    "uri": ".gradle/caches/9.5.0/transforms/85aa158762f38ade72906b3c072b5a7a/transformed/out/jars/classes.jar"
+                                },
+                                "region": {
+                                    "byteOffset": 0
+                                }                            }
+                        }
+                    ],
+                    "partialFingerprints": {
+                    }
+                },
+                {
+                    "ruleId": "TrustAllX509TrustManager",
+                    "ruleIndex": 0,
+                    "message": {
+                        "text": "checkServerTrusted is empty, which could cause insecure network traffic due to trusting arbitrary TLS/SSL certificates presented by peers",
+                        "markdown": "`checkServerTrusted` is empty, which could cause insecure network traffic due to trusting arbitrary TLS/SSL certificates presented by peers"
+                    },
+                    "locations": [
+                        {
+                            "physicalLocation": {
+                                "artifactLocation": {
+                                    "uriBaseId": "USER_HOME",
+                                    "uri": ".gradle/caches/9.5.0/transforms/85aa158762f38ade72906b3c072b5a7a/transformed/out/jars/classes.jar"
+                                },
+                                "region": {
+                                    "byteOffset": 0
+                                }                            }
+                        }
+                    ],
+                    "partialFingerprints": {
+                    }
+                },
+                {
+                    "ruleId": "UnusedResources",
+                    "ruleIndex": 2,
+                    "message": {
+                        "text": "The resource R.bool.config_advanced_audio_channel_mapping appears to be unused",
+                        "markdown": "The resource `R.bool.config_advanced_audio_channel_mapping` appears to be unused"
+                    },
+                    "locations": [
+                        {
+                            "physicalLocation": {
+                                "artifactLocation": {
+                                    "uriBaseId": "%SRCROOT%",
+                                    "uri": "mobile/src/main/res/values/config.xml"
+                                },
+                                "region": {
+                                    "startLine": 2,
+                                    "startColumn": 11,
+                                    "endLine": 2,
+                                    "endColumn": 55,
+                                    "charOffset": 22,
+                                    "charLength": 44,
+                                    "snippet": {
+                                        "text": "name=\"config_advanced_audio_channel_mapping\""
+                                    }
+                                },
+                                "contextRegion": {
+                                    "startLine": 1,
+                                    "endLine": 4,
+                                    "snippet": {
+                                        "text": "<resources>\n    <bool name=\"config_advanced_audio_channel_mapping\">true</bool>\n</resources>\n"
+                                    }
+                                }
+                            }
+                        }
+                    ],
+                    "fixes": [
+                    ],
+                    "partialFingerprints": {
+                        "sourceContext/v1": "fc2477e7f8c61738"
+                    }
+                }
+            ]
+        }
+    ]
+}

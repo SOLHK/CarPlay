@@ -1,0 +1,25 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<testsuite name="com.shilapi.xcertplay.SteamGlassSettingsTest" tests="9" skipped="0" failures="0" errors="0" timestamp="2026-10-05T01:04:27.181Z" hostname="06d2ee2f5f86" time="1.256">
+  <properties/>
+  <testcase name="narrowLayoutUsesHorizontalCategoriesAndOneVisibleSection" classname="com.shilapi.xcertplay.SteamGlassSettingsTest" time="0.123"/>
+  <testcase name="anOlderRestoreCannotMoveTheNextCategory" classname="com.shilapi.xcertplay.SteamGlassSettingsTest" time="0.177"/>
+  <testcase name="recreationRestoresTheSelectedCategory" classname="com.shilapi.xcertplay.SteamGlassSettingsTest" time="0.162"/>
+  <testcase name="categoryChangesDoNotRewriteSavedPreferences" classname="com.shilapi.xcertplay.SteamGlassSettingsTest" time="0.209"/>
+  <testcase name="categoryChangesKeepTheSameHeaderNavigationAndScrollHost" classname="com.shilapi.xcertplay.SteamGlassSettingsTest" time="0.166"/>
+  <testcase name="returningFromExtensionsKeepsTheSelectedCategory" classname="com.shilapi.xcertplay.SteamGlassSettingsTest" time="0.134"/>
+  <testcase name="optionAndSwitchTitlesShareTheSameStartEdge" classname="com.shilapi.xcertplay.SteamGlassSettingsTest" time="0.099"/>
+  <testcase name="controlsGrowToFitLargerText" classname="com.shilapi.xcertplay.SteamGlassSettingsTest" time="0.093"/>
+  <testcase name="wideLayoutKeepsCategoriesOutsideTheDetailScroll" classname="com.shilapi.xcertplay.SteamGlassSettingsTest" time="0.088"/>
+  <system-out><![CDATA[]]></system-out>
+  <system-err><![CDATA[Invalid ID 0x00000000.
+Invalid ID 0x00000000.
+Invalid ID 0x00000000.
+Invalid ID 0x00000000.
+Invalid ID 0x00000000.
+Invalid ID 0x00000000.
+Invalid ID 0x00000000.
+Invalid ID 0x00000000.
+Invalid ID 0x00000000.
+Invalid ID 0x00000000.
+]]></system-err>
+</testsuite>

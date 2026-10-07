@@ -1,0 +1,9 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<testsuite name="com.shilapi.xcertplay.hud.BydWheelSpeedTest" tests="3" skipped="0" failures="0" errors="0" timestamp="2026-10-05T10:53:32.278Z" hostname="e7822a2ead4f" time="0.0">
+  <properties/>
+  <testcase name="rejectsMissingOrImpossibleSpeed" classname="com.shilapi.xcertplay.hud.BydWheelSpeedTest" time="0.0"/>
+  <testcase name="readsSpeedInMetersPerSecond" classname="com.shilapi.xcertplay.hud.BydWheelSpeedTest" time="0.0"/>
+  <testcase name="mapsGears" classname="com.shilapi.xcertplay.hud.BydWheelSpeedTest" time="0.0"/>
+  <system-out><![CDATA[]]></system-out>
+  <system-err><![CDATA[]]></system-err>
+</testsuite>

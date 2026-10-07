@@ -1,0 +1,23 @@
+{
+  "shared": {
+    "tests": 518,
+    "failures": 0,
+    "errors": 0,
+    "skipped": 0
+  },
+  "common": {
+    "tests": 301,
+    "failures": 0,
+    "errors": 0,
+    "skipped": 0
+  },
+  "zipalign": "PASS (16KiB native / 4-byte entries)",
+  "auth_and_native": "8 baseline entries byte-identical",
+  "lint": {
+    "Error": 0,
+    "Fatal": 0,
+    "Warning": 4
+  },
+  "apk_sha256": "4154aacadfb574a727a7ede028746f9a3f258e06cc16aebc112e9a196480f8f0",
+  "device_validation": "Not performed; automated tests do not establish real-car smoothness or iPhone GPS fallback."
+}

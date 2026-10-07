@@ -1,0 +1,8 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<testsuite name="com.shilapi.xcertplay.hud.ClusterTurnOverlayExpiryTest" tests="2" skipped="0" failures="0" errors="0" timestamp="2026-10-05T00:56:36.106Z" hostname="06d2ee2f5f86" time="0.022">
+  <properties/>
+  <testcase name="emptyManeuverListClearsTheCardAfterItsGracePeriod" classname="com.shilapi.xcertplay.hud.ClusterTurnOverlayExpiryTest" time="0.014"/>
+  <testcase name="silentRouteClearsThePublishedCardWithoutAnotherPhonePacket" classname="com.shilapi.xcertplay.hud.ClusterTurnOverlayExpiryTest" time="0.006"/>
+  <system-out><![CDATA[]]></system-out>
+  <system-err><![CDATA[]]></system-err>
+</testsuite>

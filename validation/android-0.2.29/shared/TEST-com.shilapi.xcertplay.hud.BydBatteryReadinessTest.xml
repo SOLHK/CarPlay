@@ -1,0 +1,11 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<testsuite name="com.shilapi.xcertplay.hud.BydBatteryReadinessTest" tests="5" skipped="0" failures="0" errors="0" timestamp="2026-10-04T23:59:17.239Z" hostname="06d2ee2f5f86" time="0.088">
+  <properties/>
+  <testcase name="settingsCheckPublishesCanWithoutEnergyAndClearsUnknownProtocol" classname="com.shilapi.xcertplay.hud.BydBatteryReadinessTest" time="0.043"/>
+  <testcase name="failedSampleClearsTheReadingAndCapacity" classname="com.shilapi.xcertplay.hud.BydBatteryReadinessTest" time="0.007"/>
+  <testcase name="staleReadingBecomesUsableAgainOnlyAfterFreshDataIsPublished" classname="com.shilapi.xcertplay.hud.BydBatteryReadinessTest" time="0.006"/>
+  <testcase name="delayedAdbApprovalPrimesTheNextConnectionFromTheSettingsCheck" classname="com.shilapi.xcertplay.hud.BydBatteryReadinessTest" time="0.02"/>
+  <testcase name="protocolChangesCannotReuseThePreviousCapacity" classname="com.shilapi.xcertplay.hud.BydBatteryReadinessTest" time="0.006"/>
+  <system-out><![CDATA[]]></system-out>
+  <system-err><![CDATA[]]></system-err>
+</testsuite>

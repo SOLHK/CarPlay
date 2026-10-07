@@ -1,0 +1,8 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<testsuite name="com.shilapi.xcertplay.media.AudioTrackAttributesCompatibilityTest" tests="2" skipped="0" failures="0" errors="0" timestamp="2026-10-04T03:32:07.816Z" hostname="784f64faa022" time="7.78">
+  <properties/>
+  <testcase name="android10KeepsTheActualTrackAttributes" classname="com.shilapi.xcertplay.media.AudioTrackAttributesCompatibilityTest" time="0.089"/>
+  <testcase name="android9UsesTheConfiguredAttributesWithoutCallingTheNewGetter" classname="com.shilapi.xcertplay.media.AudioTrackAttributesCompatibilityTest" time="0.682"/>
+  <system-out><![CDATA[]]></system-out>
+  <system-err><![CDATA[]]></system-err>
+</testsuite>

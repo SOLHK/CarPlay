@@ -1,0 +1,9 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<testsuite name="com.shilapi.xcertplay.airplay.AirPlayDisplaySettingsTest" tests="3" skipped="0" failures="0" errors="0" timestamp="2026-10-05T00:56:34.303Z" hostname="06d2ee2f5f86" time="0.001">
+  <properties/>
+  <testcase name="maximumObservedHeightScalesPhysicalSizeWithCurrentActivityHeight" classname="com.shilapi.xcertplay.airplay.AirPlayDisplaySettingsTest" time="0.001"/>
+  <testcase name="maximumObservedWidthScalesPhysicalSizeWithCurrentActivityWidth" classname="com.shilapi.xcertplay.airplay.AirPlayDisplaySettingsTest" time="0.0"/>
+  <testcase name="maximumResolutionKeepsConfiguredReferenceLength" classname="com.shilapi.xcertplay.airplay.AirPlayDisplaySettingsTest" time="0.0"/>
+  <system-out><![CDATA[]]></system-out>
+  <system-err><![CDATA[]]></system-err>
+</testsuite>

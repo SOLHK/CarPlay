@@ -1,0 +1,18 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<testsuite name="com.shilapi.xcertplay.hud.BydVehicleFieldStoreTest" tests="12" skipped="0" failures="0" errors="0" timestamp="2026-10-05T10:53:32.149Z" hostname="e7822a2ead4f" time="0.128">
+  <properties/>
+  <testcase name="aSavedProbeSurvivesFirmwareMetadataChanges" classname="com.shilapi.xcertplay.hud.BydVehicleFieldStoreTest" time="0.021"/>
+  <testcase name="hiddenCapabilitiesDoNotEraseTheirSavedSwitches" classname="com.shilapi.xcertplay.hud.BydVehicleFieldStoreTest" time="0.012"/>
+  <testcase name="incompletePreferredReadCannotReplaceTheSavedSnapshot" classname="com.shilapi.xcertplay.hud.BydVehicleFieldStoreTest" time="0.012"/>
+  <testcase name="savedProbeMigratesToLegacyModeButCanSwitchBackWithoutDeletingIt" classname="com.shilapi.xcertplay.hud.BydVehicleFieldStoreTest" time="0.009"/>
+  <testcase name="freshInstallUsesTheDefaultDiLink5Commands" classname="com.shilapi.xcertplay.hud.BydVehicleFieldStoreTest" time="0.011"/>
+  <testcase name="legacyFeaturesStayInactiveUntilAProbeIsCached" classname="com.shilapi.xcertplay.hud.BydVehicleFieldStoreTest" time="0.009"/>
+  <testcase name="lateAutomaticReplacementCannotOverwriteANewerSnapshot" classname="com.shilapi.xcertplay.hud.BydVehicleFieldStoreTest" time="0.009"/>
+  <testcase name="automaticReplacementCannotDropPreviouslyConfirmedFields" classname="com.shilapi.xcertplay.hud.BydVehicleFieldStoreTest" time="0.008"/>
+  <testcase name="incompleteNullCatalogProbeCannotReplaceTheSavedSnapshot" classname="com.shilapi.xcertplay.hud.BydVehicleFieldStoreTest" time="0.009"/>
+  <testcase name="aConfirmedEnergyFieldMustRemainReadable" classname="com.shilapi.xcertplay.hud.BydVehicleFieldStoreTest" time="0.007"/>
+  <testcase name="anExplicitReplacementMayDropFieldsButNotOverwriteANewerSnapshot" classname="com.shilapi.xcertplay.hud.BydVehicleFieldStoreTest" time="0.007"/>
+  <testcase name="socAndRangeRemainUsableWhenController13HasNoRemainingKwhField" classname="com.shilapi.xcertplay.hud.BydVehicleFieldStoreTest" time="0.007"/>
+  <system-out><![CDATA[]]></system-out>
+  <system-err><![CDATA[]]></system-err>
+</testsuite>

@@ -1,0 +1,32 @@
+To honour the JVM settings for this build a single-use Daemon process will be forked. For more on this, please refer to https://docs.gradle.org/9.5.0/userguide/gradle_daemon.html#sec:disabling_the_daemon in the Gradle documentation.
+Daemon will be stopped at the end of the build
+Calculating task graph as no cached configuration is available for tasks: :shared:compileDebugKotlin
+
+> Configure project :mobile
+w: file:///workspace/scratch/build-check/mobile/build.gradle.kts:27:74: 'fun srcDir(srcDir: Any): Any' is deprecated. Use `directories` mutable set instead.
+
+> Configure project :shared
+Checking the license for package NDK (Side by side) 28.2.13676358 in /workspace/scratch/android-sdk/licenses
+Warning: License for package NDK (Side by side) 28.2.13676358 not accepted.
+
+FAILURE: Build failed with an exception.
+
+* What went wrong:
+A problem occurred configuring project ':shared'.
+> com.android.builder.sdk.LicenceNotAcceptedException: Failed to install the following Android SDK packages as some licences have not been accepted.
+     ndk;28.2.13676358 NDK (Side by side) 28.2.13676358
+  To build this project, accept the SDK license agreements and install the missing components using the Android Studio SDK Manager.
+  All licenses can be accepted using the sdkmanager command line tool:
+  sdkmanager --licenses
+  Or, to transfer the license agreements from one workstation to another, see https://developer.android.com/studio/intro/update.html#download-with-gradle
+
+  Using Android SDK: /workspace/scratch/android-sdk
+
+* Try:
+> Run with --stacktrace option to get the stack trace.
+> Run with --info or --debug option to get more log output.
+> Run with --scan to get full insights from a Build Scan (powered by Develocity).
+> Get more help at https://help.gradle.org.
+
+BUILD FAILED in 1m 10s
+Configuration cache entry stored.

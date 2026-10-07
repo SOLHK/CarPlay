@@ -1,0 +1,14 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<testsuite name="com.shilapi.xcertplay.LocationContinuityTest" tests="8" skipped="0" failures="0" errors="0" timestamp="2026-10-05T10:53:25.718Z" hostname="e7822a2ead4f" time="0.16">
+  <properties/>
+  <testcase name="liveDuplicateDoesNotEmitAnInvalidFix" classname="com.shilapi.xcertplay.LocationContinuityTest" time="0.048"/>
+  <testcase name="resetDoesNotCarryValidityOrDuplicateStateIntoNextSession" classname="com.shilapi.xcertplay.LocationContinuityTest" time="0.012"/>
+  <testcase name="twoHundredAlternatingSourcesDoNotLoseFreshUpdates" classname="com.shilapi.xcertplay.LocationContinuityTest" time="0.063"/>
+  <testcase name="sentPreciseGpsDoesNotStarveNewValidFusedFix" classname="com.shilapi.xcertplay.LocationContinuityTest" time="0.008"/>
+  <testcase name="expiredFixEmitsOneVoidPairThenWaitsForFreshData" classname="com.shilapi.xcertplay.LocationContinuityTest" time="0.006"/>
+  <testcase name="noFixAtStartupSendsNoInventedPosition" classname="com.shilapi.xcertplay.LocationContinuityTest" time="0.005"/>
+  <testcase name="rejectedJumpDoesNotProduceAnActivePosition" classname="com.shilapi.xcertplay.LocationContinuityTest" time="0.007"/>
+  <testcase name="qualityLossAndProviderRemovalInvalidateWithoutResendingCoordinates" classname="com.shilapi.xcertplay.LocationContinuityTest" time="0.006"/>
+  <system-out><![CDATA[]]></system-out>
+  <system-err><![CDATA[]]></system-err>
+</testsuite>

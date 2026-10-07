@@ -1,0 +1,14 @@
+{
+  "version": "0.2.27",
+  "version_code": 46,
+  "package": "com.shihab.diplay.steam",
+  "label": "CarPlay",
+  "same_signer_as_0_2_26": true,
+  "native_libraries_unchanged": true,
+  "runtime_auth_assets_unchanged": true,
+  "zipalign_16k": "passed",
+  "debuggable": false,
+  "minimum_sdk": 28,
+  "apk_sha256": "1aa5e2f646d722672f0c476406ba3942f2bc2e31c7e8c885a139de4a33a74847",
+  "real_phone_tested": false
+}

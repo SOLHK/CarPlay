@@ -1,0 +1,10 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<testsuite name="com.shilapi.xcertplay.ThemeModeDiagnosticsTest" tests="4" skipped="0" failures="0" errors="0" timestamp="2026-10-05T01:04:36.219Z" hostname="06d2ee2f5f86" time="0.007">
+  <properties/>
+  <testcase name="sessionStartAndVisibilityBoundariesRemainVisibleWithAnUnchangedTheme" classname="com.shilapi.xcertplay.ThemeModeDiagnosticsTest" time="0.001"/>
+  <testcase name="undefinedFirmwareSignalIsSeparateFromTheRetainedAppliedMode" classname="com.shilapi.xcertplay.ThemeModeDiagnosticsTest" time="0.0"/>
+  <testcase name="callbackChangesAreRecordedWithoutWaitingForTheHeartbeat" classname="com.shilapi.xcertplay.ThemeModeDiagnosticsTest" time="0.0"/>
+  <testcase name="unchangedPollingIsBoundedButStillConfirmsTheSignalWasObserved" classname="com.shilapi.xcertplay.ThemeModeDiagnosticsTest" time="0.006"/>
+  <system-out><![CDATA[]]></system-out>
+  <system-err><![CDATA[]]></system-err>
+</testsuite>

@@ -1,0 +1,12 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<testsuite name="com.shilapi.xcertplay.SteamReceiverLayoutTest" tests="6" skipped="0" failures="0" errors="0" timestamp="2026-10-05T01:04:28.442Z" hostname="06d2ee2f5f86" time="7.773">
+  <properties/>
+  <testcase name="connectionMethodCanSwitchBackToWifiDirectWithoutErasingHotspotDetails" classname="com.shilapi.xcertplay.SteamReceiverLayoutTest" time="5.245"/>
+  <testcase name="homeHasNewLayoutAndThreeAlignedShortcuts" classname="com.shilapi.xcertplay.SteamReceiverLayoutTest" time="0.359"/>
+  <testcase name="allSettingsAndChildPagesUseTheSameGlassFamily" classname="com.shilapi.xcertplay.SteamReceiverLayoutTest" time="1.207"/>
+  <testcase name="narrowHomeStacksItsShortcutsAndKeepsTextWithinBounds" classname="com.shilapi.xcertplay.SteamReceiverLayoutTest" time="0.231"/>
+  <testcase name="longErrorAndLargerTextStayScrollableOnNarrowScreens" classname="com.shilapi.xcertplay.SteamReceiverLayoutTest" time="0.148"/>
+  <testcase name="waitingPageKeepsRecoveryActionsBelowTheErrorAndCallsTheRightAction" classname="com.shilapi.xcertplay.SteamReceiverLayoutTest" time="0.479"/>
+  <system-out><![CDATA[]]></system-out>
+  <system-err><![CDATA[]]></system-err>
+</testsuite>

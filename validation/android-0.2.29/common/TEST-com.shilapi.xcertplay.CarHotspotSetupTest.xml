@@ -1,0 +1,17 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<testsuite name="com.shilapi.xcertplay.CarHotspotSetupTest" tests="11" skipped="0" failures="0" errors="0" timestamp="2026-10-05T00:08:44.090Z" hostname="06d2ee2f5f86" time="0.146">
+  <properties/>
+  <testcase name="wiredModeNeverPreparesAHotspotEvenWhenTheChoiceIsSaved" classname="com.shilapi.xcertplay.CarHotspotSetupTest" time="0.021"/>
+  <testcase name="onlyBydWithSupportedAdbSeesTheSettingIncludingBeforeApproval" classname="com.shilapi.xcertplay.CarHotspotSetupTest" time="0.014"/>
+  <testcase name="losingAdbHidesTheSettingWithoutClearingOrDisablingTheSavedChoice" classname="com.shilapi.xcertplay.CarHotspotSetupTest" time="0.014"/>
+  <testcase name="startupNeedsValidCredentialsAndNoExistingSession" classname="com.shilapi.xcertplay.CarHotspotSetupTest" time="0.014"/>
+  <testcase name="qualcommBydWithoutNavigationServicesCanReachHotspotSetup" classname="com.shilapi.xcertplay.CarHotspotSetupTest" time="0.012"/>
+  <testcase name="userInstalledLookalikeDoesNotIdentifyABydHeadUnit" classname="com.shilapi.xcertplay.CarHotspotSetupTest" time="0.009"/>
+  <testcase name="wifiDirectAndLocalOnlyHotspotAreNotAutomaticallyManaged" classname="com.shilapi.xcertplay.CarHotspotSetupTest" time="0.013"/>
+  <testcase name="disablingTheChoiceCancelsFutureStartupWithoutChangingConnectionSettings" classname="com.shilapi.xcertplay.CarHotspotSetupTest" time="0.013"/>
+  <testcase name="genericHeadUnitRemainsHiddenEvenWithAdbReady" classname="com.shilapi.xcertplay.CarHotspotSetupTest" time="0.011"/>
+  <testcase name="freshInstallAndExistingHotspotConfigurationRemainOptedOut" classname="com.shilapi.xcertplay.CarHotspotSetupTest" time="0.01"/>
+  <testcase name="existingNavigationBasedDetectionIsPreserved" classname="com.shilapi.xcertplay.CarHotspotSetupTest" time="0.011"/>
+  <system-out><![CDATA[]]></system-out>
+  <system-err><![CDATA[]]></system-err>
+</testsuite>

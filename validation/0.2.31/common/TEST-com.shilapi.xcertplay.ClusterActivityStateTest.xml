@@ -1,0 +1,13 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<testsuite name="com.shilapi.xcertplay.ClusterActivityStateTest" tests="7" skipped="0" failures="0" errors="0" timestamp="2026-10-05T10:55:51.459Z" hostname="e7822a2ead4f" time="0.001">
+  <properties/>
+  <testcase name="pausedButVisibleClusterSurvivesFocusMovingToTheHeadUnit" classname="com.shilapi.xcertplay.ClusterActivityStateTest" time="0.001"/>
+  <testcase name="stoppingAnOldInstanceDoesNotHideItsReplacement" classname="com.shilapi.xcertplay.ClusterActivityStateTest" time="0.0"/>
+  <testcase name="scenarioOnlyShowsTheMiniMapWhileItsCardIsVisible" classname="com.shilapi.xcertplay.ClusterActivityStateTest" time="0.0"/>
+  <testcase name="switchingFromMapToSimpleWithoutAMapCardHidesTheOverlay" classname="com.shilapi.xcertplay.ClusterActivityStateTest" time="0.0"/>
+  <testcase name="unknownStateAndRestartCannotDisplayAStaleOverlay" classname="com.shilapi.xcertplay.ClusterActivityStateTest" time="0.0"/>
+  <testcase name="switchingToMapDoesNotRetainTheSideLayout" classname="com.shilapi.xcertplay.ClusterActivityStateTest" time="0.0"/>
+  <testcase name="matchingClassNameFromAnotherPackageCannotSelectATheme" classname="com.shilapi.xcertplay.ClusterActivityStateTest" time="0.0"/>
+  <system-out><![CDATA[]]></system-out>
+  <system-err><![CDATA[]]></system-err>
+</testsuite>

@@ -1,0 +1,13 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<testsuite name="com.shilapi.xcertplay.BydSettingsReconnectTest" tests="7" skipped="0" failures="0" errors="0" timestamp="2026-10-04T03:47:08.602Z" hostname="784f64faa022" time="1.351">
+  <properties/>
+  <testcase name="theProgressRenderDoesNotDiscardAReadableBatteryPreflight" classname="com.shilapi.xcertplay.BydSettingsReconnectTest" time="0.419"/>
+  <testcase name="anUnrelatedSamePageRenderPreservesThePendingVehicleRead" classname="com.shilapi.xcertplay.BydSettingsReconnectTest" time="0.276"/>
+  <testcase name="unavailableAdbDoesNotReconnectEvenIfTheHotspotCardIsReady" classname="com.shilapi.xcertplay.BydSettingsReconnectTest" time="0.153"/>
+  <testcase name="hotspotAuthorizationPreventsAnOverlappingVehicleCheckOrProbe" classname="com.shilapi.xcertplay.BydSettingsReconnectTest" time="0.02"/>
+  <testcase name="anUnreadableBatteryKeepsTheCurrentConnectionAndThePendingSetting" classname="com.shilapi.xcertplay.BydSettingsReconnectTest" time="0.195"/>
+  <testcase name="aLateHotspotEligibilityResultDoesNotCancelTheVehiclePreflight" classname="com.shilapi.xcertplay.BydSettingsReconnectTest" time="0.175"/>
+  <testcase name="destructionInvalidatesThePendingReconnect" classname="com.shilapi.xcertplay.BydSettingsReconnectTest" time="0.106"/>
+  <system-out><![CDATA[]]></system-out>
+  <system-err><![CDATA[]]></system-err>
+</testsuite>

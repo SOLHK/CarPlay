@@ -1,0 +1,9 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<testsuite name="com.shilapi.xcertplay.network.CarPlayBonjourTest" tests="3" skipped="0" failures="0" errors="0" timestamp="2026-10-04T03:32:16.643Z" hostname="784f64faa022" time="0.015">
+  <properties/>
+  <testcase name="connectProbeRequestMatchesExactRequestLineAndHeaders" classname="com.shilapi.xcertplay.network.CarPlayBonjourTest" time="0.008"/>
+  <testcase name="airPlayTxtRecordsMatchLivi" classname="com.shilapi.xcertplay.network.CarPlayBonjourTest" time="0.001"/>
+  <testcase name="discoveryDiagnosticsKeepOutcomeWithoutPhoneIdentifiers" classname="com.shilapi.xcertplay.network.CarPlayBonjourTest" time="0.005"/>
+  <system-out><![CDATA[]]></system-out>
+  <system-err><![CDATA[]]></system-err>
+</testsuite>

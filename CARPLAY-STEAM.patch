@@ -1,0 +1,1192 @@
+diff --git a/CARPLAY-STEAM-0.2.26.md b/CARPLAY-STEAM-0.2.26.md
+new file mode 100644
+index 0000000..456d1e6
+--- /dev/null
++++ b/CARPLAY-STEAM-0.2.26.md
+@@ -0,0 +1,40 @@
++# CarPlay 0.2.26 · Steam
++
++基于 DiPlay v0.2.11（6014025c653c4dae88d319ce446e0bf1ddb658ea）的完整源码构建，保留原作者及第三方许可。自定义应用名称 CarPlay，安装包名 com.shihab.diplay.steam。
++
++## 本版功能
++
++- 纳入上游无线 / USB 接收、运行中 Wi-Fi iAP2 定位连接修正、Wi-Fi Direct 信道选择、媒体会话 / 歌曲封面、地图卡片 / 小组件、手势及 BYD 可选高级车辆数据功能。车型专用功能仍取决于车型及系统授权。
++- 安卓手机与安卓车机均可作为接收屏，设置新增 USB 主机、Wi-Fi Direct 能力显示与连接说明。手机横竖屏沿用上游 fullSensor 自适应。
++- 保留 100ms 媒体启动缓冲、60fps 请求、固定双指触点槽、解码输出合并。实际帧率和连接流畅度取决于设备与网络，100ms 无法覆盖超过缓冲时长的无线中断。
++- 导航、媒体可分别选择音频通道；车机是否真正提供独立导航音量需实测。
++- 迁移定位过滤：仅 GPS / fused、数据年龄不超过 1500ms、精度不超过 10m；过滤无精度、过期、未来时间、异常跳点、重复定位。实际采集请求 1000ms，回调移至后台线程。默认开启上报请求，仍需精确位置权限。
++- 迁移音频路由 / 使用类型 / 音量、视频网络阶段 / 解码提交 / 输出及定位状态诊断；导出严格最近一小时记录。记录含接收设备坐标，请自行保管。
++- 安卓手机安装时，“接收设备 GPS”指该安卓手机；车机安装时指车机。CarPlay 未提供读取 iPhone 原始实时 GPS 的接口，也不能确认 iPhone 最终选用哪个定位源。本版不能凭软件保证车道级精度。
++
++## 手机连接
++
++1. 安装 APK 后打开 CarPlay，进入连接设置。无需卸载旧包；本包使用新包名，可并存。连接前退出旧版并关闭旧版自动连接 / 自启动，避免两个接收端争用蓝牙、Wi-Fi Direct 或 USB。
++2. 无线模式：安卓 Android 10+，设备必须支持蓝牙及 Wi-Fi Direct；按应用连接设置完成配对，在另一部 iPhone 的“设置 → 通用 → CarPlay”中选择接收设备。允许所需蓝牙 / 附近设备权限并保持 Wi-Fi 开启。
++3. 有线模式：安卓 Android 9+，需要 USB 主机 / OTG 支持及数据线，将另一部 iPhone 连接至安卓接收设备。普通仅充电接口不能接收。
++4. 要上报安卓接收设备定位，授予精确位置并开启系统定位。日志在设置 → 诊断中导出。
++
++安卓接收屏仍需要另一部 iPhone 提供 CarPlay，不能让安卓单机生成 iPhone 的 CarPlay。这里未连接用户手机 / 车辆，未进行真实配对、车道定位或音量总线验证。
++
++## 安装与签名
++
++旧 0.2.25 签名私钥未能恢复，所以本版采用新签名和新包名，不能覆盖旧包，也不会自动继承旧设置。后续版本须沿用本次签名。签名备份单独保存，不属于开源源码或运行认证资产；请勿公开。
++
++## 从源码构建
++
++环境：JDK 25、Android SDK 平台 37（SDK 包 platforms;android-37.0）、NDK 28.2.13676358；Gradle wrapper 9.5.0。local.properties 自行配置 sdk.dir。
++
++源码不包含私有认证资产或签名材料。普通 assembleDebug 是不含认证身份的源码验证包，不能作为本次独立连接包。构建可连接版本须提供自己已有、获授权的运行认证输入：
++
++- DIPLAY_AUTH_ASSETS_DIR 指向外部私有目录，内含 offline-mfi/identity.pk8、offline-mfi/certificate.p7b。
++- ANDROID_KEYSTORE_PATH、ANDROID_KEYSTORE_PASSWORD、ANDROID_KEY_ALIAS、ANDROID_KEY_PASSWORD 指向自己的签名配置。
++- 执行 ./gradlew :mobile:assembleRelease :mobile:verifyStandaloneAuthentication。
++
++源码可执行 :shared:testDebugUnitTest、:common:testDebugUnitTest。JDK 25 中 Mockito 测试需按 Mockito 官方方式显式加载 mockito-core Java agent；设置 MOCKITO_AGENT_JAR 为依赖缓存中的 mockito-core-5.20.0.jar，再传 --init-script tools/steam-test-agent.gradle；本次另加仅用于工作区联网的代理配置，没有改动应用运行逻辑以规避测试。
++
++本版本完整改动见 CARPLAY-STEAM.patch；测试结果见 validation/。源码依赖下载与完整构建需可访问 Google Maven / Maven Central。
+diff --git a/README.md b/README.md
+index 0043ade..dd6bffe 100644
+--- a/README.md
++++ b/README.md
+@@ -1,3 +1,7 @@
++# CarPlay 0.2.26 · Steam
++
++安卓手机 / 车机接收屏定制版，基于下述 DiPlay 开源项目。安装、连接及版本变更请先阅读 [本版说明](CARPLAY-STEAM-0.2.26.md)。
++
+ # DiPlay
+ 
+ **CarPlay for compatible BYD Android head units.** Wired and wireless, with the familiar DiAuto interface. Independent app: `com.shihab.diplay`.
+diff --git a/common/src/main/AndroidManifest.xml b/common/src/main/AndroidManifest.xml
+index ecfeaf6..a86fcc7 100644
+--- a/common/src/main/AndroidManifest.xml
++++ b/common/src/main/AndroidManifest.xml
+@@ -88,7 +88,7 @@
+             android:exported="true"
+             tools:ignore="ExportedService">
+             <intent-filter>
+-                <action android:name="com.shihab.diplay.action.EMBED_MAP" />
++                <action android:name="com.shihab.diplay.steam.action.EMBED_MAP" />
+             </intent-filter>
+         </service>
+ 
+diff --git a/common/src/main/java/com/shilapi/xcertplay/AirPlayPersistence.kt b/common/src/main/java/com/shilapi/xcertplay/AirPlayPersistence.kt
+index 4ec9134..0bd4793 100644
+--- a/common/src/main/java/com/shilapi/xcertplay/AirPlayPersistence.kt
++++ b/common/src/main/java/com/shilapi/xcertplay/AirPlayPersistence.kt
+@@ -368,7 +368,7 @@ object AirPlayPersistence {
+ 
+     fun loadLocationReportingEnabled(context: Context): Boolean =
+         context.getSharedPreferences(PREFS, Context.MODE_PRIVATE)
+-            .getBoolean(KEY_LOCATION_REPORTING_ENABLED, false)
++            .getBoolean(KEY_LOCATION_REPORTING_ENABLED, true)
+ 
+     fun saveLocationReportingEnabled(context: Context, enabled: Boolean) {
+         context.getSharedPreferences(PREFS, Context.MODE_PRIVATE).edit()
+@@ -414,7 +414,7 @@ object AirPlayPersistence {
+ 
+     fun loadFps(context: Context): Int = AirPlayDisplaySettings.sanitizeFps(
+         context.getSharedPreferences(PREFS, Context.MODE_PRIVATE)
+-            .getInt(KEY_FPS, 30),
++            .getInt(KEY_FPS, 60),
+     )
+ 
+     fun loadMediaBufferMillis(context: Context): Int = com.shilapi.xcertplay.media.MediaAudioBuffer.sanitize(
+diff --git a/common/src/main/java/com/shilapi/xcertplay/CarPlayHostActivity.kt b/common/src/main/java/com/shilapi/xcertplay/CarPlayHostActivity.kt
+index 198b95d..a59a1fa 100644
+--- a/common/src/main/java/com/shilapi/xcertplay/CarPlayHostActivity.kt
++++ b/common/src/main/java/com/shilapi/xcertplay/CarPlayHostActivity.kt
+@@ -437,6 +437,7 @@ class CarPlayHostActivity : ComponentActivity() {
+ 
+     override fun onCreate(savedInstanceState: Bundle?) {
+         super.onCreate(savedInstanceState)
++        RuntimeDiagnostics.start(this)
+         NavigationWidgetUpdater.attach(applicationContext)
+         CenterMapOverlay.requestShow = ::showCenterMap
+         MapMirrors.sink = mirrorSink
+@@ -1550,6 +1551,8 @@ class CarPlayHostActivity : ComponentActivity() {
+             setOnClickListener { AppLocale.showPicker(this@CarPlayHostActivity) }
+         }, LinearLayout.LayoutParams(-1, -2).apply { topMargin = dp(12) })
+ 
++        content.addView(menuText("安卓 CarPlay 接收屏 · Steam\n安卓手机或车机接收 iPhone 的 CarPlay；需另一部 iPhone。无线连接需蓝牙、Wi-Fi Direct（Android 10+）；USB 连接需 USB 主机/OTG 支持。\nUSB 主机支持：${packageManager.hasSystemFeature(PackageManager.FEATURE_USB_HOST)}；Wi-Fi Direct 支持：${packageManager.hasSystemFeature(PackageManager.FEATURE_WIFI_DIRECT)}", 16f, MENU_SECONDARY), LinearLayout.LayoutParams(-1, -2).apply { topMargin = dp(12) })
++
+         val gestureButton = Button(this).apply {
+             isAllCaps = false
+             setOnClickListener {
+@@ -2137,47 +2140,7 @@ class CarPlayHostActivity : ComponentActivity() {
+         return section
+     }
+ 
+-    private fun buildDrivingSideSection(): View {
+-        val section = LinearLayout(this).apply {
+-            orientation = LinearLayout.VERTICAL
+-        }
+-        section.addView(
+-            menuText(getString(R.string.driving_side), 20f, MENU_SECONDARY),
+-            LinearLayout.LayoutParams(
+-                ViewGroup.LayoutParams.MATCH_PARENT,
+-                ViewGroup.LayoutParams.WRAP_CONTENT,
+-            ),
+-        )
+-        val group = RadioGroup(this).apply {
+-            orientation = RadioGroup.HORIZONTAL
+-        }
+-        val left = RadioButton(this).apply {
+-            id = View.generateViewId()
+-            text = getString(R.string.left_hand_drive)
+-            setTextColor(Color.WHITE)
+-            isChecked = !rightHandDrive
+-        }
+-        val right = RadioButton(this).apply {
+-            id = View.generateViewId()
+-            text = getString(R.string.right_hand_drive)
+-            setTextColor(Color.WHITE)
+-            isChecked = rightHandDrive
+-        }
+-        group.addView(left)
+-        group.addView(right)
+-        group.setOnCheckedChangeListener { _, checkedId ->
+-            rightHandDrive = checkedId == right.id
+-            updateResolutionMenu()
+-        }
+-        section.addView(
+-            group,
+-            LinearLayout.LayoutParams(
+-                ViewGroup.LayoutParams.MATCH_PARENT,
+-                ViewGroup.LayoutParams.WRAP_CONTENT,
+-            ).apply { topMargin = dp(8) },
+-        )
+-        return section
+-    }
++    private fun buildDrivingSideSection(): View = View(this).apply { visibility = View.GONE }
+ 
+     private fun buildFullscreenSection(): View {
+         val section = LinearLayout(this).apply {
+diff --git a/common/src/main/java/com/shilapi/xcertplay/DiPlayActivity.kt b/common/src/main/java/com/shilapi/xcertplay/DiPlayActivity.kt
+index e06a577..6f1f2b2 100644
+--- a/common/src/main/java/com/shilapi/xcertplay/DiPlayActivity.kt
++++ b/common/src/main/java/com/shilapi/xcertplay/DiPlayActivity.kt
+@@ -155,6 +155,7 @@ class DiPlayActivity : ComponentActivity() {
+ 
+     override fun onCreate(savedInstanceState: Bundle?) {
+         super.onCreate(savedInstanceState)
++        RuntimeDiagnostics.start(this)
+         languagePreferenceAtCreate = AppLocale.preference(this)
+         com.shilapi.xcertplay.hud.BydNavigationOutputs.onAppOpened(applicationContext)
+         WindowCompat.setDecorFitsSystemWindows(window, true)
+@@ -390,6 +391,11 @@ class DiPlayActivity : ComponentActivity() {
+                 setPadding(0, dp(10), 0, 0)
+             })
+         }
++        section(content, "安卓 CarPlay 接收屏 · Steam", R.drawable.ic_dp_connection) { card ->
++            val usb = packageManager.hasSystemFeature(PackageManager.FEATURE_USB_HOST)
++            val direct = packageManager.hasSystemFeature(PackageManager.FEATURE_WIFI_DIRECT)
++            card.addView(label("用安卓手机或车机接收另一部 iPhone 的 CarPlay。无线连接需蓝牙和 Wi-Fi Direct（Android 10+）；有线连接需 USB 主机 / OTG。\nUSB 主机：$usb；Wi-Fi Direct：$direct。", 16, MUTED))
++        }
+         section(content, getString(R.string.connection_setup), R.drawable.ic_dp_connection) { card ->
+             card.addView(label(getString(R.string.choose_how_to_connect_follow_the_setup_steps_and_save_your), 16, MUTED))
+             card.addView(button(getString(R.string.open_connection_setup), false) { page = "connection"; render() }, matchButton(12, 60))
+@@ -2094,13 +2100,11 @@ class DiPlayActivity : ComponentActivity() {
+                     appendLine("--- Recent own-app process exits (Android 11+) ---")
+                     appendLine(ProcessExitDiagnostics.report(appContext))
+                     appendLine()
+-                    for (name in SessionLogFile.REPORT_NAMES) {
+-                        val file = File(appContext.filesDir, "logs/$name")
+-                        if (file.isFile) {
+-                            appendLine("--- $name ---")
+-                            file.useLines { lines -> lines.forEach { line -> DiagnosticRedactor.redact(line)?.let { appendLine(it) } } }
+-                        }
+-                    }
++                    append("\n--- 接收设备实时定位 ---\n")
++                    append(GnssTelemetry.describe())
++                    append(VideoOutput.describe())
++                    HourDiagnosticLog.appendReport(appContext, this)
++
+                 }
+                 if (uri != null) { DiagnosticExportStore.write(appContext.contentResolver, uri, report); uri }
+                 else if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
+diff --git a/common/src/main/java/com/shilapi/xcertplay/MapEmbedService.kt b/common/src/main/java/com/shilapi/xcertplay/MapEmbedService.kt
+index ecae602..4b62376 100644
+--- a/common/src/main/java/com/shilapi/xcertplay/MapEmbedService.kt
++++ b/common/src/main/java/com/shilapi/xcertplay/MapEmbedService.kt
+@@ -209,7 +209,7 @@ class MapEmbedService : Service() {
+         private const val RELEASE_DELAY_MILLIS = 1_000L
+ 
+         /** Bind to DiPlay's service with this action (the package differs between builds). */
+-        const val ACTION = "com.shihab.diplay.action.EMBED_MAP"
++        const val ACTION = "com.shihab.diplay.steam.action.EMBED_MAP"
+ 
+         // Launcher -> DiPlay. Every message needs replyTo.
+         const val MSG_ATTACH = 1 // KEY_HOST_TOKEN, KEY_DISPLAY_ID, KEY_WIDTH, KEY_HEIGHT
+diff --git a/common/src/main/java/com/shilapi/xcertplay/SessionLogFile.kt b/common/src/main/java/com/shilapi/xcertplay/SessionLogFile.kt
+index fd8ca78..91b28bd 100644
+--- a/common/src/main/java/com/shilapi/xcertplay/SessionLogFile.kt
++++ b/common/src/main/java/com/shilapi/xcertplay/SessionLogFile.kt
+@@ -18,6 +18,7 @@ internal class SessionLogFile(val file: File) : Closeable {
+     fun append(line: String) = synchronized(lock) {
+         if (closed) return@synchronized
+         val safe = DiagnosticRedactor.redact(line) ?: return@synchronized
++        HourDiagnosticLog.append(file.parentFile, safe)
+         runCatching {
+             if (file.length() > MAX_BYTES) {
+                 rotate()
+diff --git a/common/src/main/res/values-uk/strings.xml b/common/src/main/res/values-uk/strings.xml
+index 1a4ccb3..7c0b7cb 100644
+--- a/common/src/main/res/values-uk/strings.xml
++++ b/common/src/main/res/values-uk/strings.xml
+@@ -79,7 +79,7 @@
+     <string name="safe_area_mapping_summary">Безпечна область: %1$d x %2$d у точці (%3$d, %4$d) на екрані %5$d x %6$d</string>
+     <string name="settings_android9_compat">Наведені нижче налаштування недоступні та приховані в Android 9 (API 28):\n• Wi-Fi P2P (5 ГГц) — натомість використовується LocalOnlyHotspot.\n• Програмний декодер HEVC — натомість використовується апаратне декодування.</string>
+     <string name="settings_mfi_address_hint">Адреса має починатися з http:// або https://. Токен необов’язковий і надсилається як токен авторизації Bearer.</string>
+-    <string name="app_name">DiPlay</string>
++    <string name="app_name">CarPlay</string>
+     <string name="language_section_title">Мова</string>
+     <string name="language_app_language">Мова застосунку</string>
+     <string name="language_system_default">Мова системи</string>
+diff --git a/common/src/main/res/values-zh-rCN/strings.xml b/common/src/main/res/values-zh-rCN/strings.xml
+index 710d3a5..43d1c62 100644
+--- a/common/src/main/res/values-zh-rCN/strings.xml
++++ b/common/src/main/res/values-zh-rCN/strings.xml
+@@ -92,7 +92,7 @@
+     <string name="allow_the_connection_permission_to_continue">请授予连接权限以继续</string>
+     <string name="an_independent_carplay_receiver_for_android_head_units_wir">面向 Android 车机的独立 CarPlay 接收器。有线和无线连接均在车机上运行，并使用本地认证。普通 iPhone 无需越狱、Mac、转接器或登录即可连接。\n\n此预览版使用实验性配件身份，仍在测试与不同 iPhone 和车机的兼容性。本产品未经 Apple 认证。</string>
+     <string name="android_9_compatibility">Android 9 兼容性</string>
+-    <string name="app_name">DiPlay</string>
++    <string name="app_name">CarPlay</string>
+     <string name="app_permissions">应用权限</string>
+     <string name="app_settings">应用设置</string>
+     <string name="apply_and_reconnect">应用并重新连接</string>
+diff --git a/common/src/main/res/values/strings.xml b/common/src/main/res/values/strings.xml
+index 479a139..92ae1f6 100644
+--- a/common/src/main/res/values/strings.xml
++++ b/common/src/main/res/values/strings.xml
+@@ -78,7 +78,7 @@
+     <string name="safe_area_mapping_summary">Safe area: %1$d x %2$d at (%3$d, %4$d) in %5$d x %6$d</string>
+     <string name="settings_android9_compat">The following settings are unavailable and hidden on Android 9 (API 28):\n• Wi-Fi P2P (5 GHz) — LocalOnlyHotspot is used instead.\n• HEVC software decoder — hardware decoding is used instead.</string>
+     <string name="settings_mfi_address_hint">Address must start with http:// or https://. Token is optional and sent as an Authorization bearer token.</string>
+-    <string name="app_name">DiPlay</string>
++    <string name="app_name">CarPlay</string>
+     <string name="language_section_title">Language</string>
+     <string name="language_app_language">App language</string>
+     <string name="language_system_default">System default</string>
+diff --git a/common/src/test/java/com/shilapi/xcertplay/DiagnosticRedactorTest.kt b/common/src/test/java/com/shilapi/xcertplay/DiagnosticRedactorTest.kt
+index 76f959f..f24efd3 100644
+--- a/common/src/test/java/com/shilapi/xcertplay/DiagnosticRedactorTest.kt
++++ b/common/src/test/java/com/shilapi/xcertplay/DiagnosticRedactorTest.kt
+@@ -105,7 +105,7 @@ class DiagnosticRedactorTest {
+                 }
+             }
+             val history = SessionLogFile.REPORT_NAMES.map { folder.resolve(it).readText() }
+-            assertEquals(8, folder.listFiles()!!.size)
++            assertEquals(8, folder.listFiles()!!.count { it.name in SessionLogFile.REPORT_NAMES })
+             assertTrue(history.first().contains("session=2"))
+             assertTrue(history.last().contains("session=9"))
+             assertTrue(history.any { it.contains("rejected code=0") })
+diff --git a/common/src/test/java/com/shilapi/xcertplay/LocationReportingSettingsTest.kt b/common/src/test/java/com/shilapi/xcertplay/LocationReportingSettingsTest.kt
+index 081f687..7ac47da 100644
+--- a/common/src/test/java/com/shilapi/xcertplay/LocationReportingSettingsTest.kt
++++ b/common/src/test/java/com/shilapi/xcertplay/LocationReportingSettingsTest.kt
+@@ -28,6 +28,7 @@ class LocationReportingSettingsTest {
+     private val activity get() = requireNotNull(controller).get()
+ 
+     @Before fun setUp() {
++        AirPlayPersistence.saveLocationReportingEnabled(context, false)
+         shadowOf(context).denyPermissions(Manifest.permission.ACCESS_FINE_LOCATION, Manifest.permission.ACCESS_COARSE_LOCATION)
+     }
+ 
+@@ -36,7 +37,13 @@ class LocationReportingSettingsTest {
+         controller?.pause()?.stop()?.destroy()
+     }
+ 
+-    @Test fun currentSettingsExposeLocationSwitchWithDefaultOff() {
++    @Test fun steamProfileRequestsLocationByDefaultWithoutGrantingPermission() {
++        context.getSharedPreferences("xcertplay_airplay", 0).edit().remove("location_reporting_enabled").commit()
++        assertTrue(AirPlayPersistence.loadLocationReportingEnabled(context))
++        assertEquals(PackageManager.PERMISSION_DENIED, context.checkSelfPermission(Manifest.permission.ACCESS_FINE_LOCATION))
++    }
++
++    @Test fun savedDisabledSettingRemainsDisabled() {
+         openSettings()
+ 
+         assertFalse(locationSwitch().isChecked)
+diff --git a/docs/LAUNCHER_INTEGRATION.md b/docs/LAUNCHER_INTEGRATION.md
+index 16245e3..504f00d 100644
+--- a/docs/LAUNCHER_INTEGRATION.md
++++ b/docs/LAUNCHER_INTEGRATION.md
+@@ -45,16 +45,16 @@ In DiPlay settings, under the dashboard map, turn on **Dashboard map on the cent
+ - **Draw over other apps**: the settings screen offers it, or over ADB:
+ 
+   ```bash
+-  adb shell appops set com.shihab.diplay SYSTEM_ALERT_WINDOW allow
++  adb shell appops set com.shihab.diplay.steam SYSTEM_ALERT_WINDOW allow
+   ```
+ 
+ - **Usage Access**, so the card shows only on home screens. Without it, the card shows over every app:
+ 
+   ```bash
+-  adb shell appops set com.shihab.diplay GET_USAGE_STATS allow
++  adb shell appops set com.shihab.diplay.steam GET_USAGE_STATS allow
+   ```
+ 
+-(Test builds use the package `com.shihab.diplay.hudtest`.)
++(Test builds use the package `com.shihab.diplay.steam.hudtest`.)
+ 
+ The card is a separate decoder for the same stream, so the dashboard keeps its map. While the card shows the map, "Dashboard map only in Small and Full navi" does not pause the stream. If a launcher embeds the map (section 3), the card stays hidden.
+ 
+@@ -74,7 +74,7 @@ A complete working example is the sample app in [`samples/maphost`](../samples/m
+ 
+ DiPlay exports a bound service. You talk to it with [`Messenger`](https://developer.android.com/reference/android/os/Messenger), so you need no AIDL or library. Every message you send must set `replyTo` to your own `Messenger`.
+ 
+-Service action: `com.shihab.diplay.action.EMBED_MAP`. The package differs between release and test builds, so find the service by its action.
++Service action: `com.shihab.diplay.steam.action.EMBED_MAP`. The package differs between release and test builds, so find the service by its action.
+ 
+ | Direction | `what` | Data (`Bundle`) | Meaning |
+ |---|---|---|---|
+@@ -96,7 +96,7 @@ The map is 8:3. If your view has another shape, DiPlay fills it and crops the ed
+    ```xml
+    <queries>
+        <intent>
+-           <action android:name="com.shihab.diplay.action.EMBED_MAP" />
++           <action android:name="com.shihab.diplay.steam.action.EMBED_MAP" />
+        </intent>
+    </queries>
+    ```
+@@ -104,7 +104,7 @@ The map is 8:3. If your view has another shape, DiPlay fills it and crops the ed
+ 2. Find and bind the service:
+ 
+    ```kotlin
+-   val intent = Intent("com.shihab.diplay.action.EMBED_MAP")
++   val intent = Intent("com.shihab.diplay.steam.action.EMBED_MAP")
+    val info = packageManager.queryIntentServices(intent, 0).firstOrNull()?.serviceInfo
+        ?: return // DiPlay is not installed
+    intent.setClassName(info.packageName, info.name)
+diff --git a/mobile/build.gradle.kts b/mobile/build.gradle.kts
+index ed5cfeb..0cc1d33 100644
+--- a/mobile/build.gradle.kts
++++ b/mobile/build.gradle.kts
+@@ -14,11 +14,12 @@ android {
+     }
+ 
+     defaultConfig {
+-        applicationId = "com.shihab.diplay"
++        applicationId = "com.shihab.diplay.steam"
+         minSdk = 28
+         targetSdk = 37
+-        versionCode = 30
+-        versionName = "0.2.11"
++        versionCode = 45
++        versionName = "0.2.26"
++        ndk { abiFilters += listOf("arm64-v8a", "armeabi-v7a", "x86_64") }
+ 
+     }
+ 
+diff --git a/mobile/src/debug/java/com/shilapi/xcertplay/hud/StandaloneHudDemoActivity.kt b/mobile/src/debug/java/com/shilapi/xcertplay/hud/StandaloneHudDemoActivity.kt
+index 5ee646a..6c490c5 100644
+--- a/mobile/src/debug/java/com/shilapi/xcertplay/hud/StandaloneHudDemoActivity.kt
++++ b/mobile/src/debug/java/com/shilapi/xcertplay/hud/StandaloneHudDemoActivity.kt
+@@ -81,7 +81,7 @@ class StandaloneHudDemoActivity : Activity() {
+     }
+ 
+     private fun validateTarget() {
+-        check(packageName == "com.shihab.diplay.hudtest" && Process.myUid() >= 10000)
++        check(packageName == "com.shihab.diplay.steam.hudtest" && Process.myUid() >= 10000)
+         check(Build.FINGERPRINT == "BYD-AUTO/IVI/IVI:13/TP1A.220624.014/eng.build20260722.221155:user/release-keys") {
+             "This test is restricted to the inspected firmware"
+         }
+diff --git a/mobile/src/main/res/values/strings.xml b/mobile/src/main/res/values/strings.xml
+index 401758e..3c2a98f 100644
+--- a/mobile/src/main/res/values/strings.xml
++++ b/mobile/src/main/res/values/strings.xml
+@@ -1,3 +1,3 @@
+ <resources>
+-    <string name="app_name">DiPlay</string>
++    <string name="app_name">CarPlay</string>
+ </resources>
+diff --git a/samples/home/src/main/java/com/diplay/home/DiPlayMapPanel.kt b/samples/home/src/main/java/com/diplay/home/DiPlayMapPanel.kt
+index 8602edf..7f02366 100644
+--- a/samples/home/src/main/java/com/diplay/home/DiPlayMapPanel.kt
++++ b/samples/home/src/main/java/com/diplay/home/DiPlayMapPanel.kt
+@@ -166,7 +166,7 @@ class DiPlayMapPanel(context: Context) : FrameLayout(context) {
+     private companion object {
+         const val CARPLAY_ACTIVITY = "com.shilapi.xcertplay.CarPlayHostActivity"
+         // DiPlay's map protocol.
+-        const val ACTION = "com.shihab.diplay.action.EMBED_MAP"
++        const val ACTION = "com.shihab.diplay.steam.action.EMBED_MAP"
+         const val MSG_ATTACH = 1
+         const val MSG_RESIZE = 2
+         const val MSG_DETACH = 3
+diff --git a/samples/maphost/src/main/AndroidManifest.xml b/samples/maphost/src/main/AndroidManifest.xml
+index 8484231..4bdea99 100644
+--- a/samples/maphost/src/main/AndroidManifest.xml
++++ b/samples/maphost/src/main/AndroidManifest.xml
+@@ -4,7 +4,7 @@
+     <!-- Lets the sample find DiPlay's map service on Android 11+. -->
+     <queries>
+         <intent>
+-            <action android:name="com.shihab.diplay.action.EMBED_MAP" />
++            <action android:name="com.shihab.diplay.steam.action.EMBED_MAP" />
+         </intent>
+     </queries>
+ 
+diff --git a/samples/maphost/src/main/java/com/diplay/maphost/MainActivity.kt b/samples/maphost/src/main/java/com/diplay/maphost/MainActivity.kt
+index 6ff2e88..71b1d64 100644
+--- a/samples/maphost/src/main/java/com/diplay/maphost/MainActivity.kt
++++ b/samples/maphost/src/main/java/com/diplay/maphost/MainActivity.kt
+@@ -182,7 +182,7 @@ class MainActivity : Activity() {
+ 
+     private companion object {
+         // DiPlay's protocol (MapEmbedService); copy these into your launcher.
+-        const val ACTION = "com.shihab.diplay.action.EMBED_MAP"
++        const val ACTION = "com.shihab.diplay.steam.action.EMBED_MAP"
+         const val MSG_ATTACH = 1
+         const val MSG_RESIZE = 2
+         const val MSG_DETACH = 3
+diff --git a/shared/src/main/java/com/shilapi/xcertplay/GnssTelemetry.java b/shared/src/main/java/com/shilapi/xcertplay/GnssTelemetry.java
+new file mode 100644
+index 0000000..dea7718
+--- /dev/null
++++ b/shared/src/main/java/com/shilapi/xcertplay/GnssTelemetry.java
+@@ -0,0 +1,31 @@
++package com.shilapi.xcertplay;
++import android.location.*;import android.os.*;import android.util.Log;import java.util.*;
++public final class GnssTelemetry {
++ private static LocationManager owner;private static HandlerThread thread;private static GnssStatus.Callback callback;
++ private static volatile int visible,used,beidou;private static volatile long observed;private static volatile String state="未启动";
++ private static volatile Location latest;private static volatile long fixes;
++ public static synchronized void start(final LocationManager manager){
++  if(owner==manager||manager==null)return;stop(owner);
++  // Location callbacks must keep a worker even when raw satellite status is denied.
++  owner=manager;thread=new HandlerThread("CarPlay-GNSS",android.os.Process.THREAD_PRIORITY_BACKGROUND);thread.start();
++  GnssStatus.Callback cb=new GnssStatus.Callback(){public void onSatelliteStatusChanged(GnssStatus s){if(owner!=manager||callback!=this)return;int u=0,b=0;for(int i=0;i<s.getSatelliteCount();i++){if(s.usedInFix(i))u++;if(s.getConstellationType(i)==GnssStatus.CONSTELLATION_BEIDOU)b++;}visible=s.getSatelliteCount();used=u;beidou=b;observed=SystemClock.elapsedRealtime();state="卫星状态更新";}public void onStopped(){if(owner==manager&&callback==this)state="无卫星更新";}};
++  try{if(manager.registerGnssStatusCallback(cb,new Handler(thread.getLooper()))){callback=cb;state="等待接收设备卫星";}else state="卫星状态不可用；坐标订阅独立运行";}
++  catch(RuntimeException e){state="卫星权限或接口不可用；坐标订阅独立运行";Log.w("CarPlayLocation",state,e);}
++ }
++ public static synchronized void stop(LocationManager m){if(owner==null||owner!=m)return;try{if(callback!=null)owner.unregisterGnssStatusCallback(callback);}catch(RuntimeException ignored){}finally{callback=null;owner=null;if(thread!=null)thread.quitSafely();thread=null;visible=used=beidou=0;observed=0;latest=null;fixes=0;state="已停止";LocationFixPolicy.reset();}}
++ public static synchronized Looper looper(){if(thread==null)throw new IllegalStateException("Location worker has not started");return thread.getLooper();}
++ private static boolean valid(Location fix,long now){if(fix==null)return false;long age=now-fix.getElapsedRealtimeNanos();return age>=0&&age<=5000000000L&&Double.isFinite(fix.getLatitude())&&Double.isFinite(fix.getLongitude())&&Math.abs(fix.getLatitude())<=90&&Math.abs(fix.getLongitude())<=180&&(!fix.hasAccuracy()||(Float.isFinite(fix.getAccuracy())&&fix.getAccuracy()>=0));}
++ public static void onFix(Location fix){if(!valid(fix,SystemClock.elapsedRealtimeNanos()))return;Location previous=latest;if(previous==null||fix.getElapsedRealtimeNanos()>=previous.getElapsedRealtimeNanos()){latest=new Location(fix);fixes++;}}
++ public static Location select(Collection<Location> values){long now=SystemClock.elapsedRealtimeNanos();Location best=LocationFixPolicy.select(values,now);RuntimeDiagnostics.selection(values,best,now);return best;}
++ public static int satellitesFor(Location f){long age=SystemClock.elapsedRealtime()-observed;return f!=null&&"gps".equals(f.getProvider())&&observed>0&&age>=0&&age<=1500?used:-1;}
++ public static String describe(){
++  long age=observed==0?-1:SystemClock.elapsedRealtime()-observed;
++  String text="接收设备GPS："+state+"；卫星可见="+visible+"；参与定位="+used+"；北斗可见="+beidou+"；卫星状态年龄ms="+age+"\n";
++  Location f=latest;if(f==null)text+="实时坐标：等待系统定位（需要精确位置权限及接收设备定位开启）\n";
++  else {long ms=(SystemClock.elapsedRealtimeNanos()-f.getElapsedRealtimeNanos())/1000000L;boolean fresh=ms>=0&&ms<=5000;
++   text+=String.format(Locale.US,"%s：纬度 %.6f，经度 %.6f；来源 %s\n",fresh?"最近采集坐标（不代表已上报）":"采集坐标已过期",f.getLatitude(),f.getLongitude(),f.getProvider());
++   text+="精度 "+(f.hasAccuracy()?String.format(Locale.US,"%.1f米",f.getAccuracy()):"未知")+"；速度 "+(f.hasSpeed()?String.format(Locale.US,"%.1f公里/时",f.getSpeed()*3.6):"未知")+"；数据年龄 "+ms+"ms；回调 "+fixes+"次\n";
++  }
++  return text+"定位上报："+LocationFixPolicy.status()+"\n接收设备定位采集请求间隔1000ms，实际频率由系统决定。\niPhone GPS：CarPlay未提供读取其实时坐标的接口；不能确认iPhone最终采用了哪个来源；接收设备坐标不合格时暂停上报。\n";
++ }
++}
+diff --git a/shared/src/main/java/com/shilapi/xcertplay/HourDiagnosticLog.java b/shared/src/main/java/com/shilapi/xcertplay/HourDiagnosticLog.java
+new file mode 100644
+index 0000000..70c73f8
+--- /dev/null
++++ b/shared/src/main/java/com/shilapi/xcertplay/HourDiagnosticLog.java
+@@ -0,0 +1,8 @@
++package com.shilapi.xcertplay;
++import android.content.Context;import java.io.*;import java.util.*;import java.util.concurrent.*;
++/** Bounded asynchronous timestamped one-hour log, shared by reports and runtime probes. */
++public final class HourDiagnosticLog {
++ private static final ThreadPoolExecutor worker=new ThreadPoolExecutor(1,1,0,TimeUnit.SECONDS,new ArrayBlockingQueue<Runnable>(2048),r->{Thread t=new Thread(r,"CarPlay-HourLog");t.setDaemon(true);return t;},new ThreadPoolExecutor.DiscardPolicy());
++ public static void append(File dir,String text){long time=System.currentTimeMillis();worker.execute(()->{try{dir.mkdirs();File f=new File(dir,"hour-"+(time/60000)+".log");try(FileWriter w=new FileWriter(f,true)){for(String line:text.split("\\r?\\n"))w.write(time+"\t"+line+"\n");}File[] old=dir.listFiles((d,n)->n.startsWith("hour-")&&n.endsWith(".log"));if(old!=null)for(File file:old)try{long bucket=Long.parseLong(file.getName().substring(5,file.getName().length()-4));if(bucket<(time-3600000L)/60000)file.delete();}catch(NumberFormatException ignored){} }catch(IOException ignored){} });}
++ public static void appendReport(Context c,StringBuilder b){long until=System.currentTimeMillis(),since=until-3600000;try{worker.submit(()->{}).get(10,TimeUnit.SECONDS);}catch(Exception ignored){}File[] files=new File(c.getFilesDir(),"logs").listFiles((d,n)->n.startsWith("hour-")&&n.endsWith(".log"));b.append("\n--- 最近一小时日志 ---\n");if(files==null)return;Arrays.sort(files,Comparator.comparing(File::getName));java.text.SimpleDateFormat stamp=new java.text.SimpleDateFormat("yyyy-MM-dd HH:mm:ss.SSS",Locale.US);for(File f:files)try(BufferedReader in=new BufferedReader(new FileReader(f))){String line;while((line=in.readLine())!=null){int tab=line.indexOf('\t');if(tab<0)continue;try{long time=Long.parseLong(line.substring(0,tab));if(time>=since&&time<=until)b.append(stamp.format(new Date(time))).append("  ").append(line.substring(tab+1)).append('\n');}catch(NumberFormatException ignored){}}}catch(IOException ignored){} }
++}
+diff --git a/shared/src/main/java/com/shilapi/xcertplay/LocationFixPolicy.java b/shared/src/main/java/com/shilapi/xcertplay/LocationFixPolicy.java
+new file mode 100644
+index 0000000..f530b85
+--- /dev/null
++++ b/shared/src/main/java/com/shilapi/xcertplay/LocationFixPolicy.java
+@@ -0,0 +1,55 @@
++package com.shilapi.xcertplay;
++import android.location.Location;
++import android.os.SystemClock;
++import java.util.*;
++/** Conservative accessory fixes. Never extrapolates or snaps coordinates to a lane. */
++public final class LocationFixPolicy {
++ private static Location accepted;
++ private static volatile String decision="等待合格定位";
++ private static long encodedNs=-1;
++ public static String status(){return decision;}
++ public static synchronized void reset(){accepted=null;encodedNs=-1;decision="等待合格定位";}
++ public static String rejection(Location f,long now){
++  if(f==null)return "missing";
++  if(!"gps".equals(f.getProvider())&&!"fused".equals(f.getProvider()))return "non-gnss-provider";
++  long age=now-f.getElapsedRealtimeNanos();if(age<0||age>1500000000L)return "stale-or-future";
++  if(!Double.isFinite(f.getLatitude())||!Double.isFinite(f.getLongitude())||Math.abs(f.getLatitude())>90||Math.abs(f.getLongitude())>180)return "invalid-coordinate";
++  if(!f.hasAccuracy()||!Float.isFinite(f.getAccuracy())||f.getAccuracy()<=0||f.getAccuracy()>10)return "poor-or-unknown-accuracy";
++  if(f.getTime()<=0)return "missing-utc";
++  return null;
++ }
++ private static double speed(Location f){return f.hasSpeed()&&Float.isFinite(f.getSpeed())&&f.getSpeed()>=0?f.getSpeed():0;}
++ private static double score(Location f,long now){return f.getAccuracy()+(now-f.getElapsedRealtimeNanos())/1e9*Math.max(1,speed(f));}
++ public static synchronized Location select(Collection<Location> values,long now){
++  Location best=null;StringBuilder reasons=new StringBuilder();
++  for(Location f:values){String bad=rejection(f,now);if(bad==null&&accepted!=null){long dt=f.getElapsedRealtimeNanos()-accepted.getElapsedRealtimeNanos();
++    if(dt<0)bad="out-of-order";
++    else if(dt==0&&f.distanceTo(accepted)>f.getAccuracy()+accepted.getAccuracy())bad="conflicting-same-time";
++    else if(dt>0&&now-accepted.getElapsedRealtimeNanos()<3000000000L){double limit=Math.max(60,Math.max(speed(f),speed(accepted))+15)*dt/1e9+3*(f.getAccuracy()+accepted.getAccuracy());if(f.distanceTo(accepted)>limit)bad="position-jump";}
++   }
++   if(bad!=null){reasons.append(f==null?"null":f.getProvider()).append(':').append(bad).append(';');continue;}
++   if(best==null||score(f,now)<score(best,now)||score(f,now)==score(best,now)&&f.getElapsedRealtimeNanos()>best.getElapsedRealtimeNanos())best=f;
++  }
++  if(best==null){decision="暂停上报："+reasons;return null;}
++  accepted=new Location(best);decision="选用 "+best.getProvider()+"；精度="+best.getAccuracy()+"m；年龄="+(now-best.getElapsedRealtimeNanos())/1000000+"ms；过滤="+reasons;
++  return new Location(best);
++ }
++ public static synchronized String encode(Location f){
++  if(f==null)return null;
++  String bad=rejection(f,SystemClock.elapsedRealtimeNanos());if(bad!=null){decision="暂停上报："+bad;return null;}
++  if(f.getElapsedRealtimeNanos()<=encodedNs){decision="等待新坐标，不重复上报同一定位";return null;}
++  Calendar utc=Calendar.getInstance(TimeZone.getTimeZone("UTC"),Locale.US);utc.setTimeInMillis(f.getTime());
++  String time=String.format(Locale.US,"%02d%02d%02d.%03d",utc.get(Calendar.HOUR_OF_DAY),utc.get(Calendar.MINUTE),utc.get(Calendar.SECOND),utc.get(Calendar.MILLISECOND));
++  String date=String.format(Locale.US,"%02d%02d%02d",utc.get(Calendar.DAY_OF_MONTH),utc.get(Calendar.MONTH)+1,utc.get(Calendar.YEAR)%100);
++  String lat=coordinate(f.getLatitude(),true),lon=coordinate(f.getLongitude(),false),ns=f.getLatitude()<0?"S":"N",ew=f.getLongitude()<0?"W":"E";
++  int satellites=GnssTelemetry.satellitesFor(f);String sv=satellites<0?"":String.format(Locale.US,"%02d",Math.min(99,satellites));
++  // Unknown HDOP and MSL altitude/geoid remain empty; Android altitude is ellipsoidal.
++  String gga=String.join(",","GPGGA",time,lat,ns,lon,ew,"1",sv,"","","M","","M","","");
++  String velocity=f.hasSpeed()&&Float.isFinite(f.getSpeed())&&f.getSpeed()>=0?String.format(Locale.US,"%.2f",f.getSpeed()*1.94384449):"";
++  String heading=f.hasBearing()&&Float.isFinite(f.getBearing())&&f.getBearing()>=0&&f.getBearing()<360&&(!f.hasBearingAccuracy()||f.getBearingAccuracyDegrees()>=0&&f.getBearingAccuracyDegrees()<=30)&&speed(f)>=1?String.format(Locale.US,"%.2f",f.getBearing()):"";
++  String rmc=String.join(",","GPRMC",time,"A",lat,ns,lon,ew,velocity,heading,date,"","");
++  String result=sentence(gga)+sentence(rmc);encodedNs=f.getElapsedRealtimeNanos();RuntimeDiagnostics.nmea(result);return result;
++ }
++ private static String coordinate(double degrees,boolean latitude){long units=Math.round(Math.abs(degrees)*60*100000);long whole=units/6000000;double minutes=(units%6000000)/100000.0;return String.format(Locale.US,latitude?"%02d%08.5f":"%03d%08.5f",whole,minutes);}
++ private static String sentence(String body){int sum=0;for(int i=0;i<body.length();i++)sum^=body.charAt(i);return "$"+body+String.format(Locale.US,"*%02X\r\n",sum);}
++}
+diff --git a/shared/src/main/java/com/shilapi/xcertplay/RuntimeDiagnostics.java b/shared/src/main/java/com/shilapi/xcertplay/RuntimeDiagnostics.java
+new file mode 100644
+index 0000000..72e79fd
+--- /dev/null
++++ b/shared/src/main/java/com/shilapi/xcertplay/RuntimeDiagnostics.java
+@@ -0,0 +1,67 @@
++package com.shilapi.xcertplay;
++import android.content.Context;
++import android.media.*;
++import android.location.Location;
++import android.os.*;
++import java.io.File;
++import java.lang.ref.WeakReference;
++import java.net.Socket;
++import java.util.*;
++/** Read-only bounded diagnostics; no socket reads, routing changes or recovery. */
++public final class RuntimeDiagnostics {
++ private static Handler worker; private static File directory; private static AudioManager audio;
++ private static final Map<AudioTrack,AudioAttributes> configured=Collections.synchronizedMap(new WeakHashMap<AudioTrack,AudioAttributes>());
++ public static void track(AudioTrack t,AudioAttributes attributes){configured.put(t,attributes);track(t);}
++ private static final List<WeakReference<AudioTrack>> tracks=new ArrayList<>();
++ private static volatile WeakReference<Socket> socket=new WeakReference<>(null);
++ private static volatile WeakReference<Thread> reader=new WeakReference<>(null);
++ private static volatile String phase="inactive", gps="selection not requested", nmea="not generated";
++ private static volatile long phaseAt, received, submitted, drained, rendered, gpsAt, nmeaAt;
++ private static boolean interrupted;
++ private static long now(){return SystemClock.elapsedRealtime();}
++ public static synchronized void start(Context c){
++  if(worker!=null)return;
++  try {
++   Context app=c.getApplicationContext();directory=new File(app.getFilesDir(),"logs");audio=(AudioManager)app.getSystemService(Context.AUDIO_SERVICE);
++   HandlerThread t=new HandlerThread("CarPlay-Diagnostics",android.os.Process.THREAD_PRIORITY_BACKGROUND);t.start();worker=new Handler(t.getLooper());
++   worker.post(new Runnable(){public void run(){try{snapshot();}catch(RuntimeException e){log("snapshot unavailable="+e.getClass().getSimpleName());}finally{worker.postDelayed(this,5000);}}});
++  }catch(RuntimeException e){android.util.Log.w("CarPlayDiagnostics","init unavailable",e);}
++ }
++ private static void log(String s){if(directory!=null)HourDiagnosticLog.append(directory,"Diagnostics: "+s);}
++ public static synchronized void track(AudioTrack t){for(Iterator<WeakReference<AudioTrack>> i=tracks.iterator();i.hasNext();){AudioTrack old=i.next().get();if(old==null||old.getState()!=AudioTrack.STATE_INITIALIZED)i.remove();}if(tracks.size()==8)tracks.remove(0);tracks.add(new WeakReference<>(t));
++ if(worker!=null){final WeakReference<AudioTrack> ref=new WeakReference<>(t);worker.postDelayed(new Runnable(){public void run(){AudioTrack live=ref.get();if(live!=null)audioSnapshot(live);}},250);
++ try{t.addOnRoutingChangedListener(new AudioRouting.OnRoutingChangedListener(){public void onRoutingChanged(AudioRouting routing){AudioTrack live=ref.get();if(live!=null)audioSnapshot(live);}},worker);}catch(RuntimeException ignored){}
++ }}
++ public static void screen(Socket s){socket=new WeakReference<>(s);reader=new WeakReference<>(Thread.currentThread());received=submitted=drained=rendered=0;phase="connected";phaseAt=now();interrupted=false;}
++ public static void stage(String s){if(reader.get()!=Thread.currentThread())return;phase=s;phaseAt=now();if("dispatch".equals(s))received=phaseAt;}
++ public static void submitted(){submitted=now();}
++ public static void draining(){drained=now();}
++ public static void rendered(){rendered=now();}
++ private static long age(long value,long n){return value==0?-1:Math.max(0,n-value);}
++ public static void selection(Collection<Location> values,Location best,long ns){
++  long n=now();if(n-gpsAt<5000)return;gpsAt=n;
++  StringBuilder b=new StringBuilder("selected=").append(best==null?"none":best.getProvider()).append(" candidates=[");
++  for(Location f:values){if(f==null)continue;b.append(f.getProvider()).append(":ageMs=").append((ns-f.getElapsedRealtimeNanos())/1000000).append(",accuracyM=").append(f.hasAccuracy()?f.getAccuracy():"unknown").append(';');}
++  gps=b.append("] policy=quality-and-age,maxAgeMs=1500,maxAccuracyM=10; receiverGPS=Android-local; iPhoneGPS=not-exposed-by-CarPlay; NMEA satellites=observed-gps-only,HDOP=unknown-blank").toString();
++ }
++ public static void nmea(String value){long n=now();if(n-nmeaAt<5000)return;nmeaAt=n;nmea=value==null?"none":value.replace("\r", "").replace("\n", " | ");}
++ private static void snapshot(){
++  long n=now();Socket s=socket.get();Thread r=reader.get();boolean active=s!=null&&!s.isClosed()&&r!=null&&r.isAlive();
++  if(s!=null){long displayAge=age(rendered,n);boolean stalled=active&&((rendered==0?age(phaseAt,n):displayAge)>3000);
++   log("video active="+active+" phase="+phase+" phaseAgeMs="+age(phaseAt,n)+" reader="+(r==null?"gone":r.getState())+" receiveAgeMs="+age(received,n)+" submitAgeMs="+age(submitted,n)+" drainAgeMs="+age(drained,n)+" displaySubmitAgeMs="+displayAge+" outputGap="+stalled+" (idle_or_stall_not_proof_of_freeze)");
++   if(stalled&&!interrupted&&r!=null)log("video reader stack="+Arrays.toString(r.getStackTrace()));interrupted=stalled;
++  }
++  log("location "+gps+" decision="+LocationFixPolicy.status()+" selectionSnapshotAgeMs="+age(gpsAt,n)+" encodedNmea="+nmea+" encodedAgeMs="+age(nmeaAt,n)+" (generated_not_phone_acceptance)");
++  log(GnssTelemetry.describe());
++  List<WeakReference<AudioTrack>> copy; synchronized(RuntimeDiagnostics.class){copy=new ArrayList<>(tracks);}
++  for(WeakReference<AudioTrack> ref:copy){AudioTrack t=ref.get();if(t==null)continue;
++   audioSnapshot(t);
++  }
++ }
++ private static void audioSnapshot(AudioTrack t){
++   try{if(t.getState()!=AudioTrack.STATE_INITIALIZED)return;AudioAttributes a=android.os.Build.VERSION.SDK_INT>=29?t.getAudioAttributes():configured.get(t);if(a==null){log("audio attributes unavailable api="+android.os.Build.VERSION.SDK_INT);return;}int stream=a.getVolumeControlStream();AudioDeviceInfo d=t.getRoutedDevice();AudioDeviceInfo preferred=t.getPreferredDevice();
++    log("audio session="+t.getAudioSessionId()+" usage="+a.getUsage()+" content="+a.getContentType()+" volumeControlStream="+stream+" volume="+(audio!=null&&stream>=0?audio.getStreamVolume(stream):-1)+" max="+(audio!=null&&stream>=0?audio.getStreamMaxVolume(stream):-1)+" mute="+(audio!=null&&stream>=0?audio.isStreamMute(stream):"unknown")+" route="+device(d)+" preferred="+device(preferred)+" playState="+t.getPlayState()+" underruns="+t.getUnderrunCount()+" systemMode="+(audio==null?-1:audio.getMode())+" vendorVolumeGroup=unavailable (stream_is_system_mapping_not_vendor_group_proof)");
++   }catch(RuntimeException e){log("audio unavailable="+e.getClass().getSimpleName());}
++ }
++ private static String device(AudioDeviceInfo d){return d==null?"unavailable":"id:"+d.getId()+",type:"+d.getType();}
++}
+diff --git a/shared/src/main/java/com/shilapi/xcertplay/VideoOutput.java b/shared/src/main/java/com/shilapi/xcertplay/VideoOutput.java
+new file mode 100644
+index 0000000..26eff30
+--- /dev/null
++++ b/shared/src/main/java/com/shilapi/xcertplay/VideoOutput.java
+@@ -0,0 +1,27 @@
++package com.shilapi.xcertplay;
++import android.media.MediaCodec;import android.view.Surface;import android.util.Log;import com.shilapi.xcertplay.media.VideoStats;
++/** Drop only decoded output, retaining every compressed reference frame. */
++public final class VideoOutput {
++ private static long skipped,shown,staleDrains;
++ // Never withhold every decoded frame during a sustained backlog.
++ public static boolean drainWithAge(MediaCodec codec,Surface surface,VideoStats stats,long receivedNs){
++  return drain(codec,surface,stats);
++ }
++ public static String describe(){return "视频输出合并：显示="+shown+"；跳过过时解码画面="+skipped+"；旧画面屏蔽已关闭="+staleDrains+"\n";}
++ public static boolean drain(MediaCodec codec,Surface surface,VideoStats stats){
++  RuntimeDiagnostics.draining();MediaCodec.BufferInfo info=new MediaCodec.BufferInfo();int pending=-1;boolean eos=false;int loops=0;long began=System.nanoTime();
++  try {
++   while(loops++<16&&System.nanoTime()-began<8000000L){
++    int index=codec.dequeueOutputBuffer(info,0);
++    if(index==MediaCodec.INFO_TRY_AGAIN_LATER)break;
++    if(index==MediaCodec.INFO_OUTPUT_FORMAT_CHANGED){Log.i("xcertplay-usb","video output "+codec.getOutputFormat());continue;}
++    if(index<0)continue;
++    if(pending>=0){int old=pending;pending=-1;codec.releaseOutputBuffer(old,false);skipped++;}
++    pending=index;eos=(info.flags&MediaCodec.BUFFER_FLAG_END_OF_STREAM)!=0;
++    if(eos)break;
++   }
++   if(pending>=0){int last=pending;pending=-1;boolean render=surface!=null;codec.releaseOutputBuffer(last,render);if(render){stats.onRendered();shown++;RuntimeDiagnostics.rendered();return true;}}
++   return false;
++  } finally {if(pending>=0)codec.releaseOutputBuffer(pending,false);}
++ }
++}
+diff --git a/shared/src/main/java/com/shilapi/xcertplay/airplay/ScreenStream.kt b/shared/src/main/java/com/shilapi/xcertplay/airplay/ScreenStream.kt
+index 3a7e49c..4a2c7a7 100644
+--- a/shared/src/main/java/com/shilapi/xcertplay/airplay/ScreenStream.kt
++++ b/shared/src/main/java/com/shilapi/xcertplay/airplay/ScreenStream.kt
+@@ -63,18 +63,23 @@ class ScreenStream(private val key: ByteArray, private val onDiagnostic: (String
+     }
+ 
+     private fun run(sock: Socket) {
++        com.shilapi.xcertplay.RuntimeDiagnostics.screen(sock)
+         var failure: Throwable? = null
+         val stats = StreamReceiveStats("video", onDiagnostic)
+         try {
+             val input = sock.getInputStream()
+             while (!closed.get()) {
+                 stats.reading()
++                com.shilapi.xcertplay.RuntimeDiagnostics.stage("header")
+                 val header = readFully(input, HEADER_LEN) ?: break
+                 val bodySize = readU32Le(header, 0)
+                 if (bodySize > MAX_BODY) break
++                com.shilapi.xcertplay.RuntimeDiagnostics.stage("body")
+                 val body = readFully(input, bodySize) ?: break
+                 stats.received(HEADER_LEN + bodySize)
++                com.shilapi.xcertplay.RuntimeDiagnostics.stage("dispatch")
+                 onMessage(header, body)
++                com.shilapi.xcertplay.RuntimeDiagnostics.stage("processed")
+                 stats.processed()
+             }
+         } catch (error: Exception) {
+diff --git a/shared/src/main/java/com/shilapi/xcertplay/hud/BydStandaloneHudOutput.kt b/shared/src/main/java/com/shilapi/xcertplay/hud/BydStandaloneHudOutput.kt
+index 38efe04..e500036 100644
+--- a/shared/src/main/java/com/shilapi/xcertplay/hud/BydStandaloneHudOutput.kt
++++ b/shared/src/main/java/com/shilapi/xcertplay/hud/BydStandaloneHudOutput.kt
+@@ -47,8 +47,8 @@ internal class BydStandaloneHudOutput private constructor(context: Context) {
+         /** Enable production and diagnostic packages only on the physically tested firmware. */
+         fun available(context: Context): Boolean {
+             if (Build.VERSION.SDK_INT < 28 || context.packageName !in setOf(
+-                    "com.andrerinas.headunitrevived", "com.shihab.diplay",
+-                    "com.andrerinas.headunitrevived.bydhudtest", "com.shihab.diplay.hudtest")) return false
++                    "com.andrerinas.headunitrevived", "com.shihab.diplay", "com.shihab.diplay.steam",
++                    "com.andrerinas.headunitrevived.bydhudtest", "com.shihab.diplay.hudtest", "com.shihab.diplay.steam.hudtest")) return false
+             if (Build.FINGERPRINT != "BYD-AUTO/IVI/IVI:13/TP1A.220624.014/eng.build20260722.221155:user/release-keys") return false
+             return runCatching {
+                 val manager = context.packageManager
+diff --git a/shared/src/main/java/com/shilapi/xcertplay/hud/BydStarterBridge.kt b/shared/src/main/java/com/shilapi/xcertplay/hud/BydStarterBridge.kt
+index be610d4..e0a1ae6 100644
+--- a/shared/src/main/java/com/shilapi/xcertplay/hud/BydStarterBridge.kt
++++ b/shared/src/main/java/com/shilapi/xcertplay/hud/BydStarterBridge.kt
+@@ -26,7 +26,7 @@ object BydStarterBridge {
+     private var lastNotice: String? = null
+ 
+     @Synchronized fun initialize(context: Context) {
+-        if (context.packageName !in setOf("com.andrerinas.headunitrevived.bydhudtest", "com.shihab.diplay.hudtest") || started) return
++        if (context.packageName !in setOf("com.andrerinas.headunitrevived.bydhudtest", "com.shihab.diplay.steam.hudtest") || started) return
+         val saved = context.getSharedPreferences("hud_starter", Context.MODE_PRIVATE).getString("token", null)
+         token = decodeToken(saved)
+         started = true
+@@ -36,7 +36,7 @@ object BydStarterBridge {
+     }
+ 
+     @Synchronized fun configure(context: Context, secret: String) {
+-        check(context.packageName in setOf("com.andrerinas.headunitrevived.bydhudtest", "com.shihab.diplay.hudtest"))
++        check(context.packageName in setOf("com.andrerinas.headunitrevived.bydhudtest", "com.shihab.diplay.steam.hudtest"))
+         val parsed = requireNotNull(decodeToken(secret)) { "Invalid starter token" }
+         context.getSharedPreferences("hud_starter", Context.MODE_PRIVATE).edit().putString("token", secret).apply()
+         initialize(context)
+diff --git a/shared/src/main/java/com/shilapi/xcertplay/location/AndroidCarPlayLocationProvider.kt b/shared/src/main/java/com/shilapi/xcertplay/location/AndroidCarPlayLocationProvider.kt
+index fa81a78..ce1e542 100644
+--- a/shared/src/main/java/com/shilapi/xcertplay/location/AndroidCarPlayLocationProvider.kt
++++ b/shared/src/main/java/com/shilapi/xcertplay/location/AndroidCarPlayLocationProvider.kt
+@@ -1,5 +1,7 @@
+ package com.shilapi.xcertplay.location
+ 
++import com.shilapi.xcertplay.GnssTelemetry
++import com.shilapi.xcertplay.LocationFixPolicy
+ import android.annotation.SuppressLint
+ import android.content.Context
+ import android.location.Location
+@@ -17,7 +19,7 @@ import java.util.concurrent.ConcurrentHashMap
+ /**
+  * Foreground Android location source for iAP2 LocationInformation.
+  *
+- * The freshest usable fix from GPS, fused, or network location is sent.
++ * Only recent, accurate GPS/fused fixes pass the quality gate; network fixes are not sent.
+  */
+ class AndroidCarPlayLocationProvider(
+     context: Context,
+@@ -38,7 +40,8 @@ class AndroidCarPlayLocationProvider(
+         override fun onLocationChanged(location: Location) {
+             val provider = location.provider ?: return
+             if (provider in preferredProviders) {
+-                latestFixes[provider] = location
++                latestFixes[provider] = Location(location)
++                GnssTelemetry.onFix(location)
+             }
+         }
+ 
+@@ -54,6 +57,7 @@ class AndroidCarPlayLocationProvider(
+         if (started) {
+             true
+         } else {
++            GnssTelemetry.start(locationManager)
+             seedLastKnownLocations()
+             var subscribedProviders = 0
+             for (provider in preferredProviders) {
+@@ -63,7 +67,7 @@ class AndroidCarPlayLocationProvider(
+                         UPDATE_INTERVAL_MILLIS,
+                         MIN_DISTANCE_METERS,
+                         listener,
+-                        Looper.getMainLooper(),
++                        GnssTelemetry.looper(),
+                     )
+                     subscribedProviders++
+                 } catch (error: Exception) {
+@@ -72,6 +76,7 @@ class AndroidCarPlayLocationProvider(
+             }
+             started = subscribedProviders > 0
+             if (!started) {
++                GnssTelemetry.stop(locationManager)
+                 Log.w(TAG, "No Android location provider could be started")
+             }
+             started
+@@ -106,36 +111,15 @@ class AndroidCarPlayLocationProvider(
+             locationManager.removeUpdates(listener)
+         } catch (_: Exception) {
+             // Already unregistered.
++        } finally {
++            GnssTelemetry.stop(locationManager)
++            latestFixes.clear()
+         }
+     }
+ 
+-    override fun latestNmea(): String? {
+-        val fix = latestFix() ?: return null
+-        return try {
+-            NmeaLocationEncoder.encode(
+-                CarPlayLocationFix(
+-                    latitudeDegrees = fix.latitude,
+-                    longitudeDegrees = fix.longitude,
+-                    altitudeMeters = fix.altitude.takeIf { fix.hasAltitude() }?.toDouble(),
+-                    bearingDegrees = fix.bearing.takeIf { fix.hasBearing() }?.toDouble(),
+-                    speedMetersPerSecond = fix.speed.takeIf { fix.hasSpeed() }?.toDouble(),
+-                    accuracyMeters = fix.accuracy.takeIf { fix.hasAccuracy() }?.toDouble(),
+-                    timestampMillis = fix.time,
+-                ),
+-            )
+-        } catch (error: Throwable) {
+-            Log.w(TAG, "Could not encode Android location as NMEA", error)
+-            null
+-        }
+-    }
+-
+-    private fun latestFix(): Location? {
+-        val now = System.currentTimeMillis()
+-        return preferredProviders.asSequence()
+-            .mapNotNull(latestFixes::get)
+-            .filter { now - it.time <= preferredLocationAgeMillis }
+-            .maxByOrNull { it.time }
+-    }
++    override fun latestNmea(): String? = runCatching {
++        LocationFixPolicy.encode(GnssTelemetry.select(latestFixes.values))
++    }.getOrElse { Log.w(TAG, "Could not encode location", it); null }
+ 
+     companion object {
+         private const val TAG = "CarPlayLocation"
+diff --git a/shared/src/main/java/com/shilapi/xcertplay/media/AndroidMediaSink.kt b/shared/src/main/java/com/shilapi/xcertplay/media/AndroidMediaSink.kt
+index 8425cf4..833ab2b 100644
+--- a/shared/src/main/java/com/shilapi/xcertplay/media/AndroidMediaSink.kt
++++ b/shared/src/main/java/com/shilapi/xcertplay/media/AndroidMediaSink.kt
+@@ -432,6 +432,7 @@ private class VideoDecoder(
+ 
+     fun submit(nalus: ByteArray) {
+         stats.onReceived(nalus.size)
++        com.shilapi.xcertplay.RuntimeDiagnostics.submitted()
+         queue.offer(VideoJob.Frame(nalus))
+     }
+ 
+@@ -454,7 +455,7 @@ private class VideoDecoder(
+                         is VideoJob.Frame -> {
+                             if (System.nanoTime() - job.receivedNs > MAX_FRAME_AGE_NS) {
+                                 queue.discardFrames()
+-                                recover("video backlog exceeded 250 ms")
++                                recover("video backlog exceeded 1000 ms")
+                             } else feed(job.nalus)
+                         }
+                         is VideoJob.SurfaceChanged -> changeSurface(job.surface)
+@@ -684,25 +685,9 @@ private class VideoDecoder(
+     }
+ 
+     private fun drainOutput(codec: MediaCodec) {
+-        val info = MediaCodec.BufferInfo()
+-        while (running) {
+-            val index = codec.dequeueOutputBuffer(info, 0)
+-            when {
+-                index == MediaCodec.INFO_TRY_AGAIN_LATER -> return
+-                index == MediaCodec.INFO_OUTPUT_FORMAT_CHANGED -> logOutputFormat(codec.outputFormat)
+-                index >= 0 -> {
+-                    val render = outputSurface != null
+-                    codec.releaseOutputBuffer(index, render)
+-                    if (render) stats.onRendered()
+-                    if (render && !renderedFrameLogged) {
+-                        renderedFrameLogged = true
+-                        report("first frame rendered")
+-                        Log.i(TAG, "video decoder rendered first frame bytes=${info.size}")
+-                    }
+-                    if (info.flags and MediaCodec.BUFFER_FLAG_END_OF_STREAM != 0) return
+-                }
+-                else -> return
+-            }
++        if (com.shilapi.xcertplay.VideoOutput.drain(codec, outputSurface, stats) && !renderedFrameLogged) {
++            renderedFrameLogged = true
++            report("first frame rendered")
+         }
+     }
+ 
+@@ -756,7 +741,7 @@ private class VideoDecoder(
+         const val TAG = "xcertplay-usb"
+         const val MAX_INPUT_SIZE = 8 * 1024 * 1024
+         const val INPUT_TIMEOUT_US = 10_000L
+-        const val MAX_FRAME_AGE_NS = 250_000_000L
++        const val MAX_FRAME_AGE_NS = 1_000_000_000L
+         val START_CODE = byteArrayOf(0x00, 0x00, 0x00, 0x01)
+     }
+ }
+@@ -1006,6 +991,7 @@ private class AudioRenderer(
+             )
+         }
+         track = built
++        com.shilapi.xcertplay.RuntimeDiagnostics.track(built, attributes)
+         diagnosticStage = "track-attributes"
+         trackAttributes = audioTrackAttributesForFocus(built, attributes)
+         diagnosticStage = "track-capacity"
+@@ -1216,7 +1202,12 @@ private class AudioRenderer(
+     private fun feedCodec(payload: ByteArray, presentationTimeUs: Long) {
+         val codec = codec ?: run { decoderUnavailablePackets++; return }
+         diagnosticStage = "decoder-input"
+-        val index = codec.dequeueInputBuffer(INPUT_TIMEOUT_US)
++        var index = codec.dequeueInputBuffer(INPUT_TIMEOUT_US)
++        while (running && index < 0) {
++            drainCodec(codec)
++            if (running) index = codec.dequeueInputBuffer(INPUT_TIMEOUT_US)
++        }
++        if (!running) return
+         if (index < 0) {
+             inputDropped++
+             if (inputDropped == 1) {
+@@ -1290,7 +1281,10 @@ private class AudioRenderer(
+                             output.position(info.offset)
+                             output.limit(info.offset + size)
+                             output.get(pcm, 0, size)
++                            codec.releaseOutputBuffer(index, false)
+                             writePcm(pcm, 0, size)
++                            if (info.flags and MediaCodec.BUFFER_FLAG_END_OF_STREAM != 0) return
++                            continue
+                         }
+                     }
+                     codec.releaseOutputBuffer(index, false)
+diff --git a/shared/src/main/java/com/shilapi/xcertplay/media/CarPlayTouchMapper.kt b/shared/src/main/java/com/shilapi/xcertplay/media/CarPlayTouchMapper.kt
+index af2354f..56a4202 100644
+--- a/shared/src/main/java/com/shilapi/xcertplay/media/CarPlayTouchMapper.kt
++++ b/shared/src/main/java/com/shilapi/xcertplay/media/CarPlayTouchMapper.kt
+@@ -1,33 +1,23 @@
+ package com.shilapi.xcertplay.media
+-
+ import android.view.MotionEvent
+ import com.shilapi.xcertplay.airplay.AirPlayContact
+-
+-/** Converts Android MotionEvents into normalized CarPlay touch contacts. */
+ object CarPlayTouchMapper {
+-    private const val MAX_CONTACTS = 2
+-
+-    fun contacts(event: MotionEvent, viewWidth: Int, viewHeight: Int): List<AirPlayContact> =
+-        contacts(event, CarPlayVideoLayout(0f, 0f, viewWidth.toFloat(), viewHeight.toFloat()))
+-
+-    fun contacts(event: MotionEvent, content: CarPlayVideoLayout): List<AirPlayContact> {
+-        val width = content.width.coerceAtLeast(1f)
+-        val height = content.height.coerceAtLeast(1f)
+-        val action = event.actionMasked
+-        val liftedIndex = if (action == MotionEvent.ACTION_POINTER_UP) event.actionIndex else -1
+-        val allUp = action == MotionEvent.ACTION_UP || action == MotionEvent.ACTION_CANCEL
+-        val count = minOf(MAX_CONTACTS, event.pointerCount)
+-        val contacts = ArrayList<AirPlayContact>(count)
+-        for (index in 0 until count) {
+-            contacts.add(
+-                AirPlayContact(
+-                    id = index,
+-                    x = ((event.getX(index) - content.left).toDouble() / width).coerceIn(0.0, 1.0),
+-                    y = ((event.getY(index) - content.top).toDouble() / height).coerceIn(0.0, 1.0),
+-                    down = !allUp && index != liftedIndex,
+-                ),
+-            )
+-        }
+-        return contacts
+-    }
++ private val ids = intArrayOf(-1,-1)
++ private val xs = doubleArrayOf(0.0,0.0)
++ private val ys = doubleArrayOf(0.0,0.0)
++ @Synchronized fun contacts(event: MotionEvent, viewWidth: Int, viewHeight: Int): List<AirPlayContact> = contacts(event,CarPlayVideoLayout(0f,0f,viewWidth.toFloat(),viewHeight.toFloat()))
++ @Synchronized fun contacts(event: MotionEvent, content: CarPlayVideoLayout): List<AirPlayContact> {
++  val action=event.actionMasked
++  if(action==MotionEvent.ACTION_DOWN)ids.fill(-1)
++  val cancel=action==MotionEvent.ACTION_CANCEL
++  if(!cancel) for(p in 0 until event.pointerCount) { val id=event.getPointerId(p); if(id !in ids){val slot=ids.indexOf(-1);if(slot>=0)ids[slot]=id} }
++  val result=(0..1).map { slot ->
++   val index=if(ids[slot]<0)-1 else event.findPointerIndex(ids[slot])
++   if(index>=0){val x=(event.getX(index)-content.left)/content.width.coerceAtLeast(1f);val y=(event.getY(index)-content.top)/content.height.coerceAtLeast(1f);if(x.isFinite()&&y.isFinite()){xs[slot]=x.toDouble().coerceIn(0.0,1.0);ys[slot]=y.toDouble().coerceIn(0.0,1.0)}}
++   val down=index>=0&&!cancel&&action!=MotionEvent.ACTION_UP&&!(action==MotionEvent.ACTION_POINTER_UP&&index==event.actionIndex)
++   AirPlayContact(slot,xs[slot],ys[slot],down).also { if(!down)ids[slot]=-1 }
++  }
++  if(cancel||action==MotionEvent.ACTION_UP)ids.fill(-1)
++  return result
++ }
+ }
+diff --git a/shared/src/main/java/com/shilapi/xcertplay/media/MediaAudioBuffer.kt b/shared/src/main/java/com/shilapi/xcertplay/media/MediaAudioBuffer.kt
+index ee63439..ee477c5 100644
+--- a/shared/src/main/java/com/shilapi/xcertplay/media/MediaAudioBuffer.kt
++++ b/shared/src/main/java/com/shilapi/xcertplay/media/MediaAudioBuffer.kt
+@@ -6,8 +6,8 @@ package com.shilapi.xcertplay.media
+  * outlasts them. Calls, Siri and navigation prompts keep the small low-latency buffer.
+  */
+ object MediaAudioBuffer {
+-    const val DEFAULT_MILLIS = 300
+-    val presets = listOf(DEFAULT_MILLIS, 500, 1000)
++    const val DEFAULT_MILLIS = 100
++    val presets = listOf(DEFAULT_MILLIS, 300, 500, 1000)
+ 
+     private const val HEADROOM_MILLIS = 200 // room above the start level so bursts after a gap fit
+     private const val MIN_TRACK_BUFFER_BYTES = 16 * 1024
+@@ -26,7 +26,7 @@ object MediaAudioBuffer {
+         if (!isMedia) return lowLatency
+         val bytesPerSecond = sampleRate.toLong() * channels.coerceIn(1, 2) * 2
+         val start = (bytesPerSecond * sanitize(mediaMillis) / 1000).toInt()
+-        val capacity = (bytesPerSecond * (sanitize(mediaMillis) + HEADROOM_MILLIS) / 1000).toInt()
++        val capacity = (bytesPerSecond * (sanitize(mediaMillis) + if (sanitize(mediaMillis) == 100) 40 else HEADROOM_MILLIS) / 1000).toInt()
+         return Plan(
+             trackBufferBytes = maxOf(capacity, lowLatency.trackBufferBytes),
+             startBytes = maxOf(start, lowLatency.startBytes),
+diff --git a/shared/src/main/java/com/shilapi/xcertplay/media/VideoStats.kt b/shared/src/main/java/com/shilapi/xcertplay/media/VideoStats.kt
+index cec6981..822f486 100644
+--- a/shared/src/main/java/com/shilapi/xcertplay/media/VideoStats.kt
++++ b/shared/src/main/java/com/shilapi/xcertplay/media/VideoStats.kt
+@@ -3,7 +3,7 @@ package com.shilapi.xcertplay.media
+ import android.util.Log
+ 
+ /** Five-second video counters that separate network/iPhone gaps from decoder throughput. */
+-internal class VideoStats(
++class VideoStats(
+     private val label: String = "",
+     private val nanoTime: () -> Long = System::nanoTime,
+ ) {
+diff --git a/shared/src/test/java/com/shilapi/xcertplay/HourDiagnosticLogTest.kt b/shared/src/test/java/com/shilapi/xcertplay/HourDiagnosticLogTest.kt
+new file mode 100644
+index 0000000..7ca7be6
+--- /dev/null
++++ b/shared/src/test/java/com/shilapi/xcertplay/HourDiagnosticLogTest.kt
+@@ -0,0 +1,26 @@
++package com.shilapi.xcertplay
++
++import org.junit.Assert.*
++import org.junit.Test
++import org.junit.runner.RunWith
++import org.robolectric.RobolectricTestRunner
++import org.robolectric.RuntimeEnvironment
++import org.robolectric.annotation.Config
++import java.io.File
++
++@RunWith(RobolectricTestRunner::class)
++@Config(sdk = [29], manifest = Config.NONE)
++class HourDiagnosticLogTest {
++    @Test fun exportsRecentMultilineEntriesAndExcludesOldEntries() {
++        val context = RuntimeEnvironment.getApplication()
++        val dir = File(context.filesDir, "logs").apply { mkdirs() }
++        val old = System.currentTimeMillis() - 3_700_000
++        File(dir, "hour-${old / 60000}.log").writeText("$old\tEXPIRED\n")
++        HourDiagnosticLog.append(dir, "RECENT_ONE\nRECENT_TWO")
++        val report = StringBuilder()
++        HourDiagnosticLog.appendReport(context, report)
++        assertTrue(report.contains("RECENT_ONE"))
++        assertTrue(report.contains("RECENT_TWO"))
++        assertFalse(report.contains("EXPIRED"))
++    }
++}
+diff --git a/shared/src/test/java/com/shilapi/xcertplay/LocationFixPolicyTest.kt b/shared/src/test/java/com/shilapi/xcertplay/LocationFixPolicyTest.kt
+new file mode 100644
+index 0000000..53abed2
+--- /dev/null
++++ b/shared/src/test/java/com/shilapi/xcertplay/LocationFixPolicyTest.kt
+@@ -0,0 +1,55 @@
++package com.shilapi.xcertplay
++
++import android.location.Location
++import android.os.SystemClock
++import org.junit.Assert.*
++import org.junit.Before
++import org.junit.Test
++import org.junit.runner.RunWith
++import org.robolectric.RobolectricTestRunner
++import org.robolectric.annotation.Config
++import org.robolectric.shadows.ShadowSystemClock
++import java.time.Duration
++
++@RunWith(RobolectricTestRunner::class)
++@Config(sdk = [29], manifest = Config.NONE)
++class LocationFixPolicyTest {
++    @Before fun reset() {
++        LocationFixPolicy.reset()
++        ShadowSystemClock.advanceBy(Duration.ofSeconds(10))
++    }
++    private fun fix(provider: String = "gps", ageMs: Long = 0, metres: Float = 3f) = Location(provider).apply {
++        latitude = 31.2; longitude = 121.5; accuracy = metres
++        time = 1700000000123; elapsedRealtimeNanos = SystemClock.elapsedRealtimeNanos() - ageMs * 1_000_000
++    }
++    private fun select(vararg fixes: Location) = LocationFixPolicy.select(fixes.toList(), SystemClock.elapsedRealtimeNanos())
++    @Test fun selectsFreshAccurateFixAcrossGpsAndFused() {
++        assertEquals("fused", select(fix(ageMs = 1000), fix("fused", 100, 3.8f))?.provider)
++    }
++    @Test fun withholdsStaleNetworkFutureAndUnknownAccuracy() {
++        assertNull(select(fix(ageMs = 1501), fix("network"), fix(ageMs = -1), fix(metres = 11f), fix().apply { removeAccuracy() }))
++    }
++    @Test fun rejectsJumpButReacquiresAfterOutage() {
++        assertNotNull(select(fix()))
++        ShadowSystemClock.advanceBy(Duration.ofMillis(500))
++        assertNull(select(fix().apply { longitude += 0.1 }))
++        ShadowSystemClock.advanceBy(Duration.ofSeconds(4))
++        assertNotNull(select(fix().apply { longitude += 0.1 }))
++    }
++    @Test fun nmeaPreservesUtcAndOmitsUnmeasuredValues() {
++        val location = fix("fused")
++        val nmea = requireNotNull(LocationFixPolicy.encode(location))
++        val rows = nmea.trim().split("\r\n")
++        val gga = rows[0].substringBefore('*').split(',')
++        val rmc = rows[1].substringBefore('*').split(',')
++        assertTrue(gga[1].endsWith(".123"))
++        listOf(7, 8, 9, 11).forEach { assertEquals("", gga[it]) }
++        listOf(7, 8).forEach { assertEquals("", rmc[it]) }
++        rows.forEach { row ->
++            val sum = row.substring(1).substringBefore('*').fold(0) { acc, char -> acc xor char.code }
++            assertEquals(sum, row.substringAfter('*').toInt(16))
++            assertTrue(row.length + 2 <= 82)
++        }
++        assertNull(LocationFixPolicy.encode(location))
++    }
++}
+diff --git a/shared/src/test/java/com/shilapi/xcertplay/media/CarPlayTouchMapperTest.kt b/shared/src/test/java/com/shilapi/xcertplay/media/CarPlayTouchMapperTest.kt
+index 9b9ca7c..670d117 100644
+--- a/shared/src/test/java/com/shilapi/xcertplay/media/CarPlayTouchMapperTest.kt
++++ b/shared/src/test/java/com/shilapi/xcertplay/media/CarPlayTouchMapperTest.kt
+@@ -12,6 +12,8 @@ import org.robolectric.annotation.Config
+ class CarPlayTouchMapperTest {
+     private val content = CarPlayVideoLayout.fit(1920, 990, 1920, 942)
+ 
++    @org.junit.Before fun resetContacts() { contact(MotionEvent.ACTION_CANCEL, 0f, 0f) }
++
+     @Test fun contentCornersMapToCanvasCorners() {
+         contact(MotionEvent.ACTION_DOWN, content.left, content.top).let {
+             assertEquals(0.0, it.x, 1e-6)
+@@ -44,7 +46,7 @@ class CarPlayTouchMapperTest {
+     @Test fun fullViewOverloadKeepsExistingCoordinates() {
+         val event = MotionEvent.obtain(0, 0, MotionEvent.ACTION_DOWN, 480f, 247.5f, 0)
+         try {
+-            val contact = CarPlayTouchMapper.contacts(event, 1920, 990).single()
++            val contact = CarPlayTouchMapper.contacts(event, 1920, 990).first()
+             assertEquals(0.25, contact.x, 1e-6)
+             assertEquals(0.25, contact.y, 1e-6)
+         } finally {
+@@ -52,9 +54,32 @@ class CarPlayTouchMapperTest {
+         }
+     }
+ 
++    @Test fun reorderedAndroidPointersKeepTheirCarPlaySlots() {
++        fun send(action: Int, vararg points: Pair<Int, Float>) = MotionEvent.obtain(
++            0, 1, action, points.size,
++            points.map { (id, _) -> MotionEvent.PointerProperties().apply { this.id = id; toolType = MotionEvent.TOOL_TYPE_FINGER } }.toTypedArray(),
++            points.map { (_, x) -> MotionEvent.PointerCoords().apply { this.x = x; y = 471f; pressure = 1f; size = 1f } }.toTypedArray(),
++            0, 0, 1f, 1f, 0, 0, android.view.InputDevice.SOURCE_TOUCHSCREEN, 0,
++        ).let { event -> try { CarPlayTouchMapper.contacts(event, content) } finally { event.recycle() } }
++        val left = content.left + content.width * 0.25f
++        val right = content.left + content.width * 0.75f
++        send(MotionEvent.ACTION_DOWN, 7 to left)
++        send(MotionEvent.ACTION_POINTER_DOWN or (1 shl MotionEvent.ACTION_POINTER_INDEX_SHIFT), 7 to left, 42 to right)
++        val reordered = send(MotionEvent.ACTION_MOVE, 42 to right, 7 to left)
++        assertEquals(2, reordered.size)
++        assertEquals(0.25, reordered[0].x, 1e-6)
++        assertEquals(0.75, reordered[1].x, 1e-6)
++        assertTrue(reordered.all { it.down })
++        val released = send(MotionEvent.ACTION_POINTER_UP, 42 to right, 7 to left)
++        assertTrue(released[0].down)
++        assertFalse(released[1].down)
++        val cancelled = send(MotionEvent.ACTION_CANCEL, 7 to left)
++        assertTrue(cancelled.none { it.down })
++    }
++
+     private fun contact(action: Int, x: Float, y: Float) = MotionEvent.obtain(0, 0, action, x, y, 0).let {
+         try {
+-            CarPlayTouchMapper.contacts(it, content).single()
++            CarPlayTouchMapper.contacts(it, content).first()
+         } finally {
+             it.recycle()
+         }
+diff --git a/shared/src/test/java/com/shilapi/xcertplay/media/MediaAudioBufferTest.kt b/shared/src/test/java/com/shilapi/xcertplay/media/MediaAudioBufferTest.kt
+index d96f56b..fc05d59 100644
+--- a/shared/src/test/java/com/shilapi/xcertplay/media/MediaAudioBufferTest.kt
++++ b/shared/src/test/java/com/shilapi/xcertplay/media/MediaAudioBufferTest.kt
+@@ -35,7 +35,14 @@ class MediaAudioBufferTest {
+     @Test
+     fun `unknown delay falls back to the default`() {
+         assertEquals(MediaAudioBuffer.DEFAULT_MILLIS, MediaAudioBuffer.sanitize(250))
+-        assertEquals(57_600, MediaAudioBuffer.plan(true, 48_000, 2, 7_680, mediaMillis = 42).startBytes)
++        assertEquals(19_200, MediaAudioBuffer.plan(true, 48_000, 2, 7_680, mediaMillis = 42).startBytes)
++    }
++
++    @Test
++    fun `100ms profile retains bounded underrun headroom`() {
++        val plan = MediaAudioBuffer.plan(true, 48_000, 2, 7_680, mediaMillis = 100)
++        assertEquals(19_200, plan.startBytes)
++        assertEquals(30_720, plan.trackBufferBytes) // system minimum (4 × 7680) exceeds 140ms capacity
+     }
+ 
+     @Test
+diff --git a/tools/steam-test-agent.gradle b/tools/steam-test-agent.gradle
+new file mode 100644
+index 0000000..d8bc9a7
+--- /dev/null
++++ b/tools/steam-test-agent.gradle
+@@ -0,0 +1,8 @@
++// JDK 25 tests: set MOCKITO_AGENT_JAR to the resolved mockito-core jar.
++// ./gradlew --init-script tools/steam-test-agent.gradle :shared:testDebugUnitTest :common:testDebugUnitTest
++allprojects {
++    tasks.withType(Test).configureEach {
++        def jarPath = System.getenv('MOCKITO_AGENT_JAR')
++        if (project.name == 'common' && jarPath) jvmArgs "-javaagent:${jarPath}"
++    }
++}

@@ -1,0 +1,9 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<testsuite name="com.shilapi.xcertplay.hud.NavigationOutputWorkerTest" tests="3" skipped="0" failures="0" errors="0" timestamp="2026-10-05T00:56:36.129Z" hostname="06d2ee2f5f86" time="0.008">
+  <properties/>
+  <testcase name="blocked HUD does not block caller or independent cluster" classname="com.shilapi.xcertplay.hud.NavigationOutputWorkerTest" time="0.003"/>
+  <testcase name="overflow clears incremental stream instead of replaying partial route" classname="com.shilapi.xcertplay.hud.NavigationOutputWorkerTest" time="0.002"/>
+  <testcase name="clear discards pending guidance and rejects late frames until restart" classname="com.shilapi.xcertplay.hud.NavigationOutputWorkerTest" time="0.003"/>
+  <system-out><![CDATA[]]></system-out>
+  <system-err><![CDATA[]]></system-err>
+</testsuite>

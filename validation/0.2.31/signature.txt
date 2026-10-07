@@ -1,0 +1,4 @@
+Signer #1 certificate DN: CN=Steam CarPlay, OU=Personal Build, O=Steam
+Signer #1 certificate SHA-256 digest: 4b177c3ba31184bf42d69e560d5c088299899b672ba213d12b514f618d93b269
+Signer #1 certificate SHA-1 digest: 85a1e063eaa0c6d22ea02a9c9f9d4701002b7193
+Signer #1 certificate MD5 digest: c0592412c1f815a59b28f89c2640b3c2

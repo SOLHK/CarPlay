@@ -1,0 +1,11 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<testsuite name="com.shilapi.xcertplay.mfi.RemoteMfiAuthenticationClientTest" tests="5" skipped="0" failures="0" errors="0" timestamp="2026-10-05T10:53:38.635Z" hostname="e7822a2ead4f" time="0.103">
+  <properties/>
+  <testcase name="loadsBaaPackageAndBuildsShowcaseIap2Payload" classname="com.shilapi.xcertplay.mfi.RemoteMfiAuthenticationClientTest" time="0.037"/>
+  <testcase name="rejectsUnknownCertificateType" classname="com.shilapi.xcertplay.mfi.RemoteMfiAuthenticationClientTest" time="0.003"/>
+  <testcase name="resetSurfacesHttp500DetailWithoutRetrying" classname="com.shilapi.xcertplay.mfi.RemoteMfiAuthenticationClientTest" time="0.002"/>
+  <testcase name="rejectsCertificateWhenSha256DoesNotMatch" classname="com.shilapi.xcertplay.mfi.RemoteMfiAuthenticationClientTest" time="0.002"/>
+  <testcase name="resetsLoadsAndCachesCertificateThenSignsWithStableRequestId" classname="com.shilapi.xcertplay.mfi.RemoteMfiAuthenticationClientTest" time="0.059"/>
+  <system-out><![CDATA[]]></system-out>
+  <system-err><![CDATA[]]></system-err>
+</testsuite>

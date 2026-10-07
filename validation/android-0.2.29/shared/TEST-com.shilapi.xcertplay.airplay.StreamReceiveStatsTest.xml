@@ -1,0 +1,9 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<testsuite name="com.shilapi.xcertplay.airplay.StreamReceiveStatsTest" tests="3" skipped="0" failures="0" errors="0" timestamp="2026-10-04T23:59:17.179Z" hostname="06d2ee2f5f86" time="0.005">
+  <properties/>
+  <testcase name="separatesSocketWaitFromLocalProcessingAndTracksSequenceWrap" classname="com.shilapi.xcertplay.airplay.StreamReceiveStatsTest" time="0.002"/>
+  <testcase name="reportResetsWindowButRetainsSequenceContinuity" classname="com.shilapi.xcertplay.airplay.StreamReceiveStatsTest" time="0.001"/>
+  <testcase name="linksSequenceGapsToTheSameLongReadAndResetsOnlyWindowCounters" classname="com.shilapi.xcertplay.airplay.StreamReceiveStatsTest" time="0.001"/>
+  <system-out><![CDATA[]]></system-out>
+  <system-err><![CDATA[]]></system-err>
+</testsuite>

@@ -1,0 +1,12 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<testsuite name="com.shilapi.xcertplay.glance.CarPlayGlanceTest" tests="6" skipped="0" failures="0" errors="0" timestamp="2026-10-05T00:56:34.529Z" hostname="06d2ee2f5f86" time="0.025">
+  <properties/>
+  <testcase name="expiredGuidanceClearsWithoutAnotherFrameAndNotifiesTheWidget" classname="com.shilapi.xcertplay.glance.CarPlayGlanceTest" time="0.014"/>
+  <testcase name="otherMessagesChangeNothing" classname="com.shilapi.xcertplay.glance.CarPlayGlanceTest" time="0.001"/>
+  <testcase name="anEmptySongTitleClearsTheWidgetSong" classname="com.shilapi.xcertplay.glance.CarPlayGlanceTest" time="0.004"/>
+  <testcase name="followsTheNextTurnAndTheSong" classname="com.shilapi.xcertplay.glance.CarPlayGlanceTest" time="0.002"/>
+  <testcase name="aPersistentlyEmptyManeuverListExpiresAfterTheGracePeriod" classname="com.shilapi.xcertplay.glance.CarPlayGlanceTest" time="0.001"/>
+  <testcase name="routeEndAndSessionEnd" classname="com.shilapi.xcertplay.glance.CarPlayGlanceTest" time="0.002"/>
+  <system-out><![CDATA[]]></system-out>
+  <system-err><![CDATA[]]></system-err>
+</testsuite>

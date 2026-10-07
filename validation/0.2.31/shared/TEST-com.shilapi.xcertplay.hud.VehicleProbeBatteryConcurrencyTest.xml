@@ -1,0 +1,11 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<testsuite name="com.shilapi.xcertplay.hud.VehicleProbeBatteryConcurrencyTest" tests="5" skipped="0" failures="0" errors="0" timestamp="2026-10-05T10:53:32.307Z" hostname="e7822a2ead4f" time="0.056">
+  <properties/>
+  <testcase name="savingAnAcceptedProbeDoesNotWaitForAnOlderBatteryRead" classname="com.shilapi.xcertplay.hud.VehicleProbeBatteryConcurrencyTest" time="0.012"/>
+  <testcase name="anAcceptedProbeInDefaultModeDoesNotPublishItsBatteryReading" classname="com.shilapi.xcertplay.hud.VehicleProbeBatteryConcurrencyTest" time="0.01"/>
+  <testcase name="automaticReplacementDoesNotWaitForAnOlderBatteryRead" classname="com.shilapi.xcertplay.hud.VehicleProbeBatteryConcurrencyTest" time="0.009"/>
+  <testcase name="staleAutomaticAndExplicitCandidatesDoNotPublishTheirBatteryReading" classname="com.shilapi.xcertplay.hud.VehicleProbeBatteryConcurrencyTest" time="0.01"/>
+  <testcase name="explicitReplacementDoesNotWaitForAnOlderBatteryRead" classname="com.shilapi.xcertplay.hud.VehicleProbeBatteryConcurrencyTest" time="0.011"/>
+  <system-out><![CDATA[]]></system-out>
+  <system-err><![CDATA[]]></system-err>
+</testsuite>

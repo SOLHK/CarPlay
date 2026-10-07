@@ -1,0 +1,10 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<testsuite name="com.shilapi.xcertplay.airplay.ClusterTurnCardOverlayTest" tests="4" skipped="0" failures="0" errors="0" timestamp="2026-10-04T23:59:17.159Z" hostname="06d2ee2f5f86" time="0.008">
+  <properties/>
+  <testcase name="largeCardDoesNotCoverTheWholePanel" classname="com.shilapi.xcertplay.airplay.ClusterTurnCardOverlayTest" time="0.002"/>
+  <testcase name="defaultSitsOnTheRightOfThePanel" classname="com.shilapi.xcertplay.airplay.ClusterTurnCardOverlayTest" time="0.0"/>
+  <testcase name="manualOffsetsReachThePanelEdges" classname="com.shilapi.xcertplay.airplay.ClusterTurnCardOverlayTest" time="0.0"/>
+  <testcase name="percentStepsStayOnThePanel" classname="com.shilapi.xcertplay.airplay.ClusterTurnCardOverlayTest" time="0.006"/>
+  <system-out><![CDATA[]]></system-out>
+  <system-err><![CDATA[]]></system-err>
+</testsuite>

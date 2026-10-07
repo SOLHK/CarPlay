@@ -1,0 +1,11 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<testsuite name="com.shilapi.xcertplay.orchestration.MfiTargetConfigTest" tests="5" skipped="0" failures="0" errors="0" timestamp="2026-10-05T10:53:42.430Z" hostname="e7822a2ead4f" time="0.001">
+  <properties/>
+  <testcase name="usbTargetRequiresACh341Device" classname="com.shilapi.xcertplay.orchestration.MfiTargetConfigTest" time="0.0"/>
+  <testcase name="i2cTargetUsesTheConfiguredDevicePath" classname="com.shilapi.xcertplay.orchestration.MfiTargetConfigTest" time="0.001"/>
+  <testcase name="remoteTargetRequiresAServerAddress" classname="com.shilapi.xcertplay.orchestration.MfiTargetConfigTest" time="0.0"/>
+  <testcase name="i2cTargetRejectsABlankDevicePath" classname="com.shilapi.xcertplay.orchestration.MfiTargetConfigTest" time="0.0"/>
+  <testcase name="remoteTargetDoesNotRequireALocalDevice" classname="com.shilapi.xcertplay.orchestration.MfiTargetConfigTest" time="0.0"/>
+  <system-out><![CDATA[]]></system-out>
+  <system-err><![CDATA[]]></system-err>
+</testsuite>

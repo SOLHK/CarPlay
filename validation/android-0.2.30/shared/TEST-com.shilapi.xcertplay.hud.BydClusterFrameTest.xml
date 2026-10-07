@@ -1,0 +1,11 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<testsuite name="com.shilapi.xcertplay.hud.BydClusterFrameTest" tests="5" skipped="0" failures="0" errors="0" timestamp="2026-10-05T00:56:34.730Z" hostname="06d2ee2f5f86" time="0.002">
+  <properties/>
+  <testcase name="numbered roundabout exit carries exit number" classname="com.shilapi.xcertplay.hud.BydClusterFrameTest" time="0.001"/>
+  <testcase name="maps basic turns to amap icons" classname="com.shilapi.xcertplay.hud.BydClusterFrameTest" time="0.0"/>
+  <testcase name="unknown maneuver is not advertised as straight" classname="com.shilapi.xcertplay.hud.BydClusterFrameTest" time="0.0"/>
+  <testcase name="negative distance is clamped" classname="com.shilapi.xcertplay.hud.BydClusterFrameTest" time="0.0"/>
+  <testcase name="u-turn follows driving side and arrival is destination" classname="com.shilapi.xcertplay.hud.BydClusterFrameTest" time="0.0"/>
+  <system-out><![CDATA[]]></system-out>
+  <system-err><![CDATA[]]></system-err>
+</testsuite>

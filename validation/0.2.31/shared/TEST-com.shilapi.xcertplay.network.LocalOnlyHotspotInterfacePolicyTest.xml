@@ -1,0 +1,10 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<testsuite name="com.shilapi.xcertplay.network.LocalOnlyHotspotInterfacePolicyTest" tests="4" skipped="0" failures="0" errors="0" timestamp="2026-10-05T10:53:42.378Z" hostname="e7822a2ead4f" time="0.001">
+  <properties/>
+  <testcase name="configuredIdentityCanResolveAnExistingSharedApButNeverAnotherBssid" classname="com.shilapi.xcertplay.network.LocalOnlyHotspotInterfacePolicyTest" time="0.001"/>
+  <testcase name="excludesNewStationAddressAndForeignNetworks" classname="com.shilapi.xcertplay.network.LocalOnlyHotspotInterfacePolicyTest" time="0.0"/>
+  <testcase name="waitsForApAddressInsteadOfAdvertisingEthernetOrStation" classname="com.shilapi.xcertplay.network.LocalOnlyHotspotInterfacePolicyTest" time="0.0"/>
+  <testcase name="refusesAmbiguityOrUnprovenExistingAp" classname="com.shilapi.xcertplay.network.LocalOnlyHotspotInterfacePolicyTest" time="0.0"/>
+  <system-out><![CDATA[]]></system-out>
+  <system-err><![CDATA[]]></system-err>
+</testsuite>

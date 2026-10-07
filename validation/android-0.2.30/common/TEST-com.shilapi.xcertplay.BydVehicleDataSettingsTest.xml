@@ -1,0 +1,75 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<testsuite name="com.shilapi.xcertplay.BydVehicleDataSettingsTest" tests="34" skipped="0" failures="0" errors="0" timestamp="2026-10-05T01:03:58.624Z" hostname="06d2ee2f5f86" time="10.55">
+  <properties/>
+  <testcase name="savedProbeAndEnabledSwitchSurviveAFreshActivityWithoutReprobing" classname="com.shilapi.xcertplay.BydVehicleDataSettingsTest" time="2.2"/>
+  <testcase name="aPausedUserProbeStillSavesAndPublishesItsAcceptedCandidate" classname="com.shilapi.xcertplay.BydVehicleDataSettingsTest" time="0.243"/>
+  <testcase name="anOlderProbeOutcomeCannotHideANewerSavedSnapshot" classname="com.shilapi.xcertplay.BydVehicleDataSettingsTest" time="0.201"/>
+  <testcase name="selectingDefaultAgainCannotBeOverriddenByALateLegacySelection" classname="com.shilapi.xcertplay.BydVehicleDataSettingsTest" time="0.195"/>
+  <testcase name="successfulLegacySelectionPersistsAndSwitchingBackKeepsTheProbe" classname="com.shilapi.xcertplay.BydVehicleDataSettingsTest" time="0.358"/>
+  <testcase name="theSavedSnapshotIsShownWhateverTheClockSays" classname="com.shilapi.xcertplay.BydVehicleDataSettingsTest" time="0.195"/>
+  <testcase name="aProbeRefusedRightAfterApprovalIsRetriedOnce" classname="com.shilapi.xcertplay.BydVehicleDataSettingsTest" time="0.885"/>
+  <testcase name="clusterSongSwitchLivesInAdditionalFeaturesAndHasOneOwner" classname="com.shilapi.xcertplay.BydVehicleDataSettingsTest" time="0.226"/>
+  <testcase name="samePageRenderKeepsScrollAndPageChangeStartsAtTop" classname="com.shilapi.xcertplay.BydVehicleDataSettingsTest" time="0.294"/>
+  <testcase name="temporaryAdbFailureDoesNotHideSavedFunctionsOrClearSwitches" classname="com.shilapi.xcertplay.BydVehicleDataSettingsTest" time="0.156"/>
+  <testcase name="modeChoiceIsDisabledWhileAnAdbCheckRuns" classname="com.shilapi.xcertplay.BydVehicleDataSettingsTest" time="0.243"/>
+  <testcase name="defaultModeShowsTheDiLink5SettingsBehindTheAdvancedButton" classname="com.shilapi.xcertplay.BydVehicleDataSettingsTest" time="0.174"/>
+  <testcase name="theHotspotCardCannotExposeFieldsRejectedByTheLegacyProbe" classname="com.shilapi.xcertplay.BydVehicleDataSettingsTest" time="0.238"/>
+  <testcase name="automaticValidationWaitsForHotspotAuthorizationThenResumes" classname="com.shilapi.xcertplay.BydVehicleDataSettingsTest" time="0.147"/>
+  <testcase name="aFailedReplacementIsShownInsteadOfCrashing" classname="com.shilapi.xcertplay.BydVehicleDataSettingsTest" time="0.255"/>
+  <testcase name="aModeChangeBeforeTheUserProbeReturnsKeepsThePreviousSnapshot" classname="com.shilapi.xcertplay.BydVehicleDataSettingsTest" time="0.183"/>
+  <testcase name="aNewIntentDoesNotCancelAUserProbe" classname="com.shilapi.xcertplay.BydVehicleDataSettingsTest" time="0.148"/>
+  <testcase name="aDestroyedUserProbeCannotSaveOrPublishItsLateCandidate" classname="com.shilapi.xcertplay.BydVehicleDataSettingsTest" time="0.132"/>
+  <testcase name="aSwitchTurnedOnDuringAValidationIsValidatedAfterIt" classname="com.shilapi.xcertplay.BydVehicleDataSettingsTest" time="0.292"/>
+  <testcase name="replaceAnywayKeepsTheAdbStateAndASnapshotSavedSince" classname="com.shilapi.xcertplay.BydVehicleDataSettingsTest" time="0.365"/>
+  <testcase name="aPassingValidationKeepsTheOfferToReplaceSavedData" classname="com.shilapi.xcertplay.BydVehicleDataSettingsTest" time="0.284"/>
+  <testcase name="oneTimeAdbApprovalExplainsAlwaysAllow" classname="com.shilapi.xcertplay.BydVehicleDataSettingsTest" time="0.652"/>
+  <testcase name="defaultModeShowsUnreadableDataAndReconnectsOnlyOnceItIsReadable" classname="com.shilapi.xcertplay.BydVehicleDataSettingsTest" time="0.279"/>
+  <testcase name="withoutBydNavigationTheClusterSongSwitchIsUnderAdvancedVehicleData" classname="com.shilapi.xcertplay.BydVehicleDataSettingsTest" time="0.164"/>
+  <testcase name="failedLegacySelectionKeepsTheDefaultMode" classname="com.shilapi.xcertplay.BydVehicleDataSettingsTest" time="0.215"/>
+  <testcase name="lostFieldsNeedExplicitReplacement" classname="com.shilapi.xcertplay.BydVehicleDataSettingsTest" time="0.233"/>
+  <testcase name="successfulLiveProbeRevealsOnlySupportedSettings" classname="com.shilapi.xcertplay.BydVehicleDataSettingsTest" time="0.122"/>
+  <testcase name="scheduledValidationCannotLeaveAUserProbeStuck" classname="com.shilapi.xcertplay.BydVehicleDataSettingsTest" time="0.126"/>
+  <testcase name="aValidationCancelledBeforeItsSecondCheckReadsNothingMore" classname="com.shilapi.xcertplay.BydVehicleDataSettingsTest" time="0.614"/>
+  <testcase name="anAdbCheckAloneDoesNotStartAVehicleValidation" classname="com.shilapi.xcertplay.BydVehicleDataSettingsTest" time="0.127"/>
+  <testcase name="passingAutomaticValidationClearsAnOldProbeError" classname="com.shilapi.xcertplay.BydVehicleDataSettingsTest" time="0.154"/>
+  <testcase name="scheduledValidationCannotLeaveAnAdbCheckStuck" classname="com.shilapi.xcertplay.BydVehicleDataSettingsTest" time="0.126"/>
+  <testcase name="rendersBeforeTheNextLayoutKeepTheScroll" classname="com.shilapi.xcertplay.BydVehicleDataSettingsTest" time="0.161"/>
+  <testcase name="switchingToLegacyReconnectsOnlyWhenAVehicleDataSwitchIsOn" classname="com.shilapi.xcertplay.BydVehicleDataSettingsTest" time="0.126"/>
+  <system-out><![CDATA[]]></system-out>
+  <system-err><![CDATA[Invalid ID 0x00000000.
+Invalid ID 0x00000000.
+Invalid ID 0x00000000.
+Invalid ID 0x00000000.
+Invalid ID 0x00000000.
+Invalid ID 0x00000000.
+Invalid ID 0x00000000.
+Invalid ID 0x00000000.
+Invalid ID 0x00000000.
+Invalid ID 0x00000000.
+Invalid ID 0x00000000.
+Invalid ID 0x00000000.
+Invalid ID 0x00000000.
+Invalid ID 0x00000000.
+Invalid ID 0x00000000.
+Invalid ID 0x00000000.
+Invalid ID 0x00000000.
+Invalid ID 0x00000000.
+Invalid ID 0x00000000.
+Invalid ID 0x00000000.
+Invalid ID 0x00000000.
+Invalid ID 0x00000000.
+Invalid ID 0x00000000.
+Invalid ID 0x00000000.
+Invalid ID 0x00000000.
+Invalid ID 0x00000000.
+Invalid ID 0x00000000.
+Invalid ID 0x00000000.
+Invalid ID 0x00000000.
+Invalid ID 0x00000000.
+Invalid ID 0x00000000.
+Invalid ID 0x00000000.
+Invalid ID 0x00000000.
+Invalid ID 0x00000000.
+Invalid ID 0x00000000.
+]]></system-err>
+</testsuite>

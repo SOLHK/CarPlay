@@ -1,0 +1,12 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<testsuite name="com.shilapi.xcertplay.media.MediaAudioBufferTest" tests="6" skipped="0" failures="0" errors="0" timestamp="2026-10-05T00:56:37.361Z" hostname="06d2ee2f5f86" time="0.001">
+  <properties/>
+  <testcase name="music buffers the chosen delay plus headroom" classname="com.shilapi.xcertplay.media.MediaAudioBufferTest" time="0.001"/>
+  <testcase name="all streams mapped to media receive the music buffer" classname="com.shilapi.xcertplay.media.MediaAudioBufferTest" time="0.0"/>
+  <testcase name="start level stays below a smaller granted buffer" classname="com.shilapi.xcertplay.media.MediaAudioBufferTest" time="0.0"/>
+  <testcase name="calls and prompts keep the low-latency buffer" classname="com.shilapi.xcertplay.media.MediaAudioBufferTest" time="0.0"/>
+  <testcase name="100ms profile retains bounded underrun headroom" classname="com.shilapi.xcertplay.media.MediaAudioBufferTest" time="0.0"/>
+  <testcase name="unknown delay falls back to the default" classname="com.shilapi.xcertplay.media.MediaAudioBufferTest" time="0.0"/>
+  <system-out><![CDATA[]]></system-out>
+  <system-err><![CDATA[]]></system-err>
+</testsuite>

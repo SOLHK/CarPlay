@@ -1,0 +1,33 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<testsuite name="com.shilapi.xcertplay.WifiP2pGroupManagerTest" tests="27" skipped="0" failures="0" errors="0" timestamp="2026-10-05T01:04:36.507Z" hostname="06d2ee2f5f86" time="63.422">
+  <properties/>
+  <testcase name="disabledWifiHasAnActionableErrorWithoutCreatingAnything" classname="com.shilapi.xcertplay.WifiP2pGroupManagerTest" time="0.073"/>
+  <testcase name="closeLeavesAnotherAppsReplacementGroupRunning" classname="com.shilapi.xcertplay.WifiP2pGroupManagerTest" time="2.039"/>
+  <testcase name="groupAppearingAfterRejectionIsNotRemovedDuringFallback" classname="com.shilapi.xcertplay.WifiP2pGroupManagerTest" time="0.517"/>
+  <testcase name="disconnectedStationCannotPinNewGroupToStaleTwoGhzChannel" classname="com.shilapi.xcertplay.WifiP2pGroupManagerTest" time="2.022"/>
+  <testcase name="twoGhzOnlyNoAcsDriverConnectsUsingAnExplicitChannelAndOwnedCredentials" classname="com.shilapi.xcertplay.WifiP2pGroupManagerTest" time="3.045"/>
+  <testcase name="rememberedGroupThatNeverReachesCarPlayIsEvictedOnClose" classname="com.shilapi.xcertplay.WifiP2pGroupManagerTest" time="2.029"/>
+  <testcase name="manualChannelOverridesAlignmentWithoutReplacingAutomaticMemory" classname="com.shilapi.xcertplay.WifiP2pGroupManagerTest" time="4.038"/>
+  <testcase name="workingRadioKeepsAlignedChannelAndRemovesOnlyItsGroupOnClose" classname="com.shilapi.xcertplay.WifiP2pGroupManagerTest" time="2.028"/>
+  <testcase name="staleCloseCannotRemoveANewerDiPlaySession" classname="com.shilapi.xcertplay.WifiP2pGroupManagerTest" time="4.118"/>
+  <testcase name="missingSystemCredentialsDoNotReuseTheRejectedCustomCredentials" classname="com.shilapi.xcertplay.WifiP2pGroupManagerTest" time="4.026"/>
+  <testcase name="rememberedDefaultUsesSystemCreationInsteadOfInventingAFixedChannel" classname="com.shilapi.xcertplay.WifiP2pGroupManagerTest" time="2.033"/>
+  <testcase name="unknownExistingGroupIsNeverRemovedOrReplaced" classname="com.shilapi.xcertplay.WifiP2pGroupManagerTest" time="0.016"/>
+  <testcase name="changedInternetChannelUsesCurrentAlignmentInsteadOfOldPreference" classname="com.shilapi.xcertplay.WifiP2pGroupManagerTest" time="2.096"/>
+  <testcase name="channelRejectionsReachChannelElevenWithoutAutomaticSelection" classname="com.shilapi.xcertplay.WifiP2pGroupManagerTest" time="4.032"/>
+  <testcase name="genericErrorsRecoverWithRealSystemCredentialsAndChannel" classname="com.shilapi.xcertplay.WifiP2pGroupManagerTest" time="4.541"/>
+  <testcase name="rejectedRememberedChannelIsClearedAndNewSuccessReplacesIt" classname="com.shilapi.xcertplay.WifiP2pGroupManagerTest" time="4.031"/>
+  <testcase name="staleCloseDoesNotEraseANewerConfirmedRecord" classname="com.shilapi.xcertplay.WifiP2pGroupManagerTest" time="2.022"/>
+  <testcase name="unansweredCreateIsNotFollowedByASecondRequest" classname="com.shilapi.xcertplay.WifiP2pGroupManagerTest" time="0.315"/>
+  <testcase name="twoGhzStationAlignsImmediatelyWithoutFiveGhzOrAutomaticRequests" classname="com.shilapi.xcertplay.WifiP2pGroupManagerTest" time="2.029"/>
+  <testcase name="hotspotCreationAloneAndLateConfirmationAfterCloseAreNeverLearned" classname="com.shilapi.xcertplay.WifiP2pGroupManagerTest" time="2.09"/>
+  <testcase name="firmwareIgnoringManualChannelFailsAndRemovesItsOwnGroup" classname="com.shilapi.xcertplay.WifiP2pGroupManagerTest" time="2.048"/>
+  <testcase name="connectionSnapshotDoesNotInterpretAnEmptyP2pListAsFailedIphoneAssociation" classname="com.shilapi.xcertplay.WifiP2pGroupManagerTest" time="2.114"/>
+  <testcase name="reportedChannelIsUsedWhenFirmwareIgnoresTheRequestedFrequency" classname="com.shilapi.xcertplay.WifiP2pGroupManagerTest" time="3.024"/>
+  <testcase name="rejectedManualChannelHasAnActionableErrorAndNoFallback" classname="com.shilapi.xcertplay.WifiP2pGroupManagerTest" time="0.013"/>
+  <testcase name="malformedStoredPreferenceDoesNotBlockConnection" classname="com.shilapi.xcertplay.WifiP2pGroupManagerTest" time="2.017"/>
+  <testcase name="confirmedTwoGhzConfigurationSurvivesManagerRecreationAndGoesFirst" classname="com.shilapi.xcertplay.WifiP2pGroupManagerTest" time="5.034"/>
+  <testcase name="associatingStationDoesNotSelectOrReuseStaleChannel" classname="com.shilapi.xcertplay.WifiP2pGroupManagerTest" time="2.02"/>
+  <system-out><![CDATA[]]></system-out>
+  <system-err><![CDATA[]]></system-err>
+</testsuite>

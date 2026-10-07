@@ -1,0 +1,40 @@
+{
+  "version": "0.2.30",
+  "android_tests_status": "passed",
+  "checked_at": "2026-10-05T01:07:35.608161+00:00",
+  "modules": {
+    "common": {
+      "tests": 301,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0
+    },
+    "shared": {
+      "tests": 507,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0
+    }
+  },
+  "total_tests": 808,
+  "settings_regression_tests": 9,
+  "new_receiver_layout_tests": 6,
+  "new_connection_recovery_tests": 9,
+  "hotspot_migration_tests": 6,
+  "graphics": "Robolectric 4.17 NATIVE Skia; Android View drawing",
+  "rendered_previews": [
+    "about-wide.png",
+    "connection-error-narrow-large-text.png",
+    "connection-error-wide.png",
+    "connection-setup-wide.png",
+    "connection-waiting-wide.png",
+    "extensions-wide.png",
+    "home-narrow.png",
+    "home-wide.png",
+    "settings-wide.png"
+  ],
+  "physical_device_tested": false,
+  "real_iphone_connection_tested": false,
+  "on_device_frame_rate_measured": false,
+  "android_reports_directory": "android-0.2.30"
+}

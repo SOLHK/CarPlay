@@ -1,0 +1,1579 @@
+--- /dev/null
++++ b/CARPLAY-STEAM-0.2.30.md
+@@ -0,0 +1,49 @@
++# CarPlay 0.2.30 · Steam
++
++本版重做应用自己的首页、连接设置、等待 / 错误页、设置子页面与弹窗，提供正式签名 APK 和对应完整源码。Android 原生绘制参考 Liquid Glass 的通透层次、圆角和边缘高光；未使用上游首页结构、宣传文案或绿色 C 图标。
++
++## 界面调整
++
++- 首页改为一个主连接面板与三个等宽快捷入口：连接方式、iPhone、USB。有独立绘制的手机 / 车机图形，设置入口放在顶部。窄屏纵向排列，车机返回键缩短显示文字以保持与设置键同高。
++- 连接设置按“方式、配对、连接”排列；宽屏下后两个步骤并排。Wi-Fi Direct 与车机热点显示各自的要求，Android 9 隐藏无法使用的 Wi-Fi Direct 选项。
++- 等待页和错误页采用独立玻璃工作区，显示当前连接方式、真实阶段、原因和对应恢复操作。窄屏 / 大字体时内容可滚动。
++- 主设置页保留独立的分类导航，子页面、选择框、权限 / 手机 / 热点弹窗使用相同材质；语言弹窗也统一样式。应用图标换为独立的车机 / 手机矢量图形。
++- UI 使用静态缓存的渐变与原生触摸反馈，不捕捉视频帧做背景模糊，也没有持续刷新玻璃的动画循环。同样的首页状态文本不重复设置，热点状态每次刷新只检查一次。
++
++## 连接修正
++
++1. 0.2.29 在没有保存无线模式时默认 MANUAL，并将这个选择写入设置。没有车机热点信息或热点没有打开时，这个模式无法建立连接。0.2.30 在 Android 10+ 的未配置情况下默认 Wi-Fi Direct，Android 9 继续使用支持的车机热点；已保存的手动选择及热点信息保持不变。
++2. 等待页原先先翻译状态，再根据英文关键词判断显示内容。中文提示可能落回“正在准备”。本版直接处理 CarPlayStatus，并仅用原始失败原因区分恢复操作。
++3. Wi-Fi 未开启、权限缺失、手动频道不可用、外部 Wi-Fi Direct 组、驱动拒绝全部创建尝试或热点信息错误，均显示对应入口并暂停无效自动重建。临时传输中断继续沿用指数退避重连。
++4. 已排队的重连在发现需要用户处理的错误时也会退出。恢复自动频道入口保存 Auto，再通过现有的停止 / 重建流程连接；清理外部 Wi-Fi Direct 组仍经过原确认流程。
++5. 后台保留失败会话时，首页同步失败原因并显示“重新连接”；按钮会实际停止旧会话再启动，而不是只打开原错误页。反馈受会话持有者限制，旧持有者不能覆盖当前反馈；结束会话时清除。
++
++## 用户截图的判断与操作
++
++- 0.2.25 照片显示 Wi-Fi Direct 已连接；0.2.29 照片显示车机热点模式且热点未开启，两张使用的是不同无线模式。截图无法判断该模式是主动选择、首次默认还是重新安装后的设置。
++- 升级保留已经保存的 MANUAL 模式。可以从新首页“连接方式”切回 Wi-Fi Direct，首选频道设为自动，保持车机 Wi-Fi、蓝牙和 iPhone Wi-Fi 开启，再选择 iPhone 连接。
++- 另一张等待画面对应车机拒绝 Wi-Fi Direct 创建请求。单凭照片不能确认是驱动、占用、权限还是频道问题，也不能证明 iPhone 或认证文件有问题。新错误页给出定向操作；持续失败可试车机热点或 USB，并从“设置 → 工具”导出诊断报告。
++- 车机热点模式需要在车机设置中打开热点，并保存匹配的名称、密码和安全类型；应用不会静默替换现有热点或自动清理其他投屏应用的网络。
++
++Android 官方 Wi-Fi Direct 文档：<https://developer.android.com/develop/connectivity/wifi/wifi-direct>。Apple Liquid Glass 设计参考：<https://developer.apple.com/documentation/technologyoverviews/liquid-glass>。
++
++## 验证记录
++
++- release 编译及独立认证输入检查通过。Android 单元测试共 808 项通过（common 301、shared 507），失败、错误、跳过均为 0。
++- release lint 0 个错误、4 个警告，保留既有 TrustAllX509TrustManager 等警告记录；未声称完成安全审计。
++- 9 张 Android View 原生图形预览已人工检查。
++- APK 包名、版本、ZIP CRC、16KiB ZIP 对齐、签名与新图标引用检查通过；签名、两个认证输入和 6 个项目原生库与 0.2.27 一致。安装包已确认包含新首页 / 等待 / 恢复 UI 与后台失败反馈代码。
++
++本版的完整结果在 `validation/unit-tests.json`、`validation/android-build-checks-0.2.30.json` 和 `validation/apk-verification-0.2.30.json`。原始测试 / lint 报告放在 `validation/android-0.2.30`。
++
++布局测试使用 Robolectric 4.17 NATIVE 图形模式绘制实际 Android View。`validation/ui-0.2.30` 包含首页宽窄屏、连接设置、等待 / 错误页、大字体错误页、设置、扩展与关于的九张预览；这些是测试渲染，不是真机截图。测试补入版本号用于预览，未伪造连接成功状态。
++
++未进行车机安装、iPhone 实际握手、连续无线 / USB 播放或真机帧率测试。不能把单元测试通过视为实车连通或 60fps 保证。旧版报告与上游历史实车说明保留为归档。
++
++## 构建
++
++包名 `com.shihab.diplay.steam`，版本 `0.2.30`，versionCode `49`，最低 Android 9。使用原签名；正式 APK 认证文件与 0.2.27 的选定输入相同。源码包不包含签名密钥或运行认证文件，外部输入方式见 `docs/BUILD.md`。
++
++```sh
++./gradlew :common:testDebugUnitTest :shared:testDebugUnitTest :mobile:lintRelease :mobile:verifyStandaloneAuthentication :mobile:assembleRelease
++```
+--- a/README.md
++++ b/README.md
+@@ -1,8 +1,12 @@
+-# CarPlay 0.2.29 · Steam
++# CarPlay 0.2.30 · Steam
+ 
+-安卓手机 / 车机接收屏定制版，基于下述 DiPlay 开源项目。设置页使用 Steam 独立设计的液态玻璃分类布局。版本变更及本次验证范围请先阅读 [本版说明](CARPLAY-STEAM-0.2.29.md)。
++安卓手机 / 车机接收屏定制版，基于下述 DiPlay 开源项目。首页、连接设置、连接等待 / 错误页、设置分类及子页面使用 Steam 独立设计的原生液态玻璃视觉布局。新增结构化连接状态、对应恢复操作，修正未配置时默认进入车机热点的问题。版本变更及验证范围请阅读 [本版说明](CARPLAY-STEAM-0.2.30.md)。
+ 
+-# DiPlay
++![Steam 0.2.30 首页渲染预览](validation/ui-0.2.30/home-wide.png)
++
++本版已通过编译、Android 单元测试及 Robolectric 原生图形渲染检查；尚未进行车机 / iPhone 实际连接或帧率测试。以下保留上游项目历史说明，历史实车结果不代表本版实测。
++
++## 上游 DiPlay 原始说明（历史归档）
+ 
+ **CarPlay for compatible BYD Android head units.** Wired and wireless, with the familiar DiAuto interface. Independent app: `com.shihab.diplay.steam`.
+ 
+--- a/common/src/main/java/com/shilapi/xcertplay/AirPlayPersistence.kt
++++ b/common/src/main/java/com/shilapi/xcertplay/AirPlayPersistence.kt
+@@ -255,8 +255,11 @@
+     fun loadWirelessHotspotMode(context: Context): WirelessHotspotMode {
+         val prefs = context.getSharedPreferences(PREFS, Context.MODE_PRIVATE)
+         val stored = prefs.getString(KEY_WIRELESS_HOTSPOT_MODE, null)
++        // An unconfigured receiver must not silently require car-hotspot credentials.
++        // Keep every explicitly saved mode; Wi-Fi Direct is the credential-free default on Q+.
+         val mode = WirelessHotspotMode.entries.firstOrNull { it.name == stored }
+-            ?: WirelessHotspotMode.MANUAL
++            ?: if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) WirelessHotspotMode.WIFI_P2P
++                else WirelessHotspotMode.MANUAL
+         val supported = if (mode == WirelessHotspotMode.LOCAL_ONLY_HOTSPOT ||
+             (Build.VERSION.SDK_INT < Build.VERSION_CODES.Q && mode == WirelessHotspotMode.WIFI_P2P)
+         ) WirelessHotspotMode.MANUAL else mode
+--- a/common/src/main/java/com/shilapi/xcertplay/AppLocale.kt
++++ b/common/src/main/java/com/shilapi/xcertplay/AppLocale.kt
+@@ -89,7 +89,7 @@
+                 }
+             }
+             .setNegativeButton(R.string.common_cancel, null)
+-            .show()
++            .show().also { SteamGlass.styleDialog(activity, it) }
+     }
+ 
+     /** Names stay in their native form for every language; only "system default" is localized. */
+--- a/common/src/main/java/com/shilapi/xcertplay/CarPlayHostActivity.kt
++++ b/common/src/main/java/com/shilapi/xcertplay/CarPlayHostActivity.kt
+@@ -3,6 +3,8 @@
+ import android.Manifest
+ import android.content.Context
+ import android.content.Intent
++import android.net.Uri
++import android.provider.Settings
+ import android.content.pm.PackageManager
+ import android.content.res.Configuration
+ import android.content.res.ColorStateList
+@@ -109,6 +111,8 @@
+     )
+ 
+     private var connectionPanel: View? = null
++    private var steamConnectionPanel: SteamConnectionPanel? = null
++    private var connectionNeedsAction = false
+     private var wifiRecoveryButton: View? = null
+     private var reconnectAttempts = 0
+     private lateinit var airPlayIdentity: AirPlayIdentity
+@@ -900,7 +904,6 @@
+         super.onConfigurationChanged(newConfig)
+         refreshConfiguration(newConfig, ThemeModeDiagnostics.Source.CALLBACK)
+         applyFullscreenMode()
+-        stageStatusView?.maxWidth = (resources.displayMetrics.widthPixels * 0.78f).toInt()
+         scrollLogsToBottom()
+         videoView?.post {
+             val view = videoView ?: return@post
+@@ -951,54 +954,35 @@
+         }
+         root.addView(video, FrameLayout.LayoutParams(-1, -1))
+         root.addView(gestureLayer, FrameLayout.LayoutParams(-1, -1))
+-        val panel = LinearLayout(this).apply {
+-            orientation = LinearLayout.VERTICAL
+-            gravity = Gravity.CENTER
+-            setPadding(dp(32), dp(32), dp(32), dp(32))
+-            setBackgroundColor(Color.rgb(12, 17, 27))
+-            isClickable = true
+-        }
+-        panel.addView(ImageView(this).apply {
+-            setImageResource(R.drawable.ic_carplay); contentDescription = getString(R.string.carplay)
+-        }, LinearLayout.LayoutParams(dp(88), dp(88)))
+-        panel.addView(TextView(this).apply {
+-            text = getString(R.string.diplay); ResponsiveUi.text(this, 34f); setTextColor(Color.rgb(241, 245, 252))
+-            gravity = Gravity.CENTER; setPadding(0, dp(18), 0, dp(14))
+-            typeface = Typeface.create("sans-serif-medium", Typeface.NORMAL)
+-        })
+-        val stage = TextView(this).apply {
+-            text = getString(R.string.getting_carplay_ready); ResponsiveUi.text(this, 22f); gravity = Gravity.CENTER
+-            setTextColor(Color.rgb(241, 245, 252))
+-        }
+-        panel.addView(stage)
+-        panel.addView(TextView(this).apply {
+-            text = if (wirelessEnabled) getString(R.string.keep_your_iphone_nearby_with_bluetooth_and_wi_fi_on_allow)
+-                else getString(R.string.use_a_usb_data_cable_and_unlock_your_iphone_allow_trust_an)
+-            ResponsiveUi.text(this, 17f); gravity = Gravity.CENTER; setTextColor(Color.rgb(168, 182, 202))
+-            setPadding(0, dp(14), 0, dp(24))
+-        })
+-        panel.addView(Button(this).apply {
+-            text = getString(R.string.reset_carplay_wi_fi); isAllCaps = false; ResponsiveUi.text(this, 18f)
+-            visibility = View.GONE
+-            setOnClickListener { showDiPlayHome("wireless-recovery") }
+-            wifiRecoveryButton = this
+-        }, LinearLayout.LayoutParams(dp(300), dp(64)).apply { bottomMargin = dp(12) })
+-        panel.addView(Button(this).apply {
+-            text = getString(R.string.back_to_diplay); isAllCaps = false; ResponsiveUi.text(this, 18f)
+-            setTextColor(Color.rgb(12, 17, 27))
+-            background = GradientDrawable().apply { setColor(Color.rgb(166, 200, 255)); cornerRadius = dp(20).toFloat() }
+-            setOnClickListener { showDiPlayHome() }
+-        }, LinearLayout.LayoutParams(dp(300), dp(64)))
+-        val gestureHint = TextView(this).apply {
+-            text = getString(R.string.open_diplay_settings_hint, gestureFingerCount)
+-            ResponsiveUi.text(this, 13f); gravity = Gravity.CENTER; setTextColor(Color.rgb(168, 182, 202)); setPadding(0, dp(20), 0, 0)
+-        }
+-        panel.addView(gestureHint)
++        val mode = if (!wirelessEnabled) getString(R.string.steam_usb_title) else getString(
++            if (wirelessHotspotMode == WirelessHotspotMode.MANUAL) R.string.built_in_car_hotspot else R.string.wifi_direct)
++        val panel = SteamConnectionPanel(this, mode, wirelessEnabled,
++            onHome = { showDiPlayHome() },
++            onSetup = { showDiPlayHome("connection") },
++            onRetry = { showDiPlayHome("retry-connection") },
++            onRecovery = { action ->
++                when (action) {
++                    SteamRecoveryAction.AUTO_CHANNEL -> showDiPlayHome("automatic-channel-recovery")
++                    SteamRecoveryAction.RESET -> showDiPlayHome("wireless-recovery")
++                    SteamRecoveryAction.SETUP -> showDiPlayHome("connection")
++                    else -> {
++                        val settings = when (action) {
++                            SteamRecoveryAction.WIFI -> Intent(Settings.ACTION_WIFI_SETTINGS)
++                            SteamRecoveryAction.HOTSPOT -> Intent("android.settings.TETHER_SETTINGS")
++                            SteamRecoveryAction.BLUETOOTH -> Intent(Settings.ACTION_BLUETOOTH_SETTINGS)
++                            else -> Intent(Settings.ACTION_APPLICATION_DETAILS_SETTINGS, Uri.parse("package:$packageName"))
++                        }
++                        runCatching { startActivity(settings) }.onFailure { showDiPlayHome("connection") }
++                    }
++                }
++            })
+         root.addView(panel, FrameLayout.LayoutParams(-1, -1))
+         videoView = video
+         gestureOverlay = gestureLayer
+-        settingsGestureHint = gestureHint
+-        stageStatusView = stage
++        settingsGestureHint = panel.gestureHint
++        settingsGestureHint?.text = getString(R.string.open_diplay_settings_hint, gestureFingerCount)
++        stageStatusView = panel.stage
++        steamConnectionPanel = panel
+         connectionPanel = panel
+         updateDebugOverlays()
+         return root
+@@ -3203,16 +3187,19 @@
+         if (!menuOpen && controllerGeneration == restartGeneration) {
+             updateHotspotStatus(status)
+             val description = status.describe()
+-            setConnectionStage(description)
+-            when (status) {
+-                is CarPlayStatus.Failed -> if (status.wifiResetRequired) {
+-                    wifiRecoveryButton?.visibility = View.VISIBLE
+-                } else {
+-                    wifiRecoveryButton?.visibility = View.GONE
+-                    reconnectAfterLoss(description)
+-                }
+-                else -> Unit
+-            }
++            latestStage = description
++            val feedback = SteamConnectionFeedback.from(status)
++            CarPlayBackgroundSession.updateFeedback(this, feedback)
++            connectionNeedsAction = status is CarPlayStatus.Failed && !feedback.automaticRetry
++            steamConnectionPanel?.show(feedback)
++            updateDebugOverlays()
++            if (status is CarPlayStatus.Failed) {
++                appendLog(description)
++                // Permissions, disabled radio, invalid credentials and rejected creation need
++                // an external change. Keep the actionable screen instead of rebuilding forever.
++                if (feedback.automaticRetry) reconnectAfterLoss(description)
++            }
++
+         }
+     }
+ 
+@@ -3539,7 +3526,7 @@
+ 
+     private fun reconnectAfterLoss(reason: String) {
+         if (!CarPlayBackgroundSession.isOwner(this)) return
+-        if (shuttingDown.get() || menuOpen || handshakeResetInProgress) return
++        if (shuttingDown.get() || menuOpen || handshakeResetInProgress || connectionNeedsAction) return
+         if (reconnectScheduled) return
+         reconnectScheduled = true
+         val generation = restartGeneration
+@@ -3557,6 +3544,7 @@
+                     shuttingDown.get() ||
+                     menuOpen ||
+                     handshakeResetInProgress ||
++                    connectionNeedsAction ||
+                     generation != restartGeneration
+                 ) {
+                     return@postDelayed
+@@ -3813,7 +3801,7 @@
+ 
+     private fun setConnectionStage(message: String) {
+         latestStage = message
+-        stageStatusView?.text = friendlyStage(message)
++        if (!connectionNeedsAction) stageStatusView?.text = friendlyStage(message)
+         updateDebugOverlays()
+     }
+ 
+@@ -3988,6 +3976,11 @@
+ /** Process-local hand-off for keeping the CarPlay session alive while no Activity is visible. */
+ internal object CarPlayBackgroundSession {
+     @Volatile var active = false
++    @Volatile var connectionFeedback: SteamConnectionFeedback? = null
++        private set
++    @Synchronized fun updateFeedback(candidate: Any, feedback: SteamConnectionFeedback) {
++        if (owner === candidate) connectionFeedback = feedback
++    }
+     private var stopAction: (((() -> Unit)) -> Unit)? = null
+     private var stopping = false
+     private var owner: Any? = null
+@@ -4049,6 +4042,7 @@
+     @Synchronized
+     fun clear(expected: CarPlayController? = null, keepOwner: Boolean = false) {
+         if (expected != null && controller !== expected) return
++        connectionFeedback = null
+         controller = null
+         sink = null
+         if (!keepOwner) { stopAction = null; owner = null }
+--- a/common/src/main/java/com/shilapi/xcertplay/DiPlayActivity.kt
++++ b/common/src/main/java/com/shilapi/xcertplay/DiPlayActivity.kt
+@@ -1,5 +1,5 @@
+ // SPDX-License-Identifier: AGPL-3.0-only
+-// Receiver flows retain upstream attribution; Steam settings use an independent layout.
++// Receiver UI uses Steam’s independent glass layout; open-source notices remain in About.
+ package com.shilapi.xcertplay
+ 
+ import android.Manifest
+@@ -63,6 +63,8 @@
+     private var pendingCarHotspotSetup = false
+     private var setupError: String? = null
+     private var status: TextView? = null
++    private var homeWarning: TextView? = null
++    private var homeWifiAction: Button? = null
+     private var connectButton: Button? = null
+     private var disconnectButton: Button? = null
+     private var lastRunning: Boolean? = null
+@@ -298,7 +300,7 @@
+         val previousScrollY = (pendingScrollY ?: rootScroll?.scrollY)?.takeIf {
+             renderedPage == page && (page != "settings" || renderedSettingsSection == settingsSection)
+         }
+-        status = null; connectButton = null; disconnectButton = null; lastRunning = null
++        status = null; homeWarning = null; homeWifiAction = null; connectButton = null; disconnectButton = null; lastRunning = null
+         bydAdbControls = null
+         adbSwitches.clear()
+         adbStatus = null
+@@ -314,15 +316,24 @@
+             isFillViewport = true; clipToPadding = false
+         }
+         rootScroll = scroll
+-        val content = column().apply { setPadding(dp(32), dp(24), dp(32), dp(32)) }
++        val content = column().apply { setPadding(dp(if (resources.configuration.screenWidthDp >= 760) 28 else 16), dp(24), dp(if (resources.configuration.screenWidthDp >= 760) 28 else 16), dp(28)) }
+         scroll.addView(content)
+         val header = row().apply { gravity = Gravity.CENTER_VERTICAL }
+-        header.addView(ImageView(this).apply { setImageResource(R.drawable.ic_carplay); contentDescription = getString(R.string.carplay) }, LinearLayout.LayoutParams(dp(36), dp(36)))
+-        header.addView(label(getString(R.string.diplay), 26, TEXT, true).apply { setPadding(dp(12), 0, 0, 0) }, LinearLayout.LayoutParams(0, dp(56), 1f))
+-        header.addView(button(if (page == "home") getString(R.string.car_home) else getString(R.string.back), false) {
++        header.addView(SteamSettingIcon(this, SteamSettingsSection.DISPLAY), LinearLayout.LayoutParams(dp(32), dp(32)).apply { marginEnd = dp(12) })
++        val brand = column().apply {
++            addView(label(if (resources.configuration.screenWidthDp >= 760) "STEAM  /  CarPlay" else "CarPlay", 23, TEXT, true))
++            addView(label("STEAM · ${version()}", 12, MUTED))
++        }
++        header.addView(brand, LinearLayout.LayoutParams(0, -2, 1f))
++        if (page == "home") header.addView(button(getString(R.string.settings), false) {
++            page = "settings"; render()
++        }.apply { tag = "steam_home_settings" }, LinearLayout.LayoutParams(dp(if (resources.configuration.screenWidthDp >= 760) 88 else 72), -2).apply { marginEnd = dp(8) })
++        header.addView(button(if (page == "home") getString(if (resources.configuration.screenWidthDp >= 760)
++            R.string.car_home else R.string.steam_car_home_short) else getString(R.string.back), false) {
+             if (page == "home") startActivity(Intent(Intent.ACTION_MAIN).addCategory(Intent.CATEGORY_HOME))
+             else { returnFromPage(); render() }
+-        }, LinearLayout.LayoutParams(dp(130), dp(56)))
++        }.apply { tag = "steam_home_carhome"; contentDescription = getString(if (page == "home") R.string.car_home else R.string.back) },
++            LinearLayout.LayoutParams(dp(if (page == "home" && resources.configuration.screenWidthDp >= 760) 104 else 72), -2))
+         content.addView(header)
+         content.addView(space(24))
+         when (page) {
+@@ -349,71 +360,80 @@
+     }
+ 
+     private fun home(content: LinearLayout) {
+-        val wide = resources.configuration.screenWidthDp >= 850
+-        val body = column()
+-        body.addView(label(getString(R.string.your_phone_your_drive), 13, ACCENT, true).apply { letterSpacing = .08f })
+-        body.addView(label(getString(R.string.a_familiar_drive), if (wide) 36 else 32, TEXT, true).apply { setPadding(0, dp(8), 0, dp(4)) })
+-        body.addView(label(getString(R.string.your_maps_music_and_conversations_carplay_right_here_on_yo), 17, MUTED))
+-        body.addView(space(22))
+-        val card = card()
+-        card.addView(label(getString(R.string.wireless_carplay), 14, ACCENT, true))
+-        status = label(getString(R.string.ready_when_you_are), 25, TEXT, true).apply { setPadding(0, dp(8), 0, dp(14)) }
+-        card.addView(status)
++        val wide = resources.configuration.screenWidthDp >= 760
++        content.tag = "steam_home_workspace"
++        content.addView(label(getString(R.string.steam_home_title), if (wide) 34 else 28, TEXT, true))
++        content.addView(label(getString(R.string.steam_home_hint), 16, MUTED).apply { setPadding(0, dp(8), 0, dp(24)) })
++        val deck = card().apply {
++            tag = "steam_home_deck"
++            orientation = if (wide) LinearLayout.HORIZONTAL else LinearLayout.VERTICAL
++            gravity = Gravity.CENTER_VERTICAL
++            background = SteamGlass.surface(this@DiPlayActivity, radius = 32)
++            setPadding(dp(28), dp(24), dp(28), dp(24))
++        }
++        deck.addView(SteamLinkArtwork(this), LinearLayout.LayoutParams(if (wide) dp(230) else -1, dp(if (wide) 208 else 116)).apply {
++            if (wide) marginEnd = dp(32) else bottomMargin = dp(12)
++        })
++        val controls = column()
++        controls.addView(label(getString(R.string.steam_wireless_label), 12, ACCENT, true).apply { letterSpacing = .08f })
++        status = label(getString(R.string.ready_when_you_are), 26, TEXT, true).apply {
++            tag = "steam_home_status"; setPadding(0, dp(8), 0, dp(16))
++        }
++        controls.addView(status)
+         connectButton = button(getString(R.string.connect_phone), true) {
+-            if (CarPlayBackgroundSession.hasSession()) openProjection()
+-            else connect(true)
+-        }
+-        card.addView(connectButton, matchButton())
+-        val connectionHint = when (AirPlayPersistence.loadWirelessHotspotMode(this)) {
+-            WirelessHotspotMode.MANUAL -> getString(R.string.hotspot_hint_manual)
+-            WirelessHotspotMode.LOCAL_ONLY_HOTSPOT -> getString(R.string.hotspot_hint_local)
+-            else -> getString(R.string.hotspot_hint_p2p)
+-        }
+-        card.addView(label(connectionHint, 15, MUTED).apply { setPadding(0, dp(12), 0, 0) })
+-        val startupProblem = hotspotStartupResult?.takeIf {
+-            it != CarHotspotTethering.Result.READY && it != CarHotspotTethering.Result.CANCELLED &&
+-                CarHotspotSettings.shouldEnable(this, true, AirPlayPersistence.loadWirelessHotspotMode(this)) &&
+-                com.shilapi.xcertplay.network.CarHotspotStatus.isEnabled(this) != true
+-        }
+-        if (startupProblem != null) {
+-            card.addView(label(hotspotResultText(startupProblem), 15, WARNING))
+-            card.addView(button(getString(R.string.open_car_hotspot_settings), false) { openCarWifiSettings() }, matchButton(10, 56))
+-        } else if (carHotspotOff()) {
+-            card.addView(label(getString(R.string.msg_car_hotspot_off, AirPlayPersistence.loadManualHotspotSsid(this)), 15, WARNING).apply { setPadding(0, dp(14), 0, 0) })
+-            card.addView(button(getString(R.string.open_car_hotspot_settings), false) { openCarWifiSettings() }, matchButton(10, 56))
+-        }
+-        card.addView(button(getString(R.string.choose_iphone), false) { choosePhone() }, matchButton(12, 56))
++            if (CarPlayBackgroundSession.hasSession() && CarPlayBackgroundSession.connectionFeedback?.hint != null)
++                connect(AirPlayPersistence.loadWirelessEnabled(this))
++            else if (CarPlayBackgroundSession.hasSession()) openProjection() else connect(true)
++        }.apply { tag = "steam_home_connect"; minHeight = dp(64) }
++        controls.addView(connectButton, matchButton())
++        controls.addView(label(getString(if (AirPlayPersistence.loadWirelessHotspotMode(this) == WirelessHotspotMode.MANUAL)
++            R.string.steam_mode_manual_hint else R.string.steam_mode_p2p_hint), 14, MUTED).apply {
++            setPadding(0, dp(12), 0, 0)
++        })
++        homeWarning = label("", 14, WARNING).apply { tag = "steam_home_warning"; visibility = View.GONE; setPadding(0, dp(12), 0, 0) }
++        controls.addView(homeWarning)
++        homeWifiAction = button(getString(R.string.open_car_hotspot_settings), false) { openCarWifiSettings() }.apply {
++            visibility = View.GONE
++        }
++        controls.addView(homeWifiAction, matchButton(10))
+         disconnectButton = button(getString(R.string.disconnect), false) {
+             disconnectButton?.isEnabled = false
+-            CarPlayBackgroundSession.stop { runOnUiThread { refreshStatus() } }
++            CarPlayBackgroundSession.stop { runOnUiThread { if (!isFinishing && !isDestroyed) refreshStatus() } }
+         }.apply { visibility = View.GONE }
+-        card.addView(disconnectButton, matchButton(10, 56))
+-        val right = card()
+-        right.addView(label(getString(R.string.usb_wired_connection), 14, ACCENT, true))
+-        right.addView(label(getString(R.string.plug_your_iphone_into_a_usb_data_port_allow_carplay_when_y), 16, MUTED).apply { setPadding(0, dp(10), 0, dp(14)) })
+-        right.addView(button(getString(R.string.connect_with_usb), false) { connect(false) }, matchButton())
+-        right.addView(space(12))
+-        right.addView(label(getString(R.string.connection_and_display_options), 14, TEXT, true))
+-        right.addView(label(getString(R.string.make_diplay_feel_right_for_your_car), 15, MUTED).apply { setPadding(0, dp(6), 0, dp(12)) })
+-        right.addView(button(getString(R.string.settings), false) { page = "settings"; render() }, matchButton())
+-        right.addView(label("${getString(R.string.home_public_preview)}${version()}", 12, MUTED).apply { gravity = Gravity.CENTER_HORIZONTAL; setPadding(0, dp(16), 0, 0) })
+-        if (wide) {
+-            body.addView(row().apply {
+-                gravity = Gravity.TOP
+-                addView(card, LinearLayout.LayoutParams(0, -2, 1.1f))
+-                addView(space(20), LinearLayout.LayoutParams(dp(20), 1))
+-                addView(right, LinearLayout.LayoutParams(0, -2, 1f))
+-            })
+-        } else {
+-            body.addView(card)
+-            body.addView(space(16))
+-            body.addView(right)
+-        }
+-        setupError?.let { body.addView(label(it, 16, WARNING).apply { setPadding(0, dp(16), 0, 0) }) }
+-        content.addView(body)
+-    }
+-
+-    private fun usesSteamGlass() = page == "settings" || page == "features" || page == "connection" || page == "about"
++        controls.addView(disconnectButton, matchButton(10))
++        deck.addView(controls, LinearLayout.LayoutParams(if (wide) 0 else -1, -2, if (wide) 1f else 0f))
++        content.addView(deck)
++        content.addView(space(20))
++        val shortcuts = if (wide) row() else column()
++        shortcuts.tag = "steam_home_shortcuts"
++        fun shortcut(title: String, value: String, section: SteamSettingsSection, tag: String, click: () -> Unit) = row().apply {
++            this.tag = tag; gravity = Gravity.CENTER_VERTICAL
++            background = SteamGlass.action(this@DiPlayActivity, radius = 24)
++            minimumHeight = dp(88); setPadding(dp(20), dp(18), dp(20), dp(18))
++            isFocusable = true; contentDescription = "$title, $value"; setOnClickListener { click() }
++            addView(SteamSettingIcon(this@DiPlayActivity, section), LinearLayout.LayoutParams(dp(26), dp(26)).apply { marginEnd = dp(14) })
++            addView(column().apply {
++                addView(label(title, 16, TEXT, true))
++                addView(label(value, 13, MUTED).apply { setPadding(0, dp(4), 0, 0) })
++            }, LinearLayout.LayoutParams(0, -2, 1f))
++        }
++        val items = listOf(
++            shortcut(getString(R.string.steam_mode_title), wirelessModeName(), SteamSettingsSection.CONNECTION, "steam_home_mode") { page = "connection"; render() },
++            shortcut(getString(R.string.steam_phone_title), if (DiPlayPreferences.phoneAddress(this) == null) getString(R.string.steam_phone_empty)
++                else DiPlayPreferences.phoneName(this), SteamSettingsSection.MORE, "steam_home_phone") { choosePhone() },
++            shortcut(getString(R.string.steam_usb_title), getString(R.string.steam_usb_hint), SteamSettingsSection.DISPLAY, "steam_home_usb") { connect(false) },
++        )
++        items.forEachIndexed { index, view -> shortcuts.addView(view, LinearLayout.LayoutParams(if (wide) 0 else -1, -2, if (wide) 1f else 0f).apply {
++            if (index > 0) { if (wide) marginStart = dp(16) else topMargin = dp(12) }
++        }) }
++        content.addView(shortcuts)
++        setupError?.let { content.addView(label(it, 16, WARNING).apply { setPadding(0, dp(16), 0, 0) }) }
++    }
++
++    private fun wirelessModeName() = getString(if (AirPlayPersistence.loadWirelessHotspotMode(this) == WirelessHotspotMode.MANUAL)
++        R.string.built_in_car_hotspot else R.string.wifi_direct)
++
++    private fun usesSteamGlass() = true
+ 
+     private fun rememberSettingsScroll() {
+         if (renderedPage == "settings") renderedSettingsSection?.let {
+@@ -707,7 +727,8 @@
+     }
+ 
+     private fun additionalFeatures(content: LinearLayout) {
+-        content.addView(label("CarPlay 新增功能 · Steam", 28, TEXT, true))
++        content.addView(label(getString(R.string.steam_extensions), 28, TEXT, true))
++        content.addView(label(getString(R.string.steam_features_hint), 16, MUTED).apply { setPadding(0, dp(8), 0, dp(24)) })
+         section(content, getString(R.string.carplay_controls), R.drawable.ic_dp_display) { card ->
+             val gestureFingers = listOf(2, 3, 4)
+             choice(card, getString(R.string.settings_gesture_fingers_label),
+@@ -867,8 +888,8 @@
+     }
+ 
+     private fun about(content: LinearLayout) {
+-        content.addView(label(getString(R.string.diplay), 40, TEXT, true))
+-        content.addView(label(getString(R.string.carplay_at_home_in_your_car), 20, MUTED).apply { setPadding(0, dp(8), 0, dp(24)) })
++        content.addView(label("CarPlay", 32, TEXT, true))
++        content.addView(label("Steam · ${version()}", 16, MUTED).apply { setPadding(0, dp(8), 0, dp(24)) })
+         section(content, "${getString(R.string.about_public_preview_prefix)}${version()}") { card ->
+             card.addView(label(getString(R.string.an_independent_carplay_receiver_for_android_head_units_wir), 17, TEXT))
+         }
+@@ -1035,7 +1056,7 @@
+             .setMessage(getString(R.string.msg_car_hotspot_connect, AirPlayPersistence.loadManualHotspotSsid(this)))
+             .setPositiveButton(getString(R.string.open_car_settings)) { _, _ -> openCarWifiSettings() }
+             .setNeutralButton(getString(R.string.connect)) { _, _ -> connect(true) }
+-            .setNegativeButton(getString(R.string.cancel), null).show()
++            .setNegativeButton(getString(R.string.cancel), null).show().also { styleSettingsDialog(it) }
+     }
+ 
+     // BYD maps the AOSP tether action to its own hotspot screen; other firmware falls back to Wi-Fi settings.
+@@ -1064,43 +1085,49 @@
+     }
+ 
+     private fun connectionSetup(content: LinearLayout) {
+-        content.addView(label(getString(R.string.connection_setup), 34, TEXT, true))
+-        content.addView(label(getString(R.string.set_up_once_your_details_stay_saved_for_the_next_drive_cha), 17, MUTED).apply { setPadding(0, dp(8), 0, dp(24)) })
+-        section(content, getString(R.string.s_1_choose_your_connection)) { card -> wirelessLinkControls(card) }
+-        section(content, getString(R.string.s_2_pair_your_iphone)) { card ->
+-            card.addView(label(getString(R.string.keep_bluetooth_and_wi_fi_on_your_iphone_pair_with_the_car), 16, MUTED))
+-            card.addView(button("${getString(R.string.choose_iphone_prefix)}${DiPlayPreferences.phoneName(this)}", false) { choosePhone() }, matchButton(12, 60))
++        content.tag = "steam_connection_setup_workspace"
++        content.addView(label(getString(R.string.steam_setup_title), 30, TEXT, true))
++        content.addView(label(getString(R.string.steam_setup_hint), 16, MUTED).apply { setPadding(0, dp(8), 0, dp(24)) })
++        section(content, "01  /  ${getString(R.string.steam_mode_title)}") { card -> wirelessLinkControls(card) }
++        val wide = resources.configuration.screenWidthDp >= 760
++        val lower = if (wide) row().apply { gravity = Gravity.TOP } else column()
++        val phone = column()
++        section(phone, "02  /  ${getString(R.string.steam_pair_step)}") { card ->
++            card.addView(label(getString(R.string.keep_bluetooth_and_wi_fi_on_your_iphone_pair_with_the_car), 15, MUTED))
++            card.addView(button("${getString(R.string.choose_iphone_prefix)}${DiPlayPreferences.phoneName(this)}", false) { choosePhone() }, matchButton(12))
+             card.addView(button(getString(R.string.review_app_permissions), false) {
+                 openSystem(Intent(Settings.ACTION_APPLICATION_DETAILS_SETTINGS, Uri.parse("package:$packageName")))
+-            }, matchButton(12, 60))
+-        }
+-        section(content, getString(R.string.s_3_connect)) { card ->
+-            card.addView(label(getString(R.string.return_from_car_settings_to_diplay_then_connect_accept_the), 16, MUTED))
+-            card.addView(button(getString(R.string.connect_phone), true) { connect(true) }, matchButton(12, 60))
+-        }
+-        section(content, getString(R.string.prefer_a_cable)) { card ->
+-            card.addView(label(getString(R.string.use_a_usb_data_cable_and_the_car_s_usb_data_port_unlock_yo), 16, MUTED))
+-            card.addView(button(getString(R.string.connect_with_usb), false) { connect(false) }, matchButton(12, 60))
+-        }
++            }, matchButton(12))
++        }
++        val connect = column()
++        section(connect, "03  /  ${getString(R.string.steam_ready_step)}") { card ->
++            card.addView(label(getString(R.string.return_from_car_settings_to_diplay_then_connect_accept_the), 15, MUTED))
++            card.addView(button(getString(R.string.connect_phone), true) { connect(true) }.apply { tag = "steam_setup_connect" }, matchButton(12))
++            card.addView(button(getString(R.string.connect_with_usb), false) { connect(false) }, matchButton(12))
++        }
++        lower.addView(phone, LinearLayout.LayoutParams(if (wide) 0 else -1, -2, if (wide) 1f else 0f))
++        lower.addView(connect, LinearLayout.LayoutParams(if (wide) 0 else -1, -2, if (wide) 1f else 0f).apply {
++            if (wide) marginStart = dp(18)
++        })
++        content.addView(lower)
+     }
+ 
+     private fun wirelessLinkControls(parent: LinearLayout) {
+         val mode = if (pendingCarHotspotSetup) WirelessHotspotMode.MANUAL else AirPlayPersistence.loadWirelessHotspotMode(this)
+-        val modes = listOf(WirelessHotspotMode.MANUAL, WirelessHotspotMode.WIFI_P2P)
+-        val titles = listOf(getString(R.string.built_in_car_hotspot), getString(R.string.wifi_direct))
+-        val descriptions = listOf(
+-            getString(R.string.hotspot_mode_manual_desc),
+-            getString(R.string.hotspot_mode_p2p_desc)
+-        )
++        val modes = if (Build.VERSION.SDK_INT >= 29) listOf(WirelessHotspotMode.WIFI_P2P, WirelessHotspotMode.MANUAL) else listOf(WirelessHotspotMode.MANUAL)
+         val wide = resources.configuration.screenWidthDp >= 850
+         val choices = if (wide) row().apply { gravity = Gravity.TOP } else column()
+         parent.addView(choices)
+         modes.forEachIndexed { index, candidate ->
+-            val option = column()
++            val option = column().apply {
++                background = SteamGlass.surface(this@DiPlayActivity, mode == candidate, radius = 24)
++                setPadding(dp(16), dp(12), dp(16), dp(12))
++            }
+             choices.addView(option, if (wide) LinearLayout.LayoutParams(0, -2, 1f).apply {
+                 if (index > 0) marginStart = dp(16)
+-            } else LinearLayout.LayoutParams(-1, -2))
+-            option.addView(button("${if (mode == candidate) "✓  " else ""}${titles[index]}", mode == candidate) {
++            } else LinearLayout.LayoutParams(-1, -2).apply { if (index > 0) topMargin = dp(12) })
++            val title = getString(if (candidate == WirelessHotspotMode.MANUAL) R.string.built_in_car_hotspot else R.string.wifi_direct)
++            option.addView(button("${if (mode == candidate) "✓  " else ""}$title", mode == candidate) {
+                 if (candidate == WirelessHotspotMode.MANUAL) {
+                     pendingCarHotspotSetup = true
+                     render()
+@@ -1108,9 +1135,10 @@
+                     pendingCarHotspotSetup = false
+                     applyWirelessLink(candidate)
+                 }
+-            }, matchButton(12, 60))
+-            option.addView(label(descriptions[index], 15, MUTED).apply { setPadding(0, dp(6), 0, dp(12)) })
+-        }
++            }.apply { tag = "steam_mode_${candidate.name.lowercase(Locale.ROOT)}" }, matchButton())
++            option.addView(label(getString(if (candidate == WirelessHotspotMode.MANUAL) R.string.steam_mode_manual_hint else R.string.steam_mode_p2p_hint), 15, MUTED).apply { setPadding(0, dp(6), 0, dp(12)) })
++        }
++        parent.addView(space(20))
+         if (mode == WirelessHotspotMode.MANUAL) {
+             parent.addView(label(getString(R.string.hotspot_setup), 22, TEXT, true))
+             parent.addView(label(getString(R.string.s_1_open_car_hotspot_settings_turn_the_hotspot_on_and_sele), 16, MUTED).apply { setPadding(0, dp(8), 0, dp(12)) })
+@@ -1157,7 +1185,7 @@
+                     }
+                 }
+                 .setNegativeButton(R.string.cancel, null)
+-                .show()
++                .show().also { styleSettingsDialog(it) }
+         }
+         parent.addView(control, matchButton(12, 60))
+         parent.addView(label(getString(R.string.wifi_direct_channel_description), 15, MUTED).apply {
+@@ -1302,6 +1330,7 @@
+             }
+         }
+         dialog.show()
++        styleSettingsDialog(dialog)
+     }
+ 
+     // "Left 20 %", "Centre · default", "Down 10 %": a signed step reads as a direction and a distance.
+@@ -1398,6 +1427,7 @@
+             }
+         }
+         dialog.show()
++        styleSettingsDialog(dialog)
+     }
+ 
+     /** The 0.2.9 Dashboard song setting, shown once: in the BYD navigation card, or under Advanced vehicle data. */
+@@ -2133,7 +2163,7 @@
+         }
+         AlertDialog.Builder(this).setTitle(title).setView(input)
+             .setPositiveButton(getString(R.string.save)) { _, _ -> save(input.text.toString().let { if (secret) it else it.trim() }) }
+-            .setNegativeButton(getString(R.string.cancel), null).show()
++            .setNegativeButton(getString(R.string.cancel), null).show().also { styleSettingsDialog(it) }
+     }
+ 
+     private fun carPlaySizeControl(parent: LinearLayout) {
+@@ -2190,14 +2220,14 @@
+             AlertDialog.Builder(this).setTitle(getString(R.string.turn_on_bluetooth))
+                 .setMessage(getString(R.string.enable_the_car_s_bluetooth_and_pair_your_iphone_first))
+                 .setPositiveButton(getString(R.string.open_bluetooth)) { _, _ -> openSystem(Intent(Settings.ACTION_BLUETOOTH_SETTINGS)) }
+-                .setNegativeButton(getString(R.string.later), null).show(); return
++                .setNegativeButton(getString(R.string.later), null).show().also { styleSettingsDialog(it) }; return
+         }
+         val devices = runCatching { adapter.bondedDevices.sortedBy { it.name ?: "" } }.getOrDefault(emptyList())
+         if (devices.isEmpty()) {
+             AlertDialog.Builder(this).setTitle(getString(R.string.pair_your_iphone))
+                 .setMessage(getString(R.string.on_your_iphone_open_settings_bluetooth_and_pair_with_the_c))
+                 .setPositiveButton(getString(R.string.open_bluetooth)) { _, _ -> openSystem(Intent(Settings.ACTION_BLUETOOTH_SETTINGS)) }
+-                .setNegativeButton(getString(R.string.got_it), null).show(); return
++                .setNegativeButton(getString(R.string.got_it), null).show().also { styleSettingsDialog(it) }; return
+         }
+         AlertDialog.Builder(this).setTitle(getString(R.string.choose_your_iphone))
+             .setItems(devices.map { device ->
+@@ -2210,7 +2240,7 @@
+                 render()
+                 if (start) connect(true)
+             }.setNeutralButton(getString(R.string.pair_another)) { _, _ -> openSystem(Intent(Settings.ACTION_BLUETOOTH_SETTINGS)) }
+-            .setNegativeButton(getString(R.string.cancel)) { _, _ -> pendingWireless = false }.show()
++            .setNegativeButton(getString(R.string.cancel)) { _, _ -> pendingWireless = false }.show().also { styleSettingsDialog(it) }
+     }
+ 
+     private fun wirelessHelp() {
+@@ -2219,13 +2249,18 @@
+             .setPositiveButton(getString(R.string.got_it), null)
+             .setNeutralButton(getString(R.string.reset_carplay_wi_fi)) { _, _ ->
+                 confirmWirelessReset()
+-            }.show()
++            }.show().also { styleSettingsDialog(it) }
+     }
+ 
+     private fun handleWirelessRecovery() {
+-        if (page != "wireless-recovery") return
+-        page = "home"; render()
+-        confirmWirelessReset()
++        when (page) {
++            "wireless-recovery" -> { page = "home"; render(); confirmWirelessReset() }
++            "automatic-channel-recovery" -> {
++                AirPlayPersistence.saveWifiP2pPreferredChannel(this, WifiP2pChannels.AUTO)
++                page = "home"; render(); connect(true)
++            }
++            "retry-connection" -> { page = "home"; render(); connect(AirPlayPersistence.loadWirelessEnabled(this)) }
++        }
+     }
+ 
+     private fun confirmWirelessReset() {
+@@ -2233,7 +2268,7 @@
+             .setMessage(getString(R.string.this_ends_the_existing_wi_fi_direct_connection_including_o))
+             .setPositiveButton(getString(R.string.reset_and_connect)) { _, _ ->
+                 CarPlayBackgroundSession.stop { runOnUiThread { resetWirelessGroup() } }
+-            }.setNegativeButton(getString(R.string.cancel), null).show()
++            }.setNegativeButton(getString(R.string.cancel), null).show().also { styleSettingsDialog(it) }
+     }
+ 
+     private fun resetWirelessGroup() {
+@@ -2269,15 +2304,36 @@
+ 
+     private fun refreshStatus() {
+         val running = CarPlayBackgroundSession.hasSession()
+-        status?.text = when {
++        val failure = CarPlayBackgroundSession.connectionFeedback?.takeIf { running && it.hint != null }
++        val hotspotOff = !running && carHotspotOff()
++        val nextStatus = when {
+             setupError != null -> getString(R.string.setup_needs_attention)
++            failure != null -> getString(failure.title)
+             CarPlayBackgroundSession.active -> getString(R.string.carplay_connected)
++            hotspotOff -> getString(R.string.steam_issue_hotspot_off)
+             running -> getString(R.string.connecting_to_your_iphone)
+             DiPlayPreferences.phoneAddress(this) != null -> "${getString(R.string.status_ready_for_prefix)}${DiPlayPreferences.phoneName(this)}"
+             else -> getString(R.string.ready_when_you_are)
+         }
++        status?.let { if (it.text.toString() != nextStatus) it.text = nextStatus }
++        val warning = if (failure != null) getString(failure.hint!!) else if (running) null else if (hotspotOff) getString(R.string.steam_home_hotspot_needed)
++            else hotspotStartupResult?.takeIf {
++                it != CarHotspotTethering.Result.READY && it != CarHotspotTethering.Result.CANCELLED &&
++                    CarHotspotSettings.shouldEnable(this, true, AirPlayPersistence.loadWirelessHotspotMode(this)) &&
++                    com.shilapi.xcertplay.network.CarHotspotStatus.isEnabled(this) != true
++            }?.let(::hotspotResultText)
++        homeWarning?.let {
++            if (it.text.toString() != (warning ?: "")) it.text = warning ?: ""
++            it.visibility = if (warning != null) View.VISIBLE else View.GONE
++        }
++        homeWifiAction?.visibility = if (!running && warning != null) View.VISIBLE else View.GONE
++        val buttonText = getString(when {
++            failure != null -> R.string.steam_retry_connection
++            running -> R.string.open_carplay
++            else -> R.string.connect_phone
++        })
++        connectButton?.let { if (it.text.toString() != buttonText) it.text = buttonText }
+         if (lastRunning != running) {
+-            connectButton?.text = if (running) getString(R.string.open_carplay) else getString(R.string.connect_phone)
+             disconnectButton?.visibility = if (running) View.VISIBLE else View.GONE
+             disconnectButton?.isEnabled = true
+             lastRunning = running
+@@ -2381,12 +2437,12 @@
+                                     addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION)
+                                 }, getString(R.string.share_diagnostic_report)))
+                             }.onFailure { toast(getString(R.string.report_saved_open_it_from_your_file_manager_to_share_it)) }
+-                        }.show()
++                        }.show().also { styleSettingsDialog(it) }
+                 } else {
+                     AlertDialog.Builder(this).setTitle(getString(R.string.could_not_save_the_report))
+                         .setMessage(getString(R.string.check_that_storage_is_available_or_choose_another_save_loc))
+                         .setPositiveButton(getString(R.string.choose_location)) { _, _ -> chooseReportDestination() }
+-                        .setNegativeButton(getString(R.string.close), null).show()
++                        .setNegativeButton(getString(R.string.close), null).show().also { styleSettingsDialog(it) }
+                 }
+             }
+         }, "diplay-export").start()
+@@ -2394,7 +2450,7 @@
+     private fun permissionHelp(title: String, body: String) {
+         AlertDialog.Builder(this).setTitle(title).setMessage(body).setPositiveButton(getString(R.string.app_settings)) { _, _ ->
+             openSystem(Intent(Settings.ACTION_APPLICATION_DETAILS_SETTINGS, Uri.parse("package:$packageName")))
+-        }.setNegativeButton(getString(R.string.later), null).show()
++        }.setNegativeButton(getString(R.string.later), null).show().also { styleSettingsDialog(it) }
+     }
+     private fun openSystem(intent: Intent) { runCatching { startActivity(intent) }.onFailure { toast(getString(R.string.open_this_setting_from_your_car_s_settings_app)) } }
+     private fun toast(message: String) { Toast.makeText(this, message, Toast.LENGTH_LONG).show() }
+@@ -2438,12 +2494,8 @@
+     private fun paintChannel(index: Int, selected: Boolean) {
+         val target = channelButtons.getOrNull(index) ?: return
+         target.isSelected = selected
+-        target.setTextColor(if (selected) BG else TEXT)
+-        target.background = android.graphics.drawable.RippleDrawable(
+-            ColorStateList.valueOf(0x336F9FD9),
+-            rounded(if (selected) ACCENT else SURFACE, if (selected) ACCENT else BORDER),
+-            null
+-        )
++        target.setTextColor(TEXT)
++        target.background = SteamGlass.action(this, selected, radius = 16)
+     }
+ 
+     private fun channelSelector(): ViewGroup {
+@@ -2566,9 +2618,7 @@
+         return text
+     }
+     private fun styleSettingsDialog(dialog: AlertDialog) {
+-        if (!usesSteamGlass()) return
+-        dialog.window?.setBackgroundDrawable(SteamGlass.surface(this, selected = true, radius = 28))
+-        dialog.window?.setDimAmount(.45f)
++        SteamGlass.styleDialog(this, dialog)
+     }
+     private fun card() = column().apply {
+         background = if (usesSteamGlass()) SteamGlass.surface(this@DiPlayActivity) else rounded(SURFACE, BORDER)
+--- /dev/null
++++ b/common/src/main/java/com/shilapi/xcertplay/SteamConnectionFeedback.kt
+@@ -0,0 +1,63 @@
++// SPDX-License-Identifier: AGPL-3.0-only
++package com.shilapi.xcertplay
++
++import com.shilapi.xcertplay.host.R
++import com.shilapi.xcertplay.orchestration.CarPlayStatus
++
++internal enum class SteamRecoveryAction { WIFI, HOTSPOT, PERMISSIONS, AUTO_CHANNEL, RESET, BLUETOOTH, SETUP }
++
++/** Decode the controller's raw status before translation; never parse a localized UI label. */
++internal data class SteamConnectionFeedback(
++    val title: Int,
++    val hint: Int? = null,
++    val action: SteamRecoveryAction? = null,
++    val automaticRetry: Boolean = true,
++) {
++    companion object {
++        fun from(status: CarPlayStatus): SteamConnectionFeedback {
++            if (status is CarPlayStatus.Failed) return failure(status)
++            return SteamConnectionFeedback(when (status) {
++                CarPlayStatus.StartingHotspot -> R.string.steam_stage_wifi
++                is CarPlayStatus.HotspotReady, CarPlayStatus.WaitingForPairedIphone -> R.string.steam_stage_phone
++                CarPlayStatus.ConnectingBluetooth, CarPlayStatus.Pairing -> R.string.steam_stage_bluetooth
++                CarPlayStatus.DiscoveringIphone, CarPlayStatus.WaitingForIphone,
++                CarPlayStatus.WaitingForReenumeration, CarPlayStatus.RequestingIphonePermission -> R.string.steam_stage_usb
++                CarPlayStatus.RunningWireless, CarPlayStatus.WirelessActive, CarPlayStatus.AttachingNetwork,
++                CarPlayStatus.RunningControl, CarPlayStatus.OpeningDataPaths,
++                CarPlayStatus.ConnectingControl -> R.string.steam_stage_open
++                else -> R.string.steam_stage_prepare
++            })
++        }
++
++        private fun failure(status: CarPlayStatus.Failed): SteamConnectionFeedback {
++            val message = status.message
++            fun has(value: String) = message.contains(value, ignoreCase = true)
++            fun issue(title: Int, hint: Int, action: SteamRecoveryAction) =
++                SteamConnectionFeedback(title, hint, action, automaticRetry = false)
++            return when {
++                status.wifiResetRequired || has("needs a reset") -> issue(
++                    R.string.steam_issue_reset, R.string.steam_issue_reset_hint, SteamRecoveryAction.RESET)
++                has("Turn on Wi-Fi") -> issue(
++                    R.string.steam_issue_wifi_off, R.string.steam_issue_wifi_off_hint, SteamRecoveryAction.WIFI)
++                has("car hotspot is off") -> issue(
++                    R.string.steam_issue_hotspot_off, R.string.steam_issue_hotspot_off_hint, SteamRecoveryAction.HOTSPOT)
++                has("automatic hotspot startup") || has("could not start its hotspot") || has("waiting for the car hotspot") -> issue(
++                    R.string.steam_issue_hotspot_off, R.string.steam_issue_hotspot_off_hint, SteamRecoveryAction.HOTSPOT)
++                has("permission") || has("Allow precise Location") || has("Allow Nearby devices") -> issue(
++                    R.string.steam_issue_permission, R.string.steam_issue_permission_hint, SteamRecoveryAction.PERMISSIONS)
++                has("could not use channel") -> issue(
++                    R.string.steam_issue_channel, R.string.steam_issue_channel_hint, SteamRecoveryAction.AUTO_CHANNEL)
++                has("unsupported") || has("not supported") || has("unavailable") && has("WifiP2pManager") -> issue(
++                    R.string.steam_issue_unsupported, R.string.steam_issue_unsupported_hint, SteamRecoveryAction.SETUP)
++                has("createGroup failed") || has("Wi-Fi Direct startup timed out") -> issue(
++                    R.string.steam_issue_busy, R.string.steam_issue_busy_hint, SteamRecoveryAction.WIFI)
++                has("SSID is not configured") || has("passphrase") || has("hotspot credentials") || has("Manual hotspot") -> issue(
++                    R.string.steam_issue_setup, R.string.steam_issue_setup_hint, SteamRecoveryAction.SETUP)
++                has("RFCOMM") || has("Bluetooth") || has("no longer paired") -> SteamConnectionFeedback(
++                    R.string.steam_issue_phone, R.string.steam_issue_phone_hint, SteamRecoveryAction.BLUETOOTH)
++                else -> SteamConnectionFeedback(R.string.steam_issue_retry, R.string.steam_issue_retry_hint,
++                    SteamRecoveryAction.SETUP)
++            }
++        }
++    }
++}
+--- /dev/null
++++ b/common/src/main/java/com/shilapi/xcertplay/SteamConnectionPanel.kt
+@@ -0,0 +1,128 @@
++// SPDX-License-Identifier: AGPL-3.0-only
++package com.shilapi.xcertplay
++
++import android.content.Context
++import android.graphics.Typeface
++import android.view.Gravity
++import android.view.View
++import android.widget.Button
++import android.widget.LinearLayout
++import android.widget.ScrollView
++import android.widget.TextView
++import com.shilapi.xcertplay.host.R
++
++/** The receiver's waiting/recovery UI. Projection itself stays on the underlying TextureView. */
++internal class SteamConnectionPanel(
++    context: Context,
++    private val mode: String,
++    private val wireless: Boolean,
++    private val onHome: () -> Unit,
++    private val onSetup: () -> Unit,
++    private val onRetry: () -> Unit,
++    private val onRecovery: (SteamRecoveryAction) -> Unit,
++) : ScrollView(context) {
++    val stage: TextView = text(context.getString(R.string.steam_stage_prepare), 28, true).apply {
++        tag = "steam_connection_stage"
++    }
++    val hint: TextView = text(defaultHint(), 16).apply { tag = "steam_connection_hint" }
++    val gestureHint: TextView = text("", 13)
++    val recoveryButton = action("", true) {}.apply {
++        tag = "steam_connection_recovery"; visibility = View.GONE
++    }
++    private val retryButton = action(context.getString(R.string.steam_retry_connection), false, onRetry).apply {
++        tag = "steam_connection_retry"; visibility = View.GONE
++    }
++    private val body = column()
++    private val artwork = SteamLinkArtwork(context)
++    private val details = column()
++    private var wide = false
++    private var feedback: SteamConnectionFeedback? = null
++
++    init {
++        tag = "steam_connection_workspace"
++        background = SteamGlass.backdrop()
++        isFillViewport = true; isVerticalScrollBarEnabled = false
++        isClickable = true
++        val shell = column().apply { setPadding(dp(28), dp(24), dp(28), dp(28)) }
++        val header = LinearLayout(context).apply { orientation = LinearLayout.HORIZONTAL; gravity = Gravity.CENTER_VERTICAL }
++        header.addView(text("STEAM  /  CarPlay", 22, true), LinearLayout.LayoutParams(0, -2, 1f))
++        header.addView(action(context.getString(R.string.back), false, onHome), LinearLayout.LayoutParams(dp(96), -2))
++        shell.addView(header)
++        shell.addView(text(context.getString(R.string.steam_session_title), 30, true).apply {
++            setPadding(0, dp(26), 0, dp(8))
++        })
++        shell.addView(text(context.getString(R.string.steam_session_mode, mode), 14).apply {
++            setPadding(0, 0, 0, dp(24))
++        })
++        body.background = SteamGlass.surface(context, radius = 32)
++        body.gravity = Gravity.CENTER_VERTICAL
++        body.setPadding(dp(24), dp(28), dp(24), dp(28))
++        details.addView(stage)
++        details.addView(hint, LinearLayout.LayoutParams(-1, -2).apply { topMargin = dp(14); bottomMargin = dp(24) })
++        details.addView(recoveryButton, LinearLayout.LayoutParams(-1, -2))
++        details.addView(retryButton, LinearLayout.LayoutParams(-1, -2).apply { topMargin = dp(12) })
++        details.addView(action(context.getString(R.string.steam_review_connection), false, onSetup),
++            LinearLayout.LayoutParams(-1, -2).apply { topMargin = dp(12) })
++        shell.addView(body)
++        shell.addView(gestureHint.apply { setPadding(0, dp(20), 0, 0); gravity = Gravity.CENTER_HORIZONTAL })
++        addView(shell)
++        reflow(context.resources.configuration.screenWidthDp >= 760)
++    }
++
++    private fun defaultHint() = context.getString(if (wireless)
++        R.string.keep_your_iphone_nearby_with_bluetooth_and_wi_fi_on_allow
++        else R.string.use_a_usb_data_cable_and_unlock_your_iphone_allow_trust_an)
++
++    override fun onSizeChanged(w: Int, h: Int, oldw: Int, oldh: Int) {
++        super.onSizeChanged(w, h, oldw, oldh)
++        val next = w >= dp(760)
++        if (next != wide) reflow(next)
++    }
++
++    private fun reflow(nextWide: Boolean) {
++        wide = nextWide
++        body.removeAllViews()
++        body.orientation = if (wide) LinearLayout.HORIZONTAL else LinearLayout.VERTICAL
++        body.addView(artwork, LinearLayout.LayoutParams(if (wide) dp(248) else -1, dp(if (wide) 230 else 140)).apply {
++            if (wide) marginEnd = dp(28) else bottomMargin = dp(20)
++        })
++        body.addView(details, LinearLayout.LayoutParams(if (wide) 0 else -1, -2, if (wide) 1f else 0f))
++    }
++
++    fun show(feedback: SteamConnectionFeedback) {
++        if (this.feedback == feedback) return
++        this.feedback = feedback
++        stage.text = context.getString(feedback.title)
++        hint.text = feedback.hint?.let(context::getString) ?: defaultHint()
++        stage.setTextColor(if (feedback.hint != null) 0xFFFFD9AD.toInt() else SteamGlass.text)
++        retryButton.visibility = if (feedback.hint != null && !feedback.automaticRetry) View.VISIBLE else View.GONE
++        val action = feedback.action
++        recoveryButton.visibility = if (action == null) View.GONE else View.VISIBLE
++        if (action != null) {
++            recoveryButton.text = context.getString(when (action) {
++                SteamRecoveryAction.WIFI -> R.string.open_car_wi_fi_settings
++                SteamRecoveryAction.HOTSPOT -> R.string.open_car_hotspot_settings
++                SteamRecoveryAction.PERMISSIONS -> R.string.steam_open_permissions
++                SteamRecoveryAction.AUTO_CHANNEL -> R.string.steam_use_auto_channel
++                SteamRecoveryAction.RESET -> R.string.reset_carplay_wi_fi
++                SteamRecoveryAction.BLUETOOTH -> R.string.open_bluetooth
++                SteamRecoveryAction.SETUP -> R.string.steam_review_connection
++            })
++            recoveryButton.setOnClickListener { onRecovery(action) }
++        }
++    }
++
++    private fun column() = LinearLayout(context).apply { orientation = LinearLayout.VERTICAL }
++    private fun text(value: String, size: Int, bold: Boolean = false) = TextView(context).apply {
++        text = value; textSize = size.toFloat(); setTextColor(if (bold) SteamGlass.text else SteamGlass.muted)
++        typeface = Typeface.create(if (bold) "sans-serif-medium" else "sans-serif", Typeface.NORMAL)
++        setLineSpacing(dp(3).toFloat(), 1f)
++    }
++    private fun action(value: String, primary: Boolean, click: () -> Unit) = Button(context).apply {
++        text = value; textSize = 16f; isAllCaps = false; setTextColor(SteamGlass.text)
++        background = SteamGlass.action(context, primary, 24); stateListAnimator = null
++        minHeight = dp(56); minimumWidth = 0; setPadding(dp(20), dp(12), dp(20), dp(12))
++        setOnClickListener { click() }
++    }
++    private fun dp(value: Int) = SteamGlass.dp(context, value)
++}
+--- a/common/src/main/java/com/shilapi/xcertplay/SteamGlass.kt
++++ b/common/src/main/java/com/shilapi/xcertplay/SteamGlass.kt
+@@ -35,11 +35,25 @@
+ 
+ /** Native, static glass shading: no bitmap capture, RenderEffect or animation loop. */
+ internal object SteamGlass {
++    val text = Color.rgb(244, 248, 255)
++    val muted = Color.rgb(184, 199, 222)
++    val accent = Color.rgb(189, 219, 255)
++    fun dp(context: Context, value: Int) = (value * context.resources.displayMetrics.density + .5f).toInt()
+     fun backdrop(): Drawable = AmbientDrawable()
+     fun surface(context: Context, selected: Boolean = false, radius: Int = 24): Drawable =
+         GlassDrawable(context.resources.displayMetrics.density, selected, radius)
+     fun action(context: Context, selected: Boolean = false, radius: Int = 18): Drawable =
+         RippleDrawable(ColorStateList.valueOf(0x26D1E9FF), surface(context, selected, radius), null)
++    fun styleDialog(context: Context, dialog: android.app.AlertDialog) {
++        dialog.window?.setBackgroundDrawable(surface(context, selected = true, radius = 28))
++        dialog.window?.setDimAmount(.55f)
++        for (which in listOf(android.app.AlertDialog.BUTTON_POSITIVE,
++            android.app.AlertDialog.BUTTON_NEGATIVE, android.app.AlertDialog.BUTTON_NEUTRAL)) {
++            dialog.getButton(which)?.apply {
++                setTextColor(SteamGlass.text); isAllCaps = false; minHeight = dp(context, 48)
++            }
++        }
++    }
+ }
+ 
+ private class AmbientDrawable : Drawable() {
+@@ -49,9 +63,9 @@
+         val w = bounds.width().toFloat().coerceAtLeast(1f)
+         val h = bounds.height().toFloat().coerceAtLeast(1f)
+         base.shader = LinearGradient(0f, 0f, w, h,
+-            intArrayOf(Color.rgb(11, 19, 34), Color.rgb(17, 29, 48), Color.rgb(10, 17, 30)), null, Shader.TileMode.CLAMP)
++            intArrayOf(Color.rgb(19, 29, 51), Color.rgb(35, 41, 67), Color.rgb(12, 26, 42)), null, Shader.TileMode.CLAMP)
+         val centers = arrayOf(floatArrayOf(w * .12f, h * .22f), floatArrayOf(w * .83f, h * .05f), floatArrayOf(w * .8f, h * .9f))
+-        val colors = intArrayOf(0x486894DA, 0x386D64BE, 0x28488F9C)
++        val colors = intArrayOf(0x68778DE3, 0x626F52A8, 0x4845A3B2)
+         glows.forEachIndexed { index, paint ->
+             paint.shader = RadialGradient(centers[index][0], centers[index][1], maxOf(w, h) * .72f,
+                 colors[index], Color.TRANSPARENT, Shader.TileMode.CLAMP)
+@@ -76,10 +90,10 @@
+         rect.inset(density * .6f, density * .6f)
+         val h = bounds.height().toFloat().coerceAtLeast(1f)
+         fill.shader = LinearGradient(0f, bounds.top.toFloat(), bounds.width().toFloat(), bounds.top + h,
+-            if (selected) intArrayOf(0x666B9BCB, 0x383B638E, 0x30354E74)
+-            else intArrayOf(0x344E657F, 0x242E415C, 0x1C263750), null, Shader.TileMode.CLAMP)
++            if (selected) intArrayOf(0xA07B9FC4.toInt(), 0x6449699D, 0x585A5D94)
++            else intArrayOf(0x666F809E, 0x323A4B69, 0x3C334D67), null, Shader.TileMode.CLAMP)
+         edge.shader = LinearGradient(bounds.left.toFloat(), bounds.top.toFloat(), bounds.right.toFloat(), bounds.bottom.toFloat(),
+-            intArrayOf(if (selected) 0x80D8EEFF.toInt() else 0x55D8E9FF, 0x163F6082, 0x224D739A), null, Shader.TileMode.CLAMP)
++            intArrayOf(if (selected) 0xD8E9F9FF.toInt() else 0xA0D8E9FF.toInt(), 0x225A729B, 0x646F9FB7), null, Shader.TileMode.CLAMP)
+     }
+     override fun draw(canvas: Canvas) { canvas.drawRoundRect(rect, radiusPx, radiusPx, fill); canvas.drawRoundRect(rect, radiusPx, radiusPx, edge) }
+     override fun setAlpha(alpha: Int) { fill.alpha = alpha; edge.alpha = alpha; invalidateSelf() }
+--- /dev/null
++++ b/common/src/main/java/com/shilapi/xcertplay/SteamLinkArtwork.kt
+@@ -0,0 +1,51 @@
++// SPDX-License-Identifier: AGPL-3.0-only
++package com.shilapi.xcertplay
++
++import android.content.Context
++import android.graphics.Canvas
++import android.graphics.Color
++import android.graphics.LinearGradient
++import android.graphics.Paint
++import android.graphics.Path
++import android.graphics.RectF
++import android.graphics.Shader
++import android.view.View
++
++/** Original receiver illustration, drawn once per invalidation without bitmaps or timers. */
++internal class SteamLinkArtwork(context: Context) : View(context) {
++    private val fill = Paint(Paint.ANTI_ALIAS_FLAG).apply {
++        shader = LinearGradient(25f, 20f, 190f, 170f,
++            intArrayOf(0x847EA7E7.toInt(), 0x345D709D, 0x545C92B1), null, Shader.TileMode.CLAMP)
++    }
++    private val stroke = Paint(Paint.ANTI_ALIAS_FLAG).apply {
++        color = 0xDCE0EDFF.toInt(); style = Paint.Style.STROKE
++        strokeWidth = 1.8f; strokeCap = Paint.Cap.ROUND; strokeJoin = Paint.Join.ROUND
++    }
++    private val route = Path().apply {
++        moveTo(49f, 103f); lineTo(70f, 85f); lineTo(89f, 97f); lineTo(119f, 67f)
++        moveTo(109f, 67f); lineTo(119f, 67f); lineTo(119f, 77f)
++    }
++    private val rect = RectF()
++    init { importantForAccessibility = IMPORTANT_FOR_ACCESSIBILITY_NO }
++    override fun onDraw(canvas: Canvas) {
++        super.onDraw(canvas)
++        val scale = minOf(width / 220f, height / 180f)
++        canvas.save(); canvas.translate((width - 220f * scale) / 2f, (height - 180f * scale) / 2f)
++        canvas.scale(scale, scale)
++        stroke.color = 0x3888B6FF
++        canvas.drawCircle(110f, 90f, 78f, stroke); canvas.drawCircle(110f, 90f, 62f, stroke)
++        stroke.color = 0xDCE0EDFF.toInt()
++        rect.set(28f, 41f, 169f, 127f)
++        canvas.drawRoundRect(rect, 17f, 17f, fill); canvas.drawRoundRect(rect, 17f, 17f, stroke)
++        canvas.drawPath(route, stroke)
++        canvas.drawLine(78f, 140f, 118f, 140f, stroke); canvas.drawLine(98f, 128f, 98f, 140f, stroke)
++        rect.set(143f, 76f, 191f, 155f)
++        fill.color = Color.WHITE
++        canvas.drawRoundRect(rect, 12f, 12f, fill); canvas.drawRoundRect(rect, 12f, 12f, stroke)
++        canvas.drawLine(157f, 85f, 177f, 85f, stroke)
++        canvas.drawCircle(167f, 139f, 2f, stroke)
++        canvas.drawArc(153f, 102f, 181f, 125f, 215f, 110f, false, stroke)
++        canvas.drawArc(160f, 109f, 174f, 121f, 215f, 110f, false, stroke)
++        canvas.restore()
++    }
++}
+--- /dev/null
++++ b/common/src/main/res/drawable/ic_steam_receiver.xml
+@@ -0,0 +1,23 @@
++<vector xmlns:android="http://schemas.android.com/apk/res/android"
++    xmlns:aapt="http://schemas.android.com/aapt"
++    android:width="108dp" android:height="108dp" android:viewportWidth="108" android:viewportHeight="108">
++    <path android:pathData="M28,4L80,4Q104,4 104,28L104,80Q104,104 80,104L28,104Q4,104 4,80L4,28Q4,4 28,4Z">
++        <aapt:attr name="android:fillColor">
++            <gradient android:startX="12" android:startY="4" android:endX="98" android:endY="104" android:type="linear">
++                <item android:offset="0" android:color="#879BDC" />
++                <item android:offset="0.5" android:color="#46557E" />
++                <item android:offset="1" android:color="#306878" />
++            </gradient>
++        </aapt:attr>
++    </path>
++    <path android:pathData="M28,4L80,4Q104,4 104,28L104,80Q104,104 80,104L28,104Q4,104 4,80L4,28Q4,4 28,4Z"
++        android:fillColor="@android:color/transparent" android:strokeColor="#A0E1ECFF" android:strokeWidth="1.5" />
++    <path android:pathData="M23,31L76,31Q82,31 82,37L82,63Q82,69 76,69L23,69Q17,69 17,63L17,37Q17,31 23,31Z"
++        android:fillColor="#365EB0E2" android:strokeColor="#EDF5FF" android:strokeWidth="2.5" />
++    <path android:pathData="M28,57L39,47L48,53L65,39M58,39L65,39L65,46M49,69L49,77M37,77L61,77"
++        android:fillColor="@android:color/transparent" android:strokeColor="#EDF5FF" android:strokeWidth="2.5" android:strokeLineCap="round" android:strokeLineJoin="round" />
++    <path android:pathData="M75,51L84,51Q91,51 91,58L91,80Q91,87 84,87L75,87Q68,87 68,80L68,58Q68,51 75,51Z"
++        android:fillColor="#6687AFCF" android:strokeColor="#EDF5FF" android:strokeWidth="2.5" />
++    <path android:pathData="M76,57L83,57M76,80L83,80"
++        android:fillColor="@android:color/transparent" android:strokeColor="#EDF5FF" android:strokeWidth="2" android:strokeLineCap="round" />
++</vector>
+--- /dev/null
++++ b/common/src/main/res/values/steam_receiver.xml
+@@ -0,0 +1,53 @@
++<?xml version="1.0" encoding="utf-8"?>
++<resources>
++    <string name="steam_home_title">Your next drive, connected.</string>
++    <string name="steam_car_home_short">Home</string>
++    <string name="steam_home_hint">Choose your iPhone and bring CarPlay to this screen.</string>
++    <string name="steam_wireless_label">WIRELESS CARPLAY</string>
++    <string name="steam_mode_title">Connection method</string>
++    <string name="steam_phone_title">Your iPhone</string>
++    <string name="steam_phone_empty">Choose a paired phone</string>
++    <string name="steam_usb_title">USB connection</string>
++    <string name="steam_usb_hint">Use the car’s USB data port</string>
++    <string name="steam_mode_p2p_hint">The app creates a temporary network. Keep the car’s Wi-Fi and Bluetooth on.</string>
++    <string name="steam_mode_manual_hint">Use the car’s existing hotspot. Its name and password must match the saved details.</string>
++    <string name="steam_setup_title">Make the connection yours.</string>
++    <string name="steam_setup_hint">Select a wireless method, pair your iPhone, then connect.</string>
++    <string name="steam_pair_step">Pair your iPhone</string>
++    <string name="steam_ready_step">Ready to connect</string>
++    <string name="steam_session_title">Connecting your iPhone</string>
++    <string name="steam_session_hint">Connection progress and recovery options appear here.</string>
++    <string name="steam_session_mode">Current method · %1$s</string>
++    <string name="steam_stage_prepare">Preparing CarPlay</string>
++    <string name="steam_stage_wifi">Starting the wireless network</string>
++    <string name="steam_stage_phone">Waiting for your iPhone</string>
++    <string name="steam_stage_bluetooth">Connecting over Bluetooth</string>
++    <string name="steam_stage_usb">Waiting for the USB connection</string>
++    <string name="steam_stage_open">Opening CarPlay</string>
++    <string name="steam_issue_wifi_off">The car’s Wi-Fi is off</string>
++    <string name="steam_issue_wifi_off_hint">Turn on Wi-Fi in the car settings, then return and connect again.</string>
++    <string name="steam_issue_hotspot_off">The car hotspot is off</string>
++    <string name="steam_issue_hotspot_off_hint">Turn on the car hotspot. Check its name and password in Connection method before reconnecting.</string>
++    <string name="steam_issue_permission">Connection permission is missing</string>
++    <string name="steam_issue_permission_hint">Allow Nearby devices, and precise Location on older Android versions, in app permissions. Then reconnect.</string>
++    <string name="steam_issue_channel">This Wi-Fi channel is unavailable</string>
++    <string name="steam_issue_channel_hint">Return to automatic channel selection, or choose another supported channel in Connection method.</string>
++    <string name="steam_issue_busy">Wi-Fi Direct could not start</string>
++    <string name="steam_issue_busy_hint">The car rejected network creation. Check Wi-Fi and close other projection apps. If this continues, try the car hotspot or USB.</string>
++    <string name="steam_issue_reset">Another Wi-Fi Direct group is present</string>
++    <string name="steam_issue_reset_hint">Close other projection apps, then use the reset option to clear the group and reconnect.</string>
++    <string name="steam_issue_unsupported">Wi-Fi Direct is unavailable</string>
++    <string name="steam_issue_unsupported_hint">Use the car hotspot or connect through the USB data port.</string>
++    <string name="steam_issue_phone">The iPhone is unavailable</string>
++    <string name="steam_issue_phone_hint">Unlock your iPhone, enable Bluetooth and Wi-Fi, and check pairing with the car.</string>
++    <string name="steam_issue_setup">Check the hotspot details</string>
++    <string name="steam_issue_setup_hint">Save the current name, password and security type from the car hotspot settings.</string>
++    <string name="steam_issue_retry">The connection was interrupted</string>
++    <string name="steam_issue_retry_hint">CarPlay will retry automatically. You can also review the connection method or return home.</string>
++    <string name="steam_review_connection">Review connection method</string>
++    <string name="steam_retry_connection">Connect again</string>
++    <string name="steam_use_auto_channel">Use automatic channel</string>
++    <string name="steam_open_permissions">Open app permissions</string>
++    <string name="steam_features_hint">Manage receiver controls and vehicle extensions.</string>
++    <string name="steam_home_hotspot_needed">Car hotspot is off · Open car settings to continue</string>
++</resources>
+--- /dev/null
++++ b/common/src/main/res/values-zh-rCN/steam_receiver.xml
+@@ -0,0 +1,53 @@
++<?xml version="1.0" encoding="utf-8"?>
++<resources>
++    <string name="steam_home_title">连接，开启下一程。</string>
++    <string name="steam_car_home_short">车机</string>
++    <string name="steam_home_hint">选择你的 iPhone，在车机上使用 CarPlay。</string>
++    <string name="steam_wireless_label">无线 CARPLAY</string>
++    <string name="steam_mode_title">连接方式</string>
++    <string name="steam_phone_title">我的 iPhone</string>
++    <string name="steam_phone_empty">选择已配对的手机</string>
++    <string name="steam_usb_title">USB 有线</string>
++    <string name="steam_usb_hint">使用车机 USB 数据接口</string>
++    <string name="steam_mode_p2p_hint">应用建立临时网络，保持车机 Wi-Fi 和蓝牙开启。</string>
++    <string name="steam_mode_manual_hint">使用车机现有热点，名称和密码须与保存的信息一致。</string>
++    <string name="steam_setup_title">选择适合你的连接。</string>
++    <string name="steam_setup_hint">选好无线方式，配对 iPhone，再开始连接。</string>
++    <string name="steam_pair_step">配对 iPhone</string>
++    <string name="steam_ready_step">开始连接</string>
++    <string name="steam_session_title">正在连接你的 iPhone</string>
++    <string name="steam_session_hint">在这里查看连接进度，并处理连接问题。</string>
++    <string name="steam_session_mode">当前方式 · %1$s</string>
++    <string name="steam_stage_prepare">正在准备 CarPlay</string>
++    <string name="steam_stage_wifi">正在建立无线网络</string>
++    <string name="steam_stage_phone">等待你的 iPhone</string>
++    <string name="steam_stage_bluetooth">正在连接蓝牙</string>
++    <string name="steam_stage_usb">等待 USB 数据连接</string>
++    <string name="steam_stage_open">正在打开 CarPlay</string>
++    <string name="steam_issue_wifi_off">车机 Wi-Fi 尚未开启</string>
++    <string name="steam_issue_wifi_off_hint">在车机设置中打开 Wi-Fi，返回应用后重新连接。</string>
++    <string name="steam_issue_hotspot_off">车机热点尚未开启</string>
++    <string name="steam_issue_hotspot_off_hint">打开车机热点，并在“连接方式”中核对热点名称和密码，再重新连接。</string>
++    <string name="steam_issue_permission">缺少连接权限</string>
++    <string name="steam_issue_permission_hint">在应用权限中允许“附近设备”；较旧的安卓系统还需要精确位置权限。授权后重新连接。</string>
++    <string name="steam_issue_channel">当前 Wi-Fi 频道不可用</string>
++    <string name="steam_issue_channel_hint">恢复自动选频道，或在“连接方式”中选择另一个车机支持的频道。</string>
++    <string name="steam_issue_busy">Wi-Fi Direct 网络未能启动</string>
++    <string name="steam_issue_busy_hint">车机拒绝了创建网络请求。检查 Wi-Fi，并关闭其他投屏应用；持续失败时可试车机热点或 USB。</string>
++    <string name="steam_issue_reset">已有 Wi-Fi Direct 网络正在运行</string>
++    <string name="steam_issue_reset_hint">先关闭其他投屏应用，再使用重置入口清理网络并重新连接。</string>
++    <string name="steam_issue_unsupported">车机无法使用 Wi-Fi Direct</string>
++    <string name="steam_issue_unsupported_hint">改用车机热点，或通过 USB 数据接口连接。</string>
++    <string name="steam_issue_phone">暂时无法连接 iPhone</string>
++    <string name="steam_issue_phone_hint">解锁 iPhone，打开蓝牙和 Wi-Fi，并确认手机与车机已经配对。</string>
++    <string name="steam_issue_setup">请核对热点信息</string>
++    <string name="steam_issue_setup_hint">将车机热点当前的名称、密码和安全类型保存到“连接方式”。</string>
++    <string name="steam_issue_retry">连接暂时中断</string>
++    <string name="steam_issue_retry_hint">CarPlay 会自动重试。也可以检查连接方式，或返回首页。</string>
++    <string name="steam_review_connection">检查连接方式</string>
++    <string name="steam_retry_connection">重新连接</string>
++    <string name="steam_use_auto_channel">恢复自动选频道</string>
++    <string name="steam_open_permissions">打开应用权限</string>
++    <string name="steam_features_hint">管理接收屏操作和车机扩展功能。</string>
++    <string name="steam_home_hotspot_needed">车机热点未开启 · 请打开车机设置</string>
++</resources>
+--- a/common/src/test/java/com/shilapi/xcertplay/BydAdbSettingsUiTest.kt
++++ b/common/src/test/java/com/shilapi/xcertplay/BydAdbSettingsUiTest.kt
+@@ -108,7 +108,7 @@
+         val advanced = advancedVehicleData()
+         assertTrue(switches(advanced).all { !it.isEnabled })
+         assertFalse(descendants(advanced).filterIsInstance<TextView>().single {
+-            it.text.startsWith(activity.getString(R.string.vehicle_data_mode) + " · ")
++            it.text.toString().lineSequence().first() == activity.getString(R.string.vehicle_data_mode)
+         }.isEnabled)
+         assertFalse(BydOutputSettings.legacyVehicleProbe(activity))
+         assertFalse(BydOutputSettings.batteryToIphone(activity))
+--- a/common/src/test/java/com/shilapi/xcertplay/CarPlayCustomizationTest.kt
++++ b/common/src/test/java/com/shilapi/xcertplay/CarPlayCustomizationTest.kt
+@@ -24,10 +24,14 @@
+             assertTrue(views.any { it.text.toString() == "CarPlay" })
+             assertFalse(views.any { it.text.contains("DiPlay") })
+             assertTrue(views.filter { it.text.toString() == "CarPlay" }.all { it.textSize <= 42f })
+-            val usbTitle = views.single { it.text.toString() == "USB 有线连接" }
+-            val optionsTitle = views.single { it.text.toString() == "连接与显示选项" }
+-            assertSame(usbTitle.parent, optionsTitle.parent)
+-            assertSame(usbTitle.parent, views.single { it.text.toString() == "设置" }.parent)
++            val root = controller.get().window.decorView
++            val usb = root.findViewWithTag<View>("steam_home_usb")
++            val mode = root.findViewWithTag<View>("steam_home_mode")
++            val phone = root.findViewWithTag<View>("steam_home_phone")
++            assertNotNull(usb); assertNotNull(mode); assertNotNull(phone)
++            assertSame(usb.parent, mode.parent)
++            assertSame(usb.parent, phone.parent)
++            assertNotNull(root.findViewWithTag<View>("steam_home_settings"))
+             assertEquals("Steam", AirPlayPersistence.loadManufacturer(context))
+             assertEquals("CarPlay", AirPlayPersistence.loadModel(context))
+         } finally { controller.pause().stop().destroy() }
+--- a/common/src/test/java/com/shilapi/xcertplay/HotspotModeMigrationTest.kt
++++ b/common/src/test/java/com/shilapi/xcertplay/HotspotModeMigrationTest.kt
+@@ -25,7 +25,22 @@
+         assertEquals("test-password", AirPlayPersistence.loadManualHotspotPassphrase(context))
+     }
+ 
+-    @Test fun freshInstallUsesBuiltInHotspot() {
++    @Test fun freshInstallUsesWifiDirectWithoutRequiringCarHotspotCredentials() {
++        prefs.edit().clear().apply()
++        assertEquals(WirelessHotspotMode.WIFI_P2P, AirPlayPersistence.loadWirelessHotspotMode(context))
++        assertEquals("WIFI_P2P", prefs.getString("wireless_hotspot_mode", null))
++    }
++
++    @Test fun explicitlySavedCarHotspotIsNeverOverwrittenByTheNewDefault() {
++        AirPlayPersistence.saveWirelessHotspotMode(context, WirelessHotspotMode.MANUAL)
++        AirPlayPersistence.saveManualHotspotSsid(context, "Test car")
++        AirPlayPersistence.saveManualHotspotPassphrase(context, "test-password")
++        repeat(3) { assertEquals(WirelessHotspotMode.MANUAL, AirPlayPersistence.loadWirelessHotspotMode(context)) }
++        assertEquals("Test car", AirPlayPersistence.loadManualHotspotSsid(context))
++        assertEquals("test-password", AirPlayPersistence.loadManualHotspotPassphrase(context))
++    }
++
++    @Test @Config(sdk = [28]) fun freshOlderAndroidStillUsesSupportedCarHotspot() {
+         prefs.edit().clear().apply()
+         assertEquals(WirelessHotspotMode.MANUAL, AirPlayPersistence.loadWirelessHotspotMode(context))
+     }
+--- /dev/null
++++ b/common/src/test/java/com/shilapi/xcertplay/SteamConnectionRecoveryTest.kt
+@@ -0,0 +1,122 @@
++package com.shilapi.xcertplay
++
++import android.os.Looper
++import com.shilapi.xcertplay.host.R
++import com.shilapi.xcertplay.orchestration.CarPlayStatus
++import java.time.Duration
++import java.util.concurrent.ExecutorService
++import org.junit.After
++import org.junit.Assert.*
++import org.junit.Before
++import org.junit.Test
++import org.junit.runner.RunWith
++import org.robolectric.Robolectric
++import org.robolectric.RobolectricTestRunner
++import org.robolectric.Shadows.shadowOf
++import org.robolectric.annotation.Config
++import org.robolectric.util.ReflectionHelpers
++
++@RunWith(RobolectricTestRunner::class)
++@Config(sdk = [32], qualifiers = "zh-rCN-w1280dp-h720dp")
++class SteamConnectionRecoveryTest {
++    private lateinit var host: CarPlayHostActivity
++    private lateinit var panel: SteamConnectionPanel
++    private lateinit var reporter: (CarPlayStatus) -> Unit
++    @Before fun setUp() {
++        host = Robolectric.buildActivity(CarPlayHostActivity::class.java).get()
++        panel = SteamConnectionPanel(host, "Wi-Fi Direct", true, {}, {}, {}, {})
++        ReflectionHelpers.setField(host, "steamConnectionPanel", panel)
++        CarPlayBackgroundSession::class.java.getDeclaredField("owner").apply { isAccessible = true }
++            .set(CarPlayBackgroundSession, host)
++        @Suppress("UNCHECKED_CAST")
++        reporter = host.javaClass.getDeclaredMethod("createStatusReporter", Int::class.javaPrimitiveType)
++            .apply { isAccessible = true }.invoke(host, 0) as (CarPlayStatus) -> Unit
++    }
++    @After fun tearDown() {
++        ReflectionHelpers.getField<ExecutorService>(host, "teardownExecutor").shutdownNow()
++        ReflectionHelpers.getField<ExecutorService>(host, "airPlayCommandExecutor").shutdownNow()
++        CarPlayBackgroundSession.clear()
++    }
++
++    @Test fun chineseLocaleShowsEachRealConnectionStage() {
++        reporter(CarPlayStatus.StartingHotspot)
++        assertEquals(host.getString(R.string.steam_stage_wifi), panel.stage.text.toString())
++        reporter(CarPlayStatus.ConnectingBluetooth)
++        assertEquals(host.getString(R.string.steam_stage_bluetooth), panel.stage.text.toString())
++        reporter(CarPlayStatus.WaitingForIphone)
++        assertEquals(host.getString(R.string.steam_stage_usb), panel.stage.text.toString())
++    }
++
++    @Test fun rejectedCreationStopsTheHostRetryLoopAndShowsRecovery() {
++        reporter(CarPlayStatus.Failed("Could not establish WIFI_P2P hotspot: Wi-Fi P2P createGroup failed: busy (code=2)"))
++        assertEquals(host.getString(R.string.steam_issue_busy), panel.stage.text.toString())
++        assertEquals(host.getString(R.string.open_car_wi_fi_settings), panel.recoveryButton.text.toString())
++        assertFalse(ReflectionHelpers.getField<Boolean>(host, "reconnectScheduled"))
++        shadowOf(Looper.getMainLooper()).idleFor(Duration.ofSeconds(60))
++        assertEquals(0, ReflectionHelpers.getField<Int>(host, "restartGeneration"))
++        assertEquals(host.getString(R.string.steam_issue_busy), panel.stage.text.toString())
++    }
++
++    @Test fun aPermanentFailureCancelsAnAlreadyScheduledReconnect() {
++        reporter(CarPlayStatus.Failed("temporary transport loss"))
++        assertTrue(ReflectionHelpers.getField<Boolean>(host, "reconnectScheduled"))
++        reporter(CarPlayStatus.Failed("Turn on Wi-Fi in the head unit's settings, then reconnect"))
++        shadowOf(Looper.getMainLooper()).idleFor(Duration.ofSeconds(3))
++        assertFalse(ReflectionHelpers.getField<Boolean>(host, "reconnectScheduled"))
++        assertEquals(0, ReflectionHelpers.getField<Int>(host, "restartGeneration"))
++        assertEquals(host.getString(R.string.steam_issue_wifi_off), panel.stage.text.toString())
++    }
++
++    @Test fun resetRequiredNeverRemovesAGroupWithoutTheExistingConfirmation() {
++        reporter(CarPlayStatus.Failed("foreign group", wifiResetRequired = true))
++        assertEquals(host.getString(R.string.reset_carplay_wi_fi), panel.recoveryButton.text.toString())
++        assertFalse(ReflectionHelpers.getField<Boolean>(host, "reconnectScheduled"))
++    }
++
++    @Test fun chosenChannelFailureProvidesAutomaticChannelRecovery() {
++        val feedback = SteamConnectionFeedback.from(CarPlayStatus.Failed(
++            "Wi-Fi Direct could not use channel 149. Choose Auto or another channel. createGroup failed: busy"))
++        assertEquals(SteamRecoveryAction.AUTO_CHANNEL, feedback.action)
++        assertFalse(feedback.automaticRetry)
++    }
++
++    @Test fun permissionFailureTakesPrecedenceOverTheCreateGroupError() {
++        val feedback = SteamConnectionFeedback.from(CarPlayStatus.Failed(
++            "Wi-Fi P2P createGroup failed: permission denied (code=3)"))
++        assertEquals(SteamRecoveryAction.PERMISSIONS, feedback.action)
++        assertFalse(feedback.automaticRetry)
++    }
++
++    @Test fun missingHotspotAndUnsupportedDriverOfferDifferentRecovery() {
++        assertEquals(SteamRecoveryAction.HOTSPOT, SteamConnectionFeedback.from(
++            CarPlayStatus.Failed("The car hotspot is off. Turn it on in the car settings and connect again.")).action)
++        assertEquals(SteamRecoveryAction.SETUP, SteamConnectionFeedback.from(
++            CarPlayStatus.Failed("Wi-Fi P2P createGroup failed: unsupported (code=1)")).action)
++    }
++
++    @Test fun returningHomeAfterFailureShowsTheCauseAndOffersARealReconnect() {
++        val stop: ((() -> Unit) -> Unit) = { it() }
++        ReflectionHelpers.setField(CarPlayBackgroundSession, "stopAction", stop)
++        reporter(CarPlayStatus.Failed("Wi-Fi P2P createGroup failed: busy (code=2)"))
++        val home = Robolectric.buildActivity(DiPlayActivity::class.java).get()
++        home.setTheme(android.R.style.Theme_Material_NoActionBar)
++        ReflectionHelpers.callInstanceMethod<Unit>(home, "render")
++        val stage = home.window.decorView.findViewWithTag<android.widget.TextView>("steam_home_status")
++        val connect = home.window.decorView.findViewWithTag<android.widget.Button>("steam_home_connect")
++        assertEquals(home.getString(R.string.steam_issue_busy), stage.text.toString())
++        assertEquals(home.getString(R.string.steam_retry_connection), connect.text.toString())
++        CarPlayBackgroundSession.clear()
++        ReflectionHelpers.callInstanceMethod<Unit>(home, "refreshStatus")
++        assertEquals(home.getString(R.string.connect_phone), connect.text.toString())
++        assertNotEquals(home.getString(R.string.steam_issue_busy), stage.text.toString())
++    }
++
++    @Test fun aFormerOwnerCannotOverwriteTheCurrentConnectionFeedback() {
++        val current = SteamConnectionFeedback.from(CarPlayStatus.ConnectingBluetooth)
++        CarPlayBackgroundSession.updateFeedback(host, current)
++        CarPlayBackgroundSession.updateFeedback(Any(), SteamConnectionFeedback.from(CarPlayStatus.Failed("Turn on Wi-Fi")))
++        assertEquals(current, CarPlayBackgroundSession.connectionFeedback)
++        CarPlayBackgroundSession.clear()
++        assertNull(CarPlayBackgroundSession.connectionFeedback)
++    }
++}
+--- /dev/null
++++ b/common/src/test/java/com/shilapi/xcertplay/SteamReceiverLayoutTest.kt
+@@ -0,0 +1,142 @@
++package com.shilapi.xcertplay
++
++import android.content.Intent
++import android.graphics.Bitmap
++import android.graphics.Canvas
++import android.view.View
++import android.view.ViewGroup
++import android.widget.TextView
++import com.shilapi.xcertplay.host.R
++import com.shilapi.xcertplay.orchestration.CarPlayStatus
++import com.shilapi.xcertplay.orchestration.WirelessHotspotMode
++import java.io.File
++import org.junit.Assert.*
++import org.junit.Test
++import org.junit.runner.RunWith
++import org.robolectric.Robolectric
++import org.robolectric.RobolectricTestRunner
++import org.robolectric.RuntimeEnvironment
++import org.robolectric.Shadows.shadowOf
++import org.robolectric.annotation.Config
++import org.robolectric.annotation.GraphicsMode
++import org.robolectric.util.ReflectionHelpers
++
++@RunWith(RobolectricTestRunner::class)
++@Config(sdk = [32], qualifiers = "zh-rCN-w1280dp-h720dp-mdpi")
++@GraphicsMode(GraphicsMode.Mode.NATIVE)
++class SteamReceiverLayoutTest {
++    private fun views(view: View): Sequence<View> = sequence {
++        yield(view)
++        if (view is ViewGroup) for (i in 0 until view.childCount) yieldAll(views(view.getChildAt(i)))
++    }
++    private fun measure(view: View, width: Int, height: Int) {
++        view.measure(View.MeasureSpec.makeMeasureSpec(width, View.MeasureSpec.EXACTLY),
++            View.MeasureSpec.makeMeasureSpec(height, View.MeasureSpec.EXACTLY))
++        view.layout(0, 0, width, height)
++    }
++    private fun screenshot(view: View, name: String) {
++        val bitmap = Bitmap.createBitmap(view.width, view.height, Bitmap.Config.ARGB_8888)
++        view.draw(Canvas(bitmap))
++        val output = File("../validation/ui-0.2.30/$name.png")
++        requireNotNull(output.parentFile).mkdirs()
++        output.outputStream().use { assertTrue(bitmap.compress(Bitmap.CompressFormat.PNG, 100, it)) }
++        bitmap.recycle()
++    }
++    private fun page(name: String, block: (DiPlayActivity, View) -> Unit) {
++        val app = RuntimeEnvironment.getApplication()
++        // The library test manifest has no application version; use the release fixture for previews.
++        shadowOf(app.packageManager).installPackage(app.packageManager.getPackageInfo(app.packageName, 0).apply { versionName = "0.2.30" })
++        val intent = Intent(app, DiPlayActivity::class.java).putExtra("page", name)
++        val controller = Robolectric.buildActivity(DiPlayActivity::class.java, intent).setup()
++        try {
++            val activity = controller.get()
++            ReflectionHelpers.setField(activity, "setupError", null)
++            ReflectionHelpers.callInstanceMethod<Unit>(activity, "render")
++            val root = activity.window.decorView.findViewById<ViewGroup>(android.R.id.content).getChildAt(0)
++            measure(root, activity.resources.configuration.screenWidthDp, activity.resources.configuration.screenHeightDp)
++            block(activity, root)
++        } finally { controller.pause().stop().destroy() }
++    }
++
++    @Test fun homeHasNewLayoutAndThreeAlignedShortcuts() = page("home") { activity, root ->
++        val shortcuts = root.findViewWithTag<ViewGroup>("steam_home_shortcuts")
++        assertEquals(3, shortcuts.childCount)
++        val first = shortcuts.getChildAt(0)
++        for (i in 1..2) {
++            assertEquals(first.top, shortcuts.getChildAt(i).top)
++            assertEquals(first.bottom, shortcuts.getChildAt(i).bottom)
++            assertTrue(kotlin.math.abs(first.width - shortcuts.getChildAt(i).width) <= 1)
++        }
++        assertFalse(views(root).filterIsInstance<TextView>().any { it.text.toString() == activity.getString(R.string.a_familiar_drive) })
++        assertNotNull(root.findViewWithTag<View>("steam_home_deck"))
++        screenshot(root, "home-wide")
++    }
++
++    @Test @Config(qualifiers = "zh-rCN-w393dp-h852dp-mdpi")
++    fun narrowHomeStacksItsShortcutsAndKeepsTextWithinBounds() = page("home") { _, root ->
++        val settings = root.findViewWithTag<View>("steam_home_settings")
++        val carHome = root.findViewWithTag<View>("steam_home_carhome")
++        assertEquals(settings.top, carHome.top)
++        assertEquals(settings.bottom, carHome.bottom)
++        val shortcuts = root.findViewWithTag<ViewGroup>("steam_home_shortcuts")
++        assertTrue(shortcuts.getChildAt(1).top >= shortcuts.getChildAt(0).bottom)
++        for (label in views(root).filterIsInstance<TextView>().filter { it.visibility == View.VISIBLE }) {
++            assertTrue(label.text.toString(), label.width > label.paddingLeft + label.paddingRight)
++            assertTrue(label.text.toString(), label.layout == null || label.layout.height <= label.height - label.paddingTop - label.paddingBottom)
++        }
++        screenshot(root, "home-narrow")
++    }
++
++    @Test fun connectionMethodCanSwitchBackToWifiDirectWithoutErasingHotspotDetails() {
++        val app = RuntimeEnvironment.getApplication()
++        AirPlayPersistence.saveWirelessHotspotMode(app, WirelessHotspotMode.MANUAL)
++        AirPlayPersistence.saveManualHotspotSsid(app, "Test car")
++        AirPlayPersistence.saveManualHotspotPassphrase(app, "test-password")
++        page("connection") { activity, root ->
++            root.findViewWithTag<View>("steam_mode_wifi_p2p").performClick()
++            assertEquals(WirelessHotspotMode.WIFI_P2P, AirPlayPersistence.loadWirelessHotspotMode(activity))
++            assertEquals("Test car", AirPlayPersistence.loadManualHotspotSsid(activity))
++            assertEquals("test-password", AirPlayPersistence.loadManualHotspotPassphrase(activity))
++            val updated = activity.window.decorView.findViewById<ViewGroup>(android.R.id.content).getChildAt(0)
++            measure(updated, 1280, 720)
++            screenshot(updated, "connection-setup-wide")
++        }
++    }
++
++    @Test fun waitingPageKeepsRecoveryActionsBelowTheErrorAndCallsTheRightAction() {
++        val app = RuntimeEnvironment.getApplication()
++        var selected: SteamRecoveryAction? = null
++        val panel = SteamConnectionPanel(app, "Wi-Fi Direct", true, {}, {}, {}, { selected = it })
++        panel.show(SteamConnectionFeedback.from(CarPlayStatus.Failed("Wi-Fi P2P createGroup failed: busy (code=2)")))
++        measure(panel, 1280, 720)
++        assertTrue(panel.recoveryButton.top >= panel.hint.bottom)
++        assertEquals(app.getString(R.string.steam_issue_busy), panel.stage.text.toString())
++        panel.recoveryButton.performClick()
++        assertEquals(SteamRecoveryAction.WIFI, selected)
++        screenshot(panel, "connection-error-wide")
++        panel.show(SteamConnectionFeedback.from(CarPlayStatus.ConnectingBluetooth))
++        measure(panel, 1280, 720)
++        assertEquals(View.GONE, panel.recoveryButton.visibility)
++        screenshot(panel, "connection-waiting-wide")
++    }
++
++    @Test @Config(qualifiers = "zh-rCN-w393dp-h852dp-mdpi")
++    fun longErrorAndLargerTextStayScrollableOnNarrowScreens() {
++        val app = RuntimeEnvironment.getApplication()
++        val panel = SteamConnectionPanel(app, "Wi-Fi Direct", true, {}, {}, {}, {})
++        panel.show(SteamConnectionFeedback.from(CarPlayStatus.Failed("Wi-Fi P2P createGroup failed: busy (code=2)")))
++        panel.stage.textSize = 34f; panel.hint.textSize = 24f
++        measure(panel, 393, 852)
++        assertTrue(panel.stage.layout.height <= panel.stage.height - panel.stage.paddingTop - panel.stage.paddingBottom)
++        assertTrue(panel.hint.layout.height <= panel.hint.height - panel.hint.paddingTop - panel.hint.paddingBottom)
++        assertTrue(panel.recoveryButton.top >= panel.hint.bottom)
++        assertTrue(panel.getChildAt(0).height > panel.height)
++        screenshot(panel, "connection-error-narrow-large-text")
++    }
++
++    @Test fun allSettingsAndChildPagesUseTheSameGlassFamily() {
++        page("settings") { _, root -> screenshot(root, "settings-wide") }
++        page("features") { _, root -> screenshot(root, "extensions-wide") }
++        page("about") { _, root -> screenshot(root, "about-wide") }
++    }
++}
+--- a/mobile/build.gradle.kts
++++ b/mobile/build.gradle.kts
+@@ -17,8 +17,8 @@
+         applicationId = "com.shihab.diplay.steam"
+         minSdk = 28
+         targetSdk = 37
+-        versionCode = 48
+-        versionName = "0.2.29"
++        versionCode = 49
++        versionName = "0.2.30"
+         ndk { abiFilters += listOf("arm64-v8a", "armeabi-v7a", "x86_64") }
+ 
+     }
+--- a/mobile/src/main/AndroidManifest.xml
++++ b/mobile/src/main/AndroidManifest.xml
+@@ -6,10 +6,10 @@
+         android:allowBackup="false"
+         android:fullBackupContent="@xml/backup_rules"
+         android:dataExtractionRules="@xml/data_extraction_rules"
+-        android:icon="@drawable/ic_carplay"
++        android:icon="@drawable/ic_steam_receiver"
+         android:label="@string/app_name"
+         android:localeConfig="@xml/locales_config"
+-        android:roundIcon="@drawable/ic_carplay"
++        android:roundIcon="@drawable/ic_steam_receiver"
+         android:supportsRtl="true"
+         android:theme="@style/Theme.Xcertplay">
+ 

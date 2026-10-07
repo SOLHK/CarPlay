@@ -1,0 +1,9 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<testsuite name="com.shilapi.xcertplay.adb.LocalAdbApprovalTest" tests="3" skipped="0" failures="0" errors="0" timestamp="2026-10-05T00:56:29.061Z" hostname="06d2ee2f5f86" time="4.606">
+  <properties/>
+  <testcase name="savedKeyCompletesWithoutAReplyOnTheOriginalConnection" classname="com.shilapi.xcertplay.adb.LocalAdbApprovalTest" time="1.141"/>
+  <testcase name="partialApprovalPacketSurvivesAQuietConnectionCheck" classname="com.shilapi.xcertplay.adb.LocalAdbApprovalTest" time="1.275"/>
+  <testcase name="quietChecksDoNotRepeatThePromptOrRunCommandsBeforeApproval" classname="com.shilapi.xcertplay.adb.LocalAdbApprovalTest" time="2.189"/>
+  <system-out><![CDATA[]]></system-out>
+  <system-err><![CDATA[]]></system-err>
+</testsuite>

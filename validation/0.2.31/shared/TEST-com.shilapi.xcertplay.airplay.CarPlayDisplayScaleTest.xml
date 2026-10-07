@@ -1,0 +1,9 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<testsuite name="com.shilapi.xcertplay.airplay.CarPlayDisplayScaleTest" tests="3" skipped="0" failures="0" errors="0" timestamp="2026-10-05T10:53:30.873Z" hostname="e7822a2ead4f" time="0.0">
+  <properties/>
+  <testcase name="clampsScaleToTheUiRange" classname="com.shilapi.xcertplay.airplay.CarPlayDisplayScaleTest" time="0.0"/>
+  <testcase name="alignsScaledDisplayDimensionsToEvenPixels" classname="com.shilapi.xcertplay.airplay.CarPlayDisplayScaleTest" time="0.0"/>
+  <testcase name="scalesHandshakeDisplayAtSupportedSteps" classname="com.shilapi.xcertplay.airplay.CarPlayDisplayScaleTest" time="0.0"/>
+  <system-out><![CDATA[]]></system-out>
+  <system-err><![CDATA[]]></system-err>
+</testsuite>

@@ -1,0 +1,13 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<testsuite name="com.shilapi.xcertplay.hud.Byd13CatalogProbeTest" tests="7" skipped="0" failures="0" errors="0" timestamp="2026-10-04T23:59:17.218Z" hostname="06d2ee2f5f86" time="0.018">
+  <properties/>
+  <testcase name="aPartialTransportResponseIsNotACompleteProbe" classname="com.shilapi.xcertplay.hud.Byd13CatalogProbeTest" time="0.014"/>
+  <testcase name="aNullCatalogOutputMakesAnOtherwiseCompleteFallbackProbeIncomplete" classname="com.shilapi.xcertplay.hud.Byd13CatalogProbeTest" time="0.0"/>
+  <testcase name="nonNullCatalogOutputWithoutTheHeaderAllowsFallbacks" classname="com.shilapi.xcertplay.hud.Byd13CatalogProbeTest" time="0.001"/>
+  <testcase name="rejectsOutputWithoutProbeHeader" classname="com.shilapi.xcertplay.hud.Byd13CatalogProbeTest" time="0.0"/>
+  <testcase name="firmwareResolvedController13FieldsAreLiveValidated" classname="com.shilapi.xcertplay.hud.Byd13CatalogProbeTest" time="0.001"/>
+  <testcase name="parsesController13FirmwareSymbolsAndDevices" classname="com.shilapi.xcertplay.hud.Byd13CatalogProbeTest" time="0.0"/>
+  <testcase name="aNullPreferredReadCannotBeHiddenByADecodableFallback" classname="com.shilapi.xcertplay.hud.Byd13CatalogProbeTest" time="0.0"/>
+  <system-out><![CDATA[]]></system-out>
+  <system-err><![CDATA[]]></system-err>
+</testsuite>

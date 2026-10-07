@@ -1,0 +1,26 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="steam_connection">连接</string>
+    <string name="steam_display">画面</string>
+    <string name="steam_audio">声音</string>
+    <string name="steam_location">定位</string>
+    <string name="steam_tools">工具</string>
+    <string name="steam_more">更多</string>
+    <string name="steam_connection_hint">选择 iPhone，配置无线连接与自动启动。</string>
+    <string name="steam_display_hint">调整界面大小和清晰度；画面参数变更会重连正在运行的 CarPlay。</string>
+    <string name="steam_audio_hint">音乐、导航声道与音乐缓冲，集中在这里调整。</string>
+    <string name="steam_location_hint">查看接收设备 GPS 实时信息，管理车辆数据。</string>
+    <string name="steam_tools_hint">保存诊断日志，管理系统权限与连接帮助。</string>
+    <string name="steam_more_hint">安卓接收屏扩展、语言与版本信息。</string>
+    <string name="steam_preferences">偏好设置</string>
+    <string name="steam_done">完成</string>
+    <string name="steam_screen_summary">%1$d fps · %2$d%% 分辨率</string>
+    <string name="steam_audio_summary">音乐缓冲 %1$d 毫秒</string>
+    <string name="steam_audio_buffer">音乐缓冲</string>
+    <string name="steam_buffer_ms">%1$d 毫秒</string>
+    <string name="steam_buffer_default">%1$d 毫秒 · 默认</string>
+    <string name="steam_extensions">手机接收与上游扩展</string>
+    <string name="steam_location_summary">接收设备 GPS · 实时信息</string>
+    <string name="steam_diagnostics_summary">诊断日志 · 本地导出</string>
+    <string name="steam_brand_version">CarPlay · Steam · %1$s</string>
+</resources>

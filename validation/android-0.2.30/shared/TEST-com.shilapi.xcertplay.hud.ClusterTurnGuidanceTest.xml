@@ -1,0 +1,9 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<testsuite name="com.shilapi.xcertplay.hud.ClusterTurnGuidanceTest" tests="3" skipped="0" failures="0" errors="0" timestamp="2026-10-05T00:56:36.103Z" hostname="06d2ee2f5f86" time="0.001">
+  <properties/>
+  <testcase name="straightAheadKeepsTheCard" classname="com.shilapi.xcertplay.hud.ClusterTurnGuidanceTest" time="0.001"/>
+  <testcase name="unknownManeuverMustNotInventAStraightInstruction" classname="com.shilapi.xcertplay.hud.ClusterTurnGuidanceTest" time="0.0"/>
+  <testcase name="leftTurnIsUnchanged" classname="com.shilapi.xcertplay.hud.ClusterTurnGuidanceTest" time="0.0"/>
+  <system-out><![CDATA[]]></system-out>
+  <system-err><![CDATA[]]></system-err>
+</testsuite>

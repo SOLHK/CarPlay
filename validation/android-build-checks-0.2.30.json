@@ -1,0 +1,34 @@
+{
+  "version": "0.2.30",
+  "status": "passed",
+  "release_compiled": true,
+  "standalone_authentication_input_verified": true,
+  "unexpected_credentials_check_passed": true,
+  "unit_test_results": {
+    "common": {
+      "tests": 301,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0
+    },
+    "shared": {
+      "tests": 507,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0
+    }
+  },
+  "total_unit_tests": 808,
+  "lint_errors": 0,
+  "lint_warnings": 4,
+  "lint_warning_ids": [
+    "UnusedAttribute",
+    "TrustAllX509TrustManager",
+    "TrustAllX509TrustManager",
+    "UnusedResources"
+  ],
+  "native_graphics_rendered_previews": 9,
+  "source_unchanged_during_final_build": true,
+  "source_snapshot_files": 426,
+  "physical_device_tested": false
+}

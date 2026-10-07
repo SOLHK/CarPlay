@@ -1,0 +1,11 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<testsuite name="com.shilapi.xcertplay.transport.Iap2LocationClientTest" tests="5" skipped="0" failures="0" errors="0" timestamp="2026-10-05T00:56:40.289Z" hostname="06d2ee2f5f86" time="0.017">
+  <properties/>
+  <testcase name="locationInformationEncodesNulTerminatedNmeaSentence" classname="com.shilapi.xcertplay.transport.Iap2LocationClientTest" time="0.001"/>
+  <testcase name="wirelessIdentificationKeepsLocationMessagesAndOmitsWiredPowerSource" classname="com.shilapi.xcertplay.transport.Iap2LocationClientTest" time="0.004"/>
+  <testcase name="nmeaEncoderBuildsGgaAndRmcPairWithValidChecksums" classname="com.shilapi.xcertplay.transport.Iap2LocationClientTest" time="0.008"/>
+  <testcase name="rmcCourseIsEmptyWithoutAGpsDirection" classname="com.shilapi.xcertplay.transport.Iap2LocationClientTest" time="0.002"/>
+  <testcase name="identificationAdvertisesLocationMessagesAndComponentOnlyWhenEnabled" classname="com.shilapi.xcertplay.transport.Iap2LocationClientTest" time="0.002"/>
+  <system-out><![CDATA[]]></system-out>
+  <system-err><![CDATA[]]></system-err>
+</testsuite>

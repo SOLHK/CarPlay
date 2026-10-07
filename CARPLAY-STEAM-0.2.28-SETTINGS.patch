@@ -1,0 +1,1284 @@
+--- /dev/null
++++ b/CARPLAY-STEAM-0.2.28.md
+@@ -0,0 +1,34 @@
++# CarPlay 0.2.28 · Steam
++
++基于用户提供的 CarPlay 0.2.27 完整源码，重新设计设置界面。此次交付为源码包。
++
++## 设置界面
++
++- 车机宽屏（可用窗口宽度至少 760dp）使用左侧分类、右侧独立滚动的设置面板，标题与分类保持可见。
++- 手机和窄窗口使用顶部横向分类，不把车机侧栏挤进小屏。
++- 分类为连接、画面、声音、定位、工具、更多。音乐缓冲放入声音；诊断、系统权限与连接帮助放入工具；手机接收扩展、语言与关于放入更多。
++- 背景使用蓝紫色环境渐变，控件采用半透明渐变、圆角及玻璃边缘高光。导航图标为新绘制的线条图标。设置界面不显示上游 ic_dp_* 图标。
++- 选项采用标题、当前值分行排版，并提供方向标记；开关使用统一配色。文本随系统字体缩放，按钮和选项行能随长文本增高。
++- 记住每个分类的滚动位置、当前分类，以及扩展 / 关于 / 连接页的返回目标；Activity 重建时恢复分类和滚动位置。
++- 只构造当前分类内容。GPS 面板只在定位分类挂载时刷新；切换分类后解除挂载回调。玻璃渲染使用缓存渐变，无屏幕截图、动态模糊或持续动画。
++- 包名保持 com.shihab.diplay.steam，versionCode 47。原有接收、参数保存和连接业务逻辑沿用本次提供的源码，许可与致谢保留。
++
++## 验证范围
++
++已检查资源 XML、重复资源定义、新增资源引用、修改文件词法与括号配对、差异范围和 ZIP 完整性。
++
++原有设置测试已改为通过新分类入口操作；新增 6 项 Robolectric 回归测试，覆盖宽屏布局、窄屏分类、分类切换不改配置、子页面返回、重建恢复和较大文字布局。这些 Android 测试本次没有运行。
++
++当前环境只有 JDK 17，没有项目要求的 JDK 25、Android SDK 37 与本地 Gradle 9.5.0。执行 Gradle wrapper 下载时出现 Network is unreachable，因此本次未编译 Android 源码、未运行 Robolectric、未生成 APK、未进行手机或车机测试。
++
++validation/0.2.27-unit-tests.json 是输入包的历史结果，不能视为 0.2.28 已通过测试。本次状态见 validation/unit-tests.json。
++
++## 后续构建
++
++在具备原项目要求的工具链和依赖的环境运行：
++
++```sh
++./gradlew :common:testDebugUnitTest :shared:testDebugUnitTest :mobile:lintDebug :mobile:assembleDebug
++```
++
++构建可连接 iPhone 的正式安装包时，仍需原项目文档要求的运行认证和原签名输入，参见 docs/BUILD.md。源码包不含这些原有外部输入。
+--- a/README.md
++++ b/README.md
+@@ -1,6 +1,6 @@
+-# CarPlay 0.2.27 · Steam
++# CarPlay 0.2.28 · Steam
+ 
+-安卓手机 / 车机接收屏定制版，基于下述 DiPlay 开源项目。安装、连接及版本变更请先阅读 [本版说明](CARPLAY-STEAM-0.2.27.md)。
++安卓手机 / 车机接收屏定制版，基于下述 DiPlay 开源项目。设置页使用 Steam 独立设计的液态玻璃分类布局。版本变更及本次验证范围请先阅读 [本版说明](CARPLAY-STEAM-0.2.28.md)。
+ 
+ # DiPlay
+ 
+--- a/common/src/main/java/com/shilapi/xcertplay/DiPlayActivity.kt
++++ b/common/src/main/java/com/shilapi/xcertplay/DiPlayActivity.kt
+@@ -1,5 +1,5 @@
+ // SPDX-License-Identifier: AGPL-3.0-only
+-// UI copy and visual language adapted from DiAuto. See docs/THIRD_PARTY_NOTICES.md.
++// Receiver flows retain upstream attribution; Steam settings use an independent layout.
+ package com.shilapi.xcertplay
+ 
+ import android.Manifest
+@@ -56,7 +56,7 @@
+ import java.util.Locale
+ import kotlin.math.roundToInt
+ 
+-/** DiAuto's visual language, with a connection flow for an independent CarPlay receiver. */
++/** CarPlay receiver, with Steam's native glass settings workspace. */
+ class DiPlayActivity : ComponentActivity() {
+     private val handler = Handler(Looper.getMainLooper())
+     private var page = "home"
+@@ -77,6 +77,11 @@
+     private var rootScroll: ScrollView? = null
+     private var renderedPage: String? = null
+     private var pendingScrollY: Int? = null
++    private var settingsSection = SteamSettingsSection.DISPLAY
++    private var renderedSettingsSection: SteamSettingsSection? = null
++    private val settingsScrollPositions = mutableMapOf<SteamSettingsSection, Int>()
++    private var openedFromSettings = false
++    private var settingsSummary: TextView? = null
+     private var bydVehicleAdvancedExpanded = false
+     private var adbAccessState: BydAdbAccess.State? = null
+     private var adbCheckInProgress = false
+@@ -172,12 +177,17 @@
+         pendingCarHotspotSetup = savedInstanceState?.getBoolean("pending_car_hotspot") ?: false
+         bydVehicleAdvancedExpanded = savedInstanceState?.getBoolean("byd_vehicle_advanced") ?: false
+         page = savedInstanceState?.getString("page") ?: intent.getStringExtra("page") ?: "home"
++        settingsSection = SteamSettingsSection.restore(savedInstanceState?.getString("steam_settings_section"))
++        openedFromSettings = savedInstanceState?.getBoolean("steam_settings_child") ?: false
++        SteamSettingsSection.entries.forEach { section ->
++            savedInstanceState?.getInt("steam_settings_scroll_${section.name}")?.let { settingsScrollPositions[section] = it }
++        }
+         render()
+         scheduleAutomaticVehicleValidation()
+         handleWirelessRecovery()
+         onBackPressedDispatcher.addCallback(this, object : OnBackPressedCallback(true) {
+             override fun handleOnBackPressed() {
+-                if (page != "home") { page = "home"; render() }
++                if (page != "home") { returnFromPage(); render() }
+                 else { isEnabled = false; onBackPressedDispatcher.onBackPressed(); isEnabled = true }
+             }
+         })
+@@ -185,13 +195,19 @@
+ 
+     override fun onNewIntent(intent: Intent) {
+         super.onNewIntent(intent); setIntent(intent)
++        rememberSettingsScroll()
++        openedFromSettings = false
+         page = intent.getStringExtra("page") ?: "home"; render()
+         automaticVehicleValidationStarted = false
+         scheduleAutomaticVehicleValidation()
+         handleWirelessRecovery()
+     }
+     override fun onSaveInstanceState(outState: Bundle) {
++        rememberSettingsScroll()
+         outState.putString("page", page)
++        outState.putString("steam_settings_section", settingsSection.name)
++        outState.putBoolean("steam_settings_child", openedFromSettings)
++        settingsScrollPositions.forEach { (section, y) -> outState.putInt("steam_settings_scroll_${section.name}", y) }
+         outState.putBoolean("pending_car_hotspot", pendingCarHotspotSetup)
+         outState.putBoolean("byd_vehicle_advanced", bydVehicleAdvancedExpanded)
+         super.onSaveInstanceState(outState)
+@@ -257,12 +273,22 @@
+ 
+     private fun render() {
+         // A restore still waiting for layout keeps its target: the old page was never laid out.
+-        val previousScrollY = (pendingScrollY ?: rootScroll?.scrollY)?.takeIf { renderedPage == page }
++        val previousScrollY = (pendingScrollY ?: rootScroll?.scrollY)?.takeIf {
++            renderedPage == page && (page != "settings" || renderedSettingsSection == settingsSection)
++        }
+         status = null; connectButton = null; disconnectButton = null; lastRunning = null
+         bydAdbControls = null
+         adbSwitches.clear()
+         adbStatus = null
+-        val scroll = ScrollView(this).apply { setBackgroundColor(BG); isFillViewport = true; clipToPadding = false }
++        exportButton = null
++        settingsSummary = null
++        if (page == "settings") {
++            renderSettingsWorkspace(previousScrollY ?: settingsScrollPositions[settingsSection]); return
++        }
++        val scroll = ScrollView(this).apply {
++            if (usesSteamGlass()) background = SteamGlass.backdrop() else setBackgroundColor(BG)
++            isFillViewport = true; clipToPadding = false
++        }
+         rootScroll = scroll
+         val content = column().apply { setPadding(dp(32), dp(24), dp(32), dp(32)) }
+         scroll.addView(content)
+@@ -271,19 +297,19 @@
+         header.addView(label(getString(R.string.diplay), 26, TEXT, true).apply { setPadding(dp(12), 0, 0, 0) }, LinearLayout.LayoutParams(0, dp(56), 1f))
+         header.addView(button(if (page == "home") getString(R.string.car_home) else getString(R.string.back), false) {
+             if (page == "home") startActivity(Intent(Intent.ACTION_MAIN).addCategory(Intent.CATEGORY_HOME))
+-            else { page = "home"; render() }
++            else { returnFromPage(); render() }
+         }, LinearLayout.LayoutParams(dp(130), dp(56)))
+         content.addView(header)
+         content.addView(space(24))
+         when (page) {
+             "connection" -> connectionSetup(content)
+-            "settings" -> settings(content)
+             "about" -> about(content)
+             "features" -> additionalFeatures(content)
+             else -> home(content)
+         }
+         setContentView(scroll)
+         renderedPage = page
++        renderedSettingsSection = null
+         refreshStatus()
+         pendingScrollY = previousScrollY
+         // A stopped window still dispatches pre-draw but skips layout, so wait for a real layout;
+@@ -363,89 +389,241 @@
+         content.addView(body)
+     }
+ 
++    private fun usesSteamGlass() = page == "settings" || page == "features" || page == "connection" || page == "about"
++
++    private fun rememberSettingsScroll() {
++        if (renderedPage == "settings") renderedSettingsSection?.let {
++            settingsScrollPositions[it] = pendingScrollY ?: rootScroll?.scrollY ?: 0
++        }
++    }
++
++    private fun openSettingsChild(target: String) {
++        rememberSettingsScroll()
++        openedFromSettings = true
++        page = target
++        render()
++    }
++
++    private fun returnFromPage() {
++        rememberSettingsScroll()
++        page = if (openedFromSettings && page != "settings") "settings" else "home"
++        openedFromSettings = false
++        pendingScrollY = null
++    }
++
++    private fun selectSettingsSection(section: SteamSettingsSection) {
++        if (settingsSection == section) return
++        rememberSettingsScroll()
++        settingsSection = section
++        pendingScrollY = null
++        render()
++    }
++
++    private fun settingsSummaryText(): String = when (settingsSection) {
++        SteamSettingsSection.CONNECTION -> DiPlayPreferences.phoneName(this)
++        SteamSettingsSection.DISPLAY -> getString(R.string.steam_screen_summary,
++            AirPlayPersistence.loadFps(this), AirPlayPersistence.loadDisplayScaleTenths(this) * 10)
++        SteamSettingsSection.AUDIO -> getString(R.string.steam_audio_summary, AirPlayPersistence.loadMediaBufferMillis(this))
++        SteamSettingsSection.LOCATION -> getString(R.string.steam_location_summary)
++        SteamSettingsSection.TOOLS -> getString(R.string.steam_diagnostics_summary)
++        SteamSettingsSection.MORE -> getString(R.string.steam_brand_version, version())
++    }
++
++    private fun renderSettingsWorkspace(scrollY: Int?) {
++        val wide = resources.configuration.screenWidthDp >= 760
++        val shell = column().apply {
++            background = SteamGlass.backdrop()
++            setPadding(dp(if (wide) 24 else 16), dp(16), dp(if (wide) 24 else 16), 0)
++        }
++        val header = row().apply { gravity = Gravity.CENTER_VERTICAL; setPadding(0, 0, 0, dp(16)) }
++        val titles = column().apply {
++            addView(label(getString(R.string.settings), 28, TEXT, true))
++            addView(label("CarPlay · Steam", 13, MUTED).apply { setPadding(0, dp(4), 0, 0) })
++        }
++        header.addView(titles, LinearLayout.LayoutParams(0, -2, 1f))
++        header.addView(button(getString(R.string.steam_done), false) {
++            returnFromPage(); render()
++        }, LinearLayout.LayoutParams(dp(88), -2))
++        shell.addView(header)
++
++        val navigation = if (wide) column() else row()
++        navigation.tag = "steam_settings_navigation"
++        navigation.setPadding(dp(8), dp(8), dp(8), dp(8))
++        navigation.background = SteamGlass.surface(this)
++        if (wide) navigation.addView(label(getString(R.string.steam_preferences), 13, MUTED).apply {
++            setPadding(dp(14), dp(10), 0, dp(12))
++        })
++        SteamSettingsSection.entries.forEach { section ->
++            val selected = section == settingsSection
++            val item = row().apply {
++                gravity = Gravity.CENTER_VERTICAL
++                minimumHeight = dp(56)
++                setPadding(dp(14), dp(10), dp(14), dp(10))
++                background = SteamGlass.action(this@DiPlayActivity, selected, 18)
++                isSelected = selected
++                isFocusable = true
++                contentDescription = getString(section.title)
++                tag = "steam_settings_${section.name.lowercase(Locale.ROOT)}"
++                setOnClickListener { selectSettingsSection(section) }
++            }
++            item.addView(SteamSettingIcon(this, section), LinearLayout.LayoutParams(dp(24), dp(24)).apply { marginEnd = dp(10) })
++            item.addView(label(getString(section.title), 16, if (selected) TEXT else MUTED, selected).apply {
++                importantForAccessibility = View.IMPORTANT_FOR_ACCESSIBILITY_NO
++            }, LinearLayout.LayoutParams(if (wide) 0 else -2, -2, if (wide) 1f else 0f))
++            navigation.addView(item, LinearLayout.LayoutParams(if (wide) -1 else -2, -2).apply {
++                if (wide) bottomMargin = dp(6) else marginEnd = dp(6)
++            })
++        }
++        val navigationScroll: View = if (wide) ScrollView(this).apply {
++            isFillViewport = false; isVerticalScrollBarEnabled = false
++            addView(navigation)
++        } else HorizontalScrollView(this).apply {
++            isHorizontalScrollBarEnabled = false
++            addView(navigation)
++            navigation.doOnLayout {
++                val selected = navigation.findViewWithTag<View>("steam_settings_${settingsSection.name.lowercase(Locale.ROOT)}")
++                selected?.let { scrollTo(maxOf(0, it.left - dp(8)), 0) }
++            }
++        }
++        val detail = column().apply {
++            tag = "steam_settings_detail"
++            setPadding(0, dp(if (wide) 0 else 16), 0, dp(24))
++        }
++        val intro = column().apply { setPadding(dp(8), dp(4), dp(8), dp(20)) }
++        intro.addView(label(getString(settingsSection.title), 26, TEXT, true))
++        intro.addView(label(getString(settingsSection.hint), 14, MUTED).apply { setPadding(0, dp(8), 0, dp(12)) })
++        settingsSummary = label(settingsSummaryText(), 13, ACCENT, true).apply {
++            background = SteamGlass.surface(this@DiPlayActivity, selected = true, radius = 12)
++            setPadding(dp(12), dp(8), dp(12), dp(8))
++        }
++        intro.addView(settingsSummary, LinearLayout.LayoutParams(-2, -2))
++        detail.addView(intro)
++        settings(detail)
++        val scroll = ScrollView(this).apply {
++            isFillViewport = false; clipToPadding = false
++            isVerticalScrollBarEnabled = false
++            addView(detail)
++        }
++        rootScroll = scroll
++        if (wide) {
++            val body = row()
++            body.addView(navigationScroll, LinearLayout.LayoutParams(dp(200), -1).apply { marginEnd = dp(24) })
++            body.addView(scroll, LinearLayout.LayoutParams(0, -1, 1f))
++            shell.addView(body, LinearLayout.LayoutParams(-1, 0, 1f))
++        } else {
++            shell.addView(navigationScroll, LinearLayout.LayoutParams(-1, -2))
++            shell.addView(scroll, LinearLayout.LayoutParams(-1, 0, 1f))
++        }
++        setContentView(shell, ViewGroup.LayoutParams(-1, -1))
++        renderedPage = page
++        renderedSettingsSection = settingsSection
++        pendingScrollY = scrollY
++        scrollY?.let { y -> scroll.doOnLayout {
++            if (rootScroll === scroll) { scroll.scrollTo(0, y); pendingScrollY = null }
++        } }
++        refreshStatus()
++    }
++
+     private fun settings(content: LinearLayout) {
+-        content.addView(label(getString(R.string.your_drive_your_way), 34, TEXT, true))
+-        content.addView(label(getString(R.string.apply_reconnects_carplay_for_size_resolution_music_buffer), 17, MUTED).apply { setPadding(0, dp(8), 0, dp(24)) })
+-        section(content, getString(R.string.connection_setup), R.drawable.ic_dp_connection) { card ->
+-            card.addView(label(getString(R.string.choose_how_to_connect_follow_the_setup_steps_and_save_your), 16, MUTED))
+-            card.addView(button(getString(R.string.open_connection_setup), false) { page = "connection"; render() }, matchButton(12, 60))
+-        }
+-        section(content, getString(R.string.diagnostics), R.drawable.ic_dp_diagnostics) { card ->
+-            exportButton = button(if (exportInProgress) getString(R.string.saving_report) else getString(R.string.save_diagnostic_report), false) {
+-                if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) exportDiagnostics()
+-                else chooseReportDestination()
+-            }.apply { isEnabled = !exportInProgress }
+-            card.addView(exportButton, matchButton(10, 60))
+-            card.addView(button(getString(R.string.choose_save_location), false) { chooseReportDestination() }, matchButton(10, 60))
+-            val destination = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) getString(R.string.reports_save_to_downloads_diplay) else getString(R.string.choose_where_to_save_your_report)
+-            card.addView(label(destination + getString(R.string.nothing_is_sent_automatically_protocol_payloads_and_creden), 14, MUTED).apply { setPadding(0, dp(12), 0, 0) })
+-        }
+-        section(content, getString(R.string.automatic_connection), R.drawable.ic_dp_automation) { card ->
+-            toggle(card, getString(R.string.connect_when_diplay_opens), getString(R.string.use_your_last_connection_type_and_selected_iphone), DiPlayPreferences.autoConnect(this)) { DiPlayPreferences.saveAutoConnect(this, it) }
+-            adbToggle(card, R.string.open_after_the_car_starts,
+-                R.string.availability_depends_on_your_head_unit_s_startup_settings,
+-                read = { AirPlayPersistence.loadAutoStartOnBoot(this) },
+-                needsAdb = { CarHotspotSettings.enabled(this) &&
+-                    AirPlayPersistence.loadWirelessHotspotMode(this) == WirelessHotspotMode.MANUAL },
+-                permissions = { listOf(CarHotspotSetup.Permission.BOOT_LAUNCH) }) {
+-                AirPlayPersistence.saveAutoStartOnBoot(this, it)
+-            }
+-            card.addView(button("${getString(R.string.choose_iphone_prefix)}${DiPlayPreferences.phoneName(this)}", false) { choosePhone() }, matchButton(12, 60))
+-        }
+-        section(content, getString(R.string.display_and_performance), R.drawable.ic_dp_display) { card ->
+-            carPlaySizeControl(card)
+-            choice(card, getString(R.string.resolution), listOf(getString(R.string.resolution_native), getString(R.string.s_80_lighter_load), getString(R.string.s_60_lightest_load)), listOf(10, 8, 6).indexOf(AirPlayPersistence.loadDisplayScaleTenths(this)).coerceAtLeast(0)) { AirPlayPersistence.saveDisplayScaleTenths(this, listOf(10, 8, 6)[it]) }
+-            val bufferPresets = com.shilapi.xcertplay.media.MediaAudioBuffer.presets
+-            choice(card, getString(R.string.music_buffer), bufferPresets.map { if (it == 100) "100 毫秒 · 默认" else "$it 毫秒" },
+-                bufferPresets.indexOf(AirPlayPersistence.loadMediaBufferMillis(this)).coerceAtLeast(0)) {
+-                AirPlayPersistence.saveMediaBufferMillis(this, bufferPresets[it])
+-            }
+-            choice(card, getString(R.string.frame_rate), listOf(getString(R.string.s_30_fps_lighter_load), getString(R.string.s_60_fps_smoother_motion)), if (AirPlayPersistence.loadFps(this) == 60) 1 else 0) { AirPlayPersistence.saveFps(this, if (it == 1) 60 else 30) }
+-            toggle(card, getString(R.string.efficient_video), getString(R.string.use_hevc_leave_off_for_the_widest_head_unit_compatibility), AirPlayPersistence.loadHevcEnabled(this)) { AirPlayPersistence.saveHevcEnabled(this, it) }
+-            toggle(card, getString(R.string.full_screen), getString(R.string.hide_the_car_s_system_bars_while_carplay_is_open), AirPlayPersistence.loadHideTopBar(this) && AirPlayPersistence.loadHideBottomBar(this)) {
+-                AirPlayPersistence.saveHideTopBar(this, it); AirPlayPersistence.saveHideBottomBar(this, it)
+-            }
+-        }
+-        section(content, getString(R.string.audio_routing)) { card ->
+-            toggle(card, getString(R.string.contrib_audio_home_toggle_audio_focus), getString(R.string.contrib_audio_home_toggle_audio_focus_desc), AirPlayPersistence.loadAudioFocusEnabled(this)) { AirPlayPersistence.saveAudioFocusEnabled(this, it) }
+-            if (resources.getBoolean(R.bool.config_advanced_audio_channel_mapping)) {
+-                toggle(card, getString(R.string.advanced_audio_channel_mapping),
+-                    getString(R.string.use_usage_content_type_routing_instead_of_stream_type),
+-                    AirPlayPersistence.loadAdvancedAudioChannelMapping(this)) {
+-                    AirPlayPersistence.saveAdvancedAudioChannelMapping(this, it)
+-                }
+-            }
+-            mediaChannelControl(card)
+-            navigationChannelControl(card)
+-        }
+-        section(content, getString(R.string.location), R.drawable.ic_dp_navigation) { card ->
+-            toggle(card, getString(R.string.report_location_to_iphone),
+-                getString(R.string.sends_precise_android_location_as_carplay_gps_data_when_th),
+-                AirPlayPersistence.loadLocationReportingEnabled(this), save = ::onLocationReportingChanged)
+-            card.addView(label(getString(R.string.location_reporting_reconnects), 14, MUTED))
+-            card.addView(label(GnssTelemetry.describe(), 14, MUTED).also { LocationPanel.bind(it) })
+-            card.addView(button(getString(if (bydVehicleAdvancedExpanded)
+-                R.string.hide_advanced_vehicle_data else R.string.advanced_vehicle_data), false) {
+-                bydVehicleAdvancedExpanded = !bydVehicleAdvancedExpanded
+-                render()
+-            }, matchButton(12, 56))
+-            if (bydVehicleAdvancedExpanded) {
+-                advancedVehicleData(card)
+-                // Dashboard song needs ADB, not the navigation receiver; show it here when that card is hidden.
+-                if (!BydOutputSettings.navigationAvailable(this)) clusterSongSwitch(card)
+-            }
+-        }
+-        section(content, getString(R.string.permissions_and_connection_help), R.drawable.ic_dp_permissions) { card ->
+-            card.addView(label(getString(R.string.nearby_devices_connects_your_iphone_microphone_enables_sir), 16, MUTED))
+-            card.addView(button(getString(R.string.app_permissions), false) { openSystem(Intent(Settings.ACTION_APPLICATION_DETAILS_SETTINGS, Uri.parse("package:$packageName"))) }, matchButton(16, 60))
+-            card.addView(button(getString(R.string.bluetooth_settings), false) { openSystem(Intent(Settings.ACTION_BLUETOOTH_SETTINGS)) }, matchButton(10, 60))
+-            card.addView(button(getString(R.string.wireless_connection_help), false) { wirelessHelp() }, matchButton(10, 60))
+-        }
+-        section(content, getString(R.string.about), R.drawable.ic_dp_about) { card ->
+-            card.addView(button(getString(R.string.about_diplay), false) { page = "about"; render() }, matchButton(0, 60))
+-        }
+-        section(content, "新增功能", R.drawable.ic_dp_connection) { card ->
+-            card.addView(button("手机接收与上游扩展", false) { page = "features"; render() }, matchButton(0, 60))
++        when (settingsSection) {
++            SteamSettingsSection.CONNECTION -> {
++                section(content, getString(R.string.connection_setup), R.drawable.ic_dp_connection) { card ->
++                    card.addView(label(getString(R.string.choose_how_to_connect_follow_the_setup_steps_and_save_your), 16, MUTED))
++                    card.addView(button(getString(R.string.open_connection_setup), false) { openSettingsChild("connection") }, matchButton(12, 60))
++                }
++                section(content, getString(R.string.automatic_connection), R.drawable.ic_dp_automation) { card ->
++                    toggle(card, getString(R.string.connect_when_diplay_opens), getString(R.string.use_your_last_connection_type_and_selected_iphone), DiPlayPreferences.autoConnect(this)) { DiPlayPreferences.saveAutoConnect(this, it) }
++                    adbToggle(card, R.string.open_after_the_car_starts,
++                        R.string.availability_depends_on_your_head_unit_s_startup_settings,
++                        read = { AirPlayPersistence.loadAutoStartOnBoot(this) },
++                        needsAdb = { CarHotspotSettings.enabled(this) &&
++                            AirPlayPersistence.loadWirelessHotspotMode(this) == WirelessHotspotMode.MANUAL },
++                        permissions = { listOf(CarHotspotSetup.Permission.BOOT_LAUNCH) }) {
++                        AirPlayPersistence.saveAutoStartOnBoot(this, it)
++                    }
++                    card.addView(button("${getString(R.string.choose_iphone_prefix)}${DiPlayPreferences.phoneName(this)}", false) { choosePhone() }, matchButton(12, 60))
++                }
++            }
++            SteamSettingsSection.DISPLAY -> {
++                section(content, getString(R.string.display_and_performance), R.drawable.ic_dp_display) { card ->
++                    carPlaySizeControl(card)
++                    choice(card, getString(R.string.resolution), listOf(getString(R.string.resolution_native), getString(R.string.s_80_lighter_load), getString(R.string.s_60_lightest_load)), listOf(10, 8, 6).indexOf(AirPlayPersistence.loadDisplayScaleTenths(this)).coerceAtLeast(0)) { AirPlayPersistence.saveDisplayScaleTenths(this, listOf(10, 8, 6)[it]) }
++                    choice(card, getString(R.string.frame_rate), listOf(getString(R.string.s_30_fps_lighter_load), getString(R.string.s_60_fps_smoother_motion)), if (AirPlayPersistence.loadFps(this) == 60) 1 else 0) { AirPlayPersistence.saveFps(this, if (it == 1) 60 else 30) }
++                    toggle(card, getString(R.string.efficient_video), getString(R.string.use_hevc_leave_off_for_the_widest_head_unit_compatibility), AirPlayPersistence.loadHevcEnabled(this)) { AirPlayPersistence.saveHevcEnabled(this, it) }
++                    toggle(card, getString(R.string.full_screen), getString(R.string.hide_the_car_s_system_bars_while_carplay_is_open), AirPlayPersistence.loadHideTopBar(this) && AirPlayPersistence.loadHideBottomBar(this)) {
++                        AirPlayPersistence.saveHideTopBar(this, it); AirPlayPersistence.saveHideBottomBar(this, it)
++                    }
++                }
++            }
++            SteamSettingsSection.AUDIO -> {
++                section(content, getString(R.string.audio_routing)) { card ->
++                    toggle(card, getString(R.string.contrib_audio_home_toggle_audio_focus), getString(R.string.contrib_audio_home_toggle_audio_focus_desc), AirPlayPersistence.loadAudioFocusEnabled(this)) { AirPlayPersistence.saveAudioFocusEnabled(this, it) }
++                    if (resources.getBoolean(R.bool.config_advanced_audio_channel_mapping)) {
++                        toggle(card, getString(R.string.advanced_audio_channel_mapping),
++                            getString(R.string.use_usage_content_type_routing_instead_of_stream_type),
++                            AirPlayPersistence.loadAdvancedAudioChannelMapping(this)) {
++                            AirPlayPersistence.saveAdvancedAudioChannelMapping(this, it)
++                        }
++                    }
++                    card.addView(space(8))
++                    mediaChannelControl(card)
++                    card.addView(space(10))
++                    navigationChannelControl(card)
++                }
++                section(content, getString(R.string.steam_audio_buffer)) { card ->
++                    val bufferPresets = com.shilapi.xcertplay.media.MediaAudioBuffer.presets
++                    choice(card, getString(R.string.music_buffer), bufferPresets.map { getString(if (it == 100) R.string.steam_buffer_default else R.string.steam_buffer_ms, it) },
++                        bufferPresets.indexOf(AirPlayPersistence.loadMediaBufferMillis(this)).coerceAtLeast(0)) {
++                        AirPlayPersistence.saveMediaBufferMillis(this, bufferPresets[it])
++                    }
++                }
++            }
++            SteamSettingsSection.LOCATION -> {
++                section(content, getString(R.string.location), R.drawable.ic_dp_navigation) { card ->
++                    toggle(card, getString(R.string.report_location_to_iphone),
++                        getString(R.string.sends_precise_android_location_as_carplay_gps_data_when_th),
++                        AirPlayPersistence.loadLocationReportingEnabled(this), save = ::onLocationReportingChanged)
++                    card.addView(label(getString(R.string.location_reporting_reconnects), 14, MUTED))
++                    card.addView(label(GnssTelemetry.describe(), 14, MUTED).also { LocationPanel.bind(it) })
++                    card.addView(button(getString(if (bydVehicleAdvancedExpanded)
++                        R.string.hide_advanced_vehicle_data else R.string.advanced_vehicle_data), false) {
++                        bydVehicleAdvancedExpanded = !bydVehicleAdvancedExpanded
++                        render()
++                    }, matchButton(12, 56))
++                    if (bydVehicleAdvancedExpanded) {
++                        advancedVehicleData(card)
++                        // Dashboard song needs ADB, not the navigation receiver; show it here when that card is hidden.
++                        if (!BydOutputSettings.navigationAvailable(this)) clusterSongSwitch(card)
++                    }
++                }
++            }
++            SteamSettingsSection.TOOLS -> {
++                section(content, getString(R.string.diagnostics), R.drawable.ic_dp_diagnostics) { card ->
++                    exportButton = button(if (exportInProgress) getString(R.string.saving_report) else getString(R.string.save_diagnostic_report), false) {
++                        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) exportDiagnostics()
++                        else chooseReportDestination()
++                    }.apply { isEnabled = !exportInProgress }
++                    card.addView(exportButton, matchButton(10, 60))
++                    card.addView(button(getString(R.string.choose_save_location), false) { chooseReportDestination() }, matchButton(10, 60))
++                    val destination = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) getString(R.string.reports_save_to_downloads_diplay) else getString(R.string.choose_where_to_save_your_report)
++                    card.addView(label(destination + getString(R.string.nothing_is_sent_automatically_protocol_payloads_and_creden), 14, MUTED).apply { setPadding(0, dp(12), 0, 0) })
++                }
++                section(content, getString(R.string.permissions_and_connection_help), R.drawable.ic_dp_permissions) { card ->
++                    card.addView(label(getString(R.string.nearby_devices_connects_your_iphone_microphone_enables_sir), 16, MUTED))
++                    card.addView(button(getString(R.string.app_permissions), false) { openSystem(Intent(Settings.ACTION_APPLICATION_DETAILS_SETTINGS, Uri.parse("package:$packageName"))) }, matchButton(16, 60))
++                    card.addView(button(getString(R.string.bluetooth_settings), false) { openSystem(Intent(Settings.ACTION_BLUETOOTH_SETTINGS)) }, matchButton(10, 60))
++                    card.addView(button(getString(R.string.wireless_connection_help), false) { wirelessHelp() }, matchButton(10, 60))
++                }
++            }
++            SteamSettingsSection.MORE -> {
++                section(content, getString(R.string.steam_more), R.drawable.ic_dp_connection) { card ->
++                    card.addView(button(getString(R.string.steam_extensions), false) { openSettingsChild("features") }, matchButton(0, 60))
++                }
++                section(content, getString(R.string.about), R.drawable.ic_dp_about) { card ->
++                    card.addView(button(getString(R.string.about_diplay), false) { openSettingsChild("about") }, matchButton(0, 60))
++                }
++                languageSettings(content)
++            }
+         }
+     }
+ 
+@@ -705,7 +883,7 @@
+         adbSwitchChangePending = true
+         updateAdbSwitches()
+         adbStatus?.setText(R.string.adb_checking_may_ask)
+-        if (page == "settings" && bydVehicleAdvancedExpanded) render()
++        if (page == "settings" && settingsSection == SteamSettingsSection.LOCATION && bydVehicleAdvancedExpanded) render()
+         Thread({
+             var access = LocalAdb.Access.UNREACHABLE
+             val ready = runCatching {
+@@ -729,7 +907,7 @@
+                 toast(getString(message))
+                 runPendingAutomaticVehicleValidation()
+                 // Re-enable the vehicle controls disabled while this authorization was outstanding.
+-                if (page == "settings" && bydVehicleAdvancedExpanded) render()
++                if (page == "settings" && settingsSection == SteamSettingsSection.LOCATION && bydVehicleAdvancedExpanded) render()
+             }
+         }, "diplay-adb-switch").start()
+     }
+@@ -962,7 +1140,7 @@
+             }
+             .setNegativeButton(getString(R.string.cancel), null)
+             .setOnDismissListener { preview.close() }
+-            .show()
++            .show().also { styleSettingsDialog(it) }
+     }
+ 
+     private fun applyMediaChannel(value: Int, previous: Int, control: Button, summary: (Int) -> String) {
+@@ -1641,7 +1819,7 @@
+         automaticVehicleValidationInProgress = true
+         val generation = ++vehicleValidationGeneration
+         Log.i(BYD_VEHICLE_TAG, "automatic vehicle validation starting savedFirmware=${saved.firmwareKey}")
+-        if (page == "settings" && bydVehicleAdvancedExpanded) render()
++        if (page == "settings" && settingsSection == SteamSettingsSection.LOCATION && bydVehicleAdvancedExpanded) render()
+         val backend = BydVehicleSettingsBackendProvider.current
+         backend.execute("diplay-byd13-auto-validate") {
+             val app = applicationContext
+@@ -1752,7 +1930,7 @@
+                             "error=${result.outcome?.error ?: "none"}",
+                     )
+                 }
+-                if (page == "settings" && bydVehicleAdvancedExpanded) {
++                if (page == "settings" && settingsSection == SteamSettingsSection.LOCATION && bydVehicleAdvancedExpanded) {
+                     render()
+                 }
+                 runPendingAutomaticVehicleValidation()
+@@ -2237,11 +2415,11 @@
+     private fun section(parent: LinearLayout, title: String, icon: Int? = null, build: (LinearLayout) -> Unit) {
+         val card = card()
+         val heading = row().apply { gravity = Gravity.CENTER_VERTICAL; setPadding(0, 0, 0, dp(16)) }
+-        if (icon != null) heading.addView(ImageView(this).apply {
++        if (icon != null && !usesSteamGlass()) heading.addView(ImageView(this).apply {
+             setImageResource(icon); imageTintList = ColorStateList.valueOf(ACCENT)
+             importantForAccessibility = View.IMPORTANT_FOR_ACCESSIBILITY_NO
+         }, LinearLayout.LayoutParams(dp(28), dp(28)).apply { marginEnd = dp(12) })
+-        heading.addView(label(title, 22, TEXT, true), LinearLayout.LayoutParams(0, -2, 1f))
++        heading.addView(label(title, if (usesSteamGlass()) 18 else 22, TEXT, true), LinearLayout.LayoutParams(0, -2, 1f))
+         card.addView(heading)
+         build(card)
+         parent.addView(card, LinearLayout.LayoutParams(-1, -2).apply { bottomMargin = dp(18) })
+@@ -2251,6 +2429,14 @@
+         val text = column(); text.addView(label(title, 18, TEXT, true)); text.addView(label(description, 14, MUTED).apply { setPadding(0, dp(6), dp(16), 0) })
+         line.addView(text, LinearLayout.LayoutParams(0, -2, 1f))
+         val control = Switch(this).apply { contentDescription = title; isChecked = value; isEnabled = enabled; minHeight = dp(56); buttonTintList = ColorStateList.valueOf(ACCENT); setOnCheckedChangeListener { _, checked -> save(checked) } }
++        if (usesSteamGlass()) {
++            control.thumbTintList = ColorStateList(arrayOf(intArrayOf(-android.R.attr.state_enabled), intArrayOf(android.R.attr.state_checked), intArrayOf()),
++                intArrayOf(0xFF66788F.toInt(), 0xFFF4FAFF.toInt(), 0xFFB9C7D9.toInt()))
++            control.trackTintList = ColorStateList(arrayOf(intArrayOf(-android.R.attr.state_enabled), intArrayOf(android.R.attr.state_checked), intArrayOf()),
++                intArrayOf(0x333F526B, 0xFF658DB9.toInt(), 0xFF3B4C66.toInt()))
++            control.minimumWidth = dp(52)
++            control.showText = false
++        }
+         line.addView(control)
+         parent.addView(line)
+         return control
+@@ -2258,8 +2444,18 @@
+     // [announcesReconnect] labels a choice whose [save] reconnects by itself.
+     private fun choice(parent: LinearLayout, title: String, options: List<String>, current: Int, reconnects: Boolean = true,
+         announcesReconnect: Boolean = reconnects, enabled: Boolean = true, save: (Int) -> Unit) {
+-        var selection = current
+-        val button = button("$title · ${options[selection]}", false) {}.apply { isEnabled = enabled }
++        var selection = current.coerceIn(options.indices)
++        val button = button("$title · ${options[selection]}", false) {}.apply {
++            isEnabled = enabled
++            if (usesSteamGlass()) {
++                text = settingsChoiceText(title, options[selection])
++                minHeight = dp(76)
++                textAlignment = View.TEXT_ALIGNMENT_GRAVITY
++                gravity = Gravity.START or Gravity.CENTER_VERTICAL
++                setCompoundDrawablesRelativeWithIntrinsicBounds(0, 0, R.drawable.ic_steam_chevron, 0)
++                compoundDrawablePadding = dp(12)
++            }
++        }
+         button.setOnClickListener {
+             var pendingSelection = selection
+             AlertDialog.Builder(this).setTitle(title)
+@@ -2268,34 +2464,59 @@
+                     if (pendingSelection != selection) {
+                         selection = pendingSelection
+                         save(selection)
+-                        button.text = "$title · ${options[selection]}"
++                        button.text = if (usesSteamGlass()) settingsChoiceText(title, options[selection]) else "$title · ${options[selection]}"
++                        settingsSummary?.text = settingsSummaryText()
+                         if (reconnects && CarPlayBackgroundSession.hasSession()) {
+                             connect(AirPlayPersistence.loadWirelessEnabled(this))
+                         }
+                     }
+-                }.setNegativeButton(getString(R.string.cancel), null).show()
+-        }
+-        parent.addView(button, matchButton(0, 60)); parent.addView(space(12))
+-    }
+-    private fun card() = column().apply { background = rounded(SURFACE, BORDER); setPadding(dp(24), dp(24), dp(24), dp(24)) }
++                }.setNegativeButton(getString(R.string.cancel), null).show().also { styleSettingsDialog(it) }
++        }
++        parent.addView(button, matchButton(0, if (usesSteamGlass()) 76 else 60)); parent.addView(space(12))
++    }
++    private fun settingsChoiceText(title: String, value: String): CharSequence {
++        val text = android.text.SpannableString("$title\n$value")
++        text.setSpan(android.text.style.RelativeSizeSpan(.82f), 0, title.length, android.text.Spanned.SPAN_EXCLUSIVE_EXCLUSIVE)
++        text.setSpan(android.text.style.ForegroundColorSpan(MUTED), 0, title.length, android.text.Spanned.SPAN_EXCLUSIVE_EXCLUSIVE)
++        return text
++    }
++    private fun styleSettingsDialog(dialog: AlertDialog) {
++        if (!usesSteamGlass()) return
++        dialog.window?.setBackgroundDrawable(SteamGlass.surface(this, selected = true, radius = 28))
++        dialog.window?.setDimAmount(.45f)
++    }
++    private fun card() = column().apply {
++        background = if (usesSteamGlass()) SteamGlass.surface(this@DiPlayActivity) else rounded(SURFACE, BORDER)
++        val padding = dp(if (usesSteamGlass()) 20 else 24)
++        setPadding(padding, padding, padding, padding)
++    }
+     private fun column() = LinearLayout(this).apply { orientation = LinearLayout.VERTICAL; layoutParams = LinearLayout.LayoutParams(-1, -2) }
+     private fun row() = LinearLayout(this).apply { orientation = LinearLayout.HORIZONTAL; layoutParams = LinearLayout.LayoutParams(-1, -2) }
+     private fun label(value: String, size: Int, color: Int, bold: Boolean = false) = TextView(this).apply {
+-        text = value; ResponsiveUi.text(this, size.toFloat()); setTextColor(color); gravity = Gravity.CENTER_VERTICAL
++        text = value
++        if (usesSteamGlass()) textSize = size.toFloat() else ResponsiveUi.text(this, size.toFloat())
++        setTextColor(color); gravity = Gravity.CENTER_VERTICAL
+         typeface = if (bold) Typeface.create("sans-serif-medium", Typeface.NORMAL) else Typeface.create("sans-serif", Typeface.NORMAL)
+         setLineSpacing(dp(3).toFloat(), 1f)
+     }
+     private fun button(title: String, primary: Boolean, click: () -> Unit) = Button(this).apply {
+-        text = title; isAllCaps = false; ResponsiveUi.text(this, 18f); setTextColor(if (primary) BG else TEXT)
++        text = title; isAllCaps = false
++        if (usesSteamGlass()) textSize = 16f else ResponsiveUi.text(this, 18f)
++        setTextColor(if (primary && !usesSteamGlass()) BG else TEXT)
+         typeface = Typeface.create("sans-serif-medium", Typeface.NORMAL)
+-        background = android.graphics.drawable.RippleDrawable(ColorStateList.valueOf(0x336F9FD9), rounded(if (primary) ACCENT else SURFACE, if (primary) ACCENT else BORDER), null)
+-        setPadding(dp(16), 0, dp(16), 0); minHeight = dp(56); stateListAnimator = null
++        background = if (usesSteamGlass()) SteamGlass.action(this@DiPlayActivity, selected = primary)
++            else android.graphics.drawable.RippleDrawable(ColorStateList.valueOf(0x336F9FD9), rounded(if (primary) ACCENT else SURFACE, if (primary) ACCENT else BORDER), null)
++        minHeight = dp(56); stateListAnimator = null
++        if (usesSteamGlass()) {
++            setPadding(dp(16), dp(8), dp(16), dp(8)); minimumWidth = 0
++            setTextColor(ColorStateList(arrayOf(intArrayOf(-android.R.attr.state_enabled), intArrayOf()), intArrayOf(0xFF7F91AA.toInt(), TEXT)))
++        } else setPadding(dp(16), 0, dp(16), 0)
+         setOnClickListener { click() }
+     }
+     private fun rounded(color: Int, stroke: Int) = GradientDrawable().apply { setColor(color); cornerRadius = dp(20).toFloat(); setStroke(dp(1), stroke) }
+-    private fun matchButton(top: Int = 0, height: Int = 68) = LinearLayout.LayoutParams(-1, dp(height)).apply { topMargin = dp(top) }
++    private fun matchButton(top: Int = 0, height: Int = 68) = LinearLayout.LayoutParams(-1, if (usesSteamGlass()) -2 else dp(height)).apply { topMargin = dp(top) }
+     private fun space(height: Int) = View(this).apply { layoutParams = LinearLayout.LayoutParams(1, dp(height)) }
+-    private fun dp(value: Int) = ResponsiveUi.dp(this, value)
++    private fun dp(value: Int) = if (usesSteamGlass()) (value * resources.displayMetrics.density).roundToInt() else ResponsiveUi.dp(this, value)
+     companion object {
+         private const val BYD_VEHICLE_TAG = "DiPlay-BYD13"
+         private const val VEHICLE_VALIDATION_RETRY_MILLIS = 500L
+--- /dev/null
++++ b/common/src/main/java/com/shilapi/xcertplay/SteamGlass.kt
+@@ -0,0 +1,129 @@
++// SPDX-License-Identifier: AGPL-3.0-only
++package com.shilapi.xcertplay
++
++import android.content.Context
++import android.content.res.ColorStateList
++import android.graphics.Canvas
++import android.graphics.Color
++import android.graphics.ColorFilter
++import android.graphics.LinearGradient
++import android.graphics.Paint
++import android.graphics.Path
++import android.graphics.PixelFormat
++import android.graphics.RadialGradient
++import android.graphics.Rect
++import android.graphics.RectF
++import android.graphics.Shader
++import android.graphics.drawable.Drawable
++import android.graphics.drawable.RippleDrawable
++import android.view.View
++import com.shilapi.xcertplay.host.R
++
++/** Steam's settings navigation. Stable names are also saved across activity recreation. */
++internal enum class SteamSettingsSection(val title: Int, val hint: Int) {
++    CONNECTION(R.string.steam_connection, R.string.steam_connection_hint),
++    DISPLAY(R.string.steam_display, R.string.steam_display_hint),
++    AUDIO(R.string.steam_audio, R.string.steam_audio_hint),
++    LOCATION(R.string.steam_location, R.string.steam_location_hint),
++    TOOLS(R.string.steam_tools, R.string.steam_tools_hint),
++    MORE(R.string.steam_more, R.string.steam_more_hint);
++
++    companion object {
++        fun restore(name: String?) = entries.firstOrNull { it.name == name } ?: DISPLAY
++    }
++}
++
++/** Native, static glass shading: no bitmap capture, RenderEffect or animation loop. */
++internal object SteamGlass {
++    fun backdrop(): Drawable = AmbientDrawable()
++    fun surface(context: Context, selected: Boolean = false, radius: Int = 24): Drawable =
++        GlassDrawable(context.resources.displayMetrics.density, selected, radius)
++    fun action(context: Context, selected: Boolean = false, radius: Int = 18): Drawable =
++        RippleDrawable(ColorStateList.valueOf(0x26D1E9FF), surface(context, selected, radius), null)
++}
++
++private class AmbientDrawable : Drawable() {
++    private val base = Paint(Paint.ANTI_ALIAS_FLAG)
++    private val glows = Array(3) { Paint(Paint.ANTI_ALIAS_FLAG) }
++    override fun onBoundsChange(bounds: Rect) {
++        val w = bounds.width().toFloat().coerceAtLeast(1f)
++        val h = bounds.height().toFloat().coerceAtLeast(1f)
++        base.shader = LinearGradient(0f, 0f, w, h,
++            intArrayOf(Color.rgb(11, 19, 34), Color.rgb(17, 29, 48), Color.rgb(10, 17, 30)), null, Shader.TileMode.CLAMP)
++        val centers = arrayOf(floatArrayOf(w * .12f, h * .22f), floatArrayOf(w * .83f, h * .05f), floatArrayOf(w * .8f, h * .9f))
++        val colors = intArrayOf(0x486894DA, 0x386D64BE, 0x28488F9C)
++        glows.forEachIndexed { index, paint ->
++            paint.shader = RadialGradient(centers[index][0], centers[index][1], maxOf(w, h) * .72f,
++                colors[index], Color.TRANSPARENT, Shader.TileMode.CLAMP)
++        }
++    }
++    override fun draw(canvas: Canvas) {
++        canvas.drawRect(bounds, base)
++        glows.forEach { canvas.drawRect(bounds, it) }
++    }
++    override fun setAlpha(alpha: Int) { base.alpha = alpha; glows.forEach { it.alpha = alpha }; invalidateSelf() }
++    override fun setColorFilter(colorFilter: ColorFilter?) { base.colorFilter = colorFilter; invalidateSelf() }
++    @Deprecated("Required by Drawable") override fun getOpacity() = PixelFormat.OPAQUE
++}
++
++private class GlassDrawable(private val density: Float, private val selected: Boolean, radius: Int) : Drawable() {
++    private val radiusPx = radius * density
++    private val rect = RectF()
++    private val fill = Paint(Paint.ANTI_ALIAS_FLAG)
++    private val edge = Paint(Paint.ANTI_ALIAS_FLAG).apply { style = Paint.Style.STROKE; strokeWidth = density }
++    override fun onBoundsChange(bounds: Rect) {
++        rect.set(bounds)
++        rect.inset(density * .6f, density * .6f)
++        val h = bounds.height().toFloat().coerceAtLeast(1f)
++        fill.shader = LinearGradient(0f, bounds.top.toFloat(), bounds.width().toFloat(), bounds.top + h,
++            if (selected) intArrayOf(0x666B9BCB, 0x383B638E, 0x30354E74)
++            else intArrayOf(0x344E657F, 0x242E415C, 0x1C263750), null, Shader.TileMode.CLAMP)
++        edge.shader = LinearGradient(bounds.left.toFloat(), bounds.top.toFloat(), bounds.right.toFloat(), bounds.bottom.toFloat(),
++            intArrayOf(if (selected) 0x80D8EEFF.toInt() else 0x55D8E9FF, 0x163F6082, 0x224D739A), null, Shader.TileMode.CLAMP)
++    }
++    override fun draw(canvas: Canvas) { canvas.drawRoundRect(rect, radiusPx, radiusPx, fill); canvas.drawRoundRect(rect, radiusPx, radiusPx, edge) }
++    override fun setAlpha(alpha: Int) { fill.alpha = alpha; edge.alpha = alpha; invalidateSelf() }
++    override fun setColorFilter(colorFilter: ColorFilter?) { fill.colorFilter = colorFilter; edge.colorFilter = colorFilter; invalidateSelf() }
++    @Deprecated("Required by Drawable") override fun getOpacity() = PixelFormat.TRANSLUCENT
++}
++
++/** Six original line glyphs, independent of the upstream ic_dp_* artwork. */
++internal class SteamSettingIcon(context: Context, section: SteamSettingsSection) : View(context) {
++    private val glyph = Path().apply {
++        when (section) {
++            SteamSettingsSection.CONNECTION -> {
++                moveTo(8f, 4f); lineTo(16f, 12f); lineTo(8f, 20f); lineTo(8f, 4f)
++                moveTo(4f, 8f); lineTo(16f, 20f); moveTo(4f, 16f); lineTo(16f, 4f)
++            }
++            SteamSettingsSection.DISPLAY -> {
++                addRoundRect(3f, 4f, 21f, 17f, 3f, 3f, Path.Direction.CW)
++                moveTo(12f, 17f); lineTo(12f, 21f); moveTo(8f, 21f); lineTo(16f, 21f)
++            }
++            SteamSettingsSection.AUDIO -> {
++                moveTo(3f, 9f); lineTo(7f, 9f); lineTo(12f, 5f); lineTo(12f, 19f); lineTo(7f, 15f); lineTo(3f, 15f); close()
++                moveTo(16f, 8f); quadTo(21f, 12f, 16f, 16f)
++            }
++            SteamSettingsSection.LOCATION -> {
++                moveTo(4f, 10f); lineTo(21f, 3f); lineTo(14f, 21f); lineTo(11f, 13f); close()
++            }
++            SteamSettingsSection.TOOLS -> {
++                addRoundRect(5f, 3f, 19f, 21f, 3f, 3f, Path.Direction.CW)
++                moveTo(8f, 15f); lineTo(10f, 11f); lineTo(13f, 16f); lineTo(16f, 9f)
++            }
++            SteamSettingsSection.MORE -> {
++                for (x in listOf(5f, 12f, 19f)) addCircle(x, 12f, 1.4f, Path.Direction.CW)
++            }
++        }
++    }
++    private val paint = Paint(Paint.ANTI_ALIAS_FLAG).apply {
++        color = Color.rgb(191, 220, 251); style = Paint.Style.STROKE
++        strokeWidth = 1.65f; strokeCap = Paint.Cap.ROUND; strokeJoin = Paint.Join.ROUND
++    }
++    init { importantForAccessibility = IMPORTANT_FOR_ACCESSIBILITY_NO }
++    override fun onDraw(canvas: Canvas) {
++        super.onDraw(canvas)
++        val scale = minOf(width, height) / 26f
++        canvas.save(); canvas.translate((width - 24f * scale) / 2f, (height - 24f * scale) / 2f)
++        canvas.scale(scale, scale); canvas.drawPath(glyph, paint); canvas.restore()
++    }
++}
+--- /dev/null
++++ b/common/src/main/res/drawable/ic_steam_chevron.xml
+@@ -0,0 +1,6 @@
++<vector xmlns:android="http://schemas.android.com/apk/res/android"
++    android:width="20dp" android:height="20dp" android:viewportWidth="20" android:viewportHeight="20" android:autoMirrored="true">
++    <path android:pathData="M7,5 L12,10 L7,15" android:strokeWidth="1.6"
++        android:strokeLineCap="round" android:strokeLineJoin="round"
++        android:strokeColor="#BFD6F2" android:fillColor="#00000000" />
++</vector>
+--- /dev/null
++++ b/common/src/main/res/values/steam_settings.xml
+@@ -0,0 +1,26 @@
++<?xml version="1.0" encoding="utf-8"?>
++<resources>
++    <string name="steam_connection">Connection</string>
++    <string name="steam_display">Display</string>
++    <string name="steam_audio">Audio</string>
++    <string name="steam_location">Location</string>
++    <string name="steam_tools">Tools</string>
++    <string name="steam_more">More</string>
++    <string name="steam_connection_hint">Choose a phone, set up wireless and manage automatic connection.</string>
++    <string name="steam_display_hint">Adjust size and clarity. Display changes reconnect an active CarPlay session.</string>
++    <string name="steam_audio_hint">Keep music and navigation channels together here, with a separate music buffer.</string>
++    <string name="steam_location_hint">View receiver GPS readings and manage vehicle data.</string>
++    <string name="steam_tools_hint">Save diagnostic reports or open system permissions.</string>
++    <string name="steam_more_hint">Android receiver features, language and version information.</string>
++    <string name="steam_preferences">Preferences</string>
++    <string name="steam_done">Done</string>
++    <string name="steam_screen_summary">%1$d fps · %2$d%% resolution</string>
++    <string name="steam_audio_summary">%1$d ms music buffer</string>
++    <string name="steam_audio_buffer">Music buffer</string>
++    <string name="steam_buffer_ms">%1$d ms</string>
++    <string name="steam_buffer_default">%1$d ms · Default</string>
++    <string name="steam_extensions">Phone receiver and extensions</string>
++    <string name="steam_location_summary">Receiver GPS · Live readings</string>
++    <string name="steam_diagnostics_summary">Diagnostics · Local export</string>
++    <string name="steam_brand_version">CarPlay · Steam · %1$s</string>
++</resources>
+--- /dev/null
++++ b/common/src/main/res/values-zh-rCN/steam_settings.xml
+@@ -0,0 +1,26 @@
++<?xml version="1.0" encoding="utf-8"?>
++<resources>
++    <string name="steam_connection">连接</string>
++    <string name="steam_display">画面</string>
++    <string name="steam_audio">声音</string>
++    <string name="steam_location">定位</string>
++    <string name="steam_tools">工具</string>
++    <string name="steam_more">更多</string>
++    <string name="steam_connection_hint">选择 iPhone，配置无线连接与自动启动。</string>
++    <string name="steam_display_hint">调整界面大小和清晰度；画面参数变更会重连正在运行的 CarPlay。</string>
++    <string name="steam_audio_hint">音乐、导航声道与音乐缓冲，集中在这里调整。</string>
++    <string name="steam_location_hint">查看接收设备 GPS 实时信息，管理车辆数据。</string>
++    <string name="steam_tools_hint">保存诊断日志，管理系统权限与连接帮助。</string>
++    <string name="steam_more_hint">安卓接收屏扩展、语言与版本信息。</string>
++    <string name="steam_preferences">偏好设置</string>
++    <string name="steam_done">完成</string>
++    <string name="steam_screen_summary">%1$d fps · %2$d%% 分辨率</string>
++    <string name="steam_audio_summary">音乐缓冲 %1$d 毫秒</string>
++    <string name="steam_audio_buffer">音乐缓冲</string>
++    <string name="steam_buffer_ms">%1$d 毫秒</string>
++    <string name="steam_buffer_default">%1$d 毫秒 · 默认</string>
++    <string name="steam_extensions">手机接收与上游扩展</string>
++    <string name="steam_location_summary">接收设备 GPS · 实时信息</string>
++    <string name="steam_diagnostics_summary">诊断日志 · 本地导出</string>
++    <string name="steam_brand_version">CarPlay · Steam · %1$s</string>
++</resources>
+--- a/common/src/test/java/com/shilapi/xcertplay/BydSettingsReconnectTest.kt
++++ b/common/src/test/java/com/shilapi/xcertplay/BydSettingsReconnectTest.kt
+@@ -41,6 +41,7 @@
+         activity = Robolectric.buildActivity(DiPlayActivity::class.java).get()
+         activity.setTheme(android.R.style.Theme_Material_NoActionBar)
+         ReflectionHelpers.setField(activity, "page", "settings")
++        ReflectionHelpers.setField(activity, "settingsSection", SteamSettingsSection.LOCATION)
+         ReflectionHelpers.setField(activity, "bydVehicleAdvancedExpanded", true)
+         AirPlayPersistence.saveWirelessEnabled(activity, false)
+         AirPlayPersistence.saveWirelessHotspotMode(activity, WirelessHotspotMode.MANUAL)
+--- a/common/src/test/java/com/shilapi/xcertplay/BydVehicleDataSettingsTest.kt
++++ b/common/src/test/java/com/shilapi/xcertplay/BydVehicleDataSettingsTest.kt
+@@ -136,7 +136,7 @@
+         ReflectionHelpers.callInstanceMethod<Unit>(activity, "renderBydAdbControls",
+             ReflectionHelpers.ClassParameter.from(LinearLayout::class.java, hotspot),
+             ReflectionHelpers.ClassParameter.from(LocalAdb.Access::class.java, LocalAdb.Access.READY))
+-        val page = descendants(activity.window.decorView).filterIsInstance<ScrollView>().first()
++        val page = ReflectionHelpers.getField<ScrollView>(activity, "rootScroll")
+             .getChildAt(0) as LinearLayout
+         page.addView(hotspot)
+ 
+@@ -681,6 +681,7 @@
+ 
+     @Test fun samePageRenderKeepsScrollAndPageChangeStartsAtTop() {
+         openSettings()
++        texts().single { it.text == activity.getString(R.string.advanced_vehicle_data) }.performClick()
+         val first = layoutRoot()
+         first.scrollTo(0, 400)
+         val savedY = first.scrollY
+@@ -698,6 +699,7 @@
+ 
+     @Test fun rendersBeforeTheNextLayoutKeepTheScroll() {
+         openSettings()
++        texts().single { it.text == activity.getString(R.string.advanced_vehicle_data) }.performClick()
+         val first = layoutRoot()
+         first.scrollTo(0, 400)
+         val savedY = first.scrollY
+@@ -718,6 +720,7 @@
+             DiPlayActivity::class.java,
+             Intent(context, DiPlayActivity::class.java).putExtra("page", "settings"),
+         ).setup()
++        navigateSteamSettings(activity, SteamSettingsSection.LOCATION)
+     }
+ 
+     private fun switches(): Sequence<Switch> = descendants(activity.window.decorView).filterIsInstance<Switch>()
+@@ -776,7 +779,7 @@
+             View.MeasureSpec.makeMeasureSpec(600, View.MeasureSpec.EXACTLY),
+         )
+         decor.layout(0, 0, 1080, 600)
+-        return descendants(decor).filterIsInstance<ScrollView>().first()
++        return ReflectionHelpers.getField(activity, "rootScroll")
+     }
+ 
+     private fun supportedCapabilities(
+--- a/common/src/test/java/com/shilapi/xcertplay/CarPlayCustomizationTest.kt
++++ b/common/src/test/java/com/shilapi/xcertplay/CarPlayCustomizationTest.kt
+@@ -37,11 +37,16 @@
+             Intent(context, DiPlayActivity::class.java).putExtra("page", "settings")).setup()
+         try {
+             val activity = controller.get()
+-            val labels = texts(activity.window.decorView).map { it.text.toString() }.toList()
+-            assertTrue(labels.any { it.contains("100 毫秒") })
+-            assertFalse(labels.any { it == activity.getString(R.string.right_hand_drive) })
+-            assertTrue(labels.any { it == "手机接收与上游扩展" })
+-            assertTrue(labels.any { it.contains("接收设备GPS") })
++            navigateSteamSettings(activity, SteamSettingsSection.AUDIO)
++            assertTrue(texts(activity.window.decorView).any { it.text.contains("100 毫秒") })
++            navigateSteamSettings(activity, SteamSettingsSection.MORE)
++            assertTrue(texts(activity.window.decorView).any { it.text.toString() == "手机接收与上游扩展" })
++            navigateSteamSettings(activity, SteamSettingsSection.LOCATION)
++            assertTrue(texts(activity.window.decorView).any { it.text.contains("接收设备GPS") })
++            for (section in SteamSettingsSection.entries) {
++                navigateSteamSettings(activity, section)
++                assertFalse(texts(activity.window.decorView).any { it.text.toString() == activity.getString(R.string.right_hand_drive) })
++            }
+         } finally { controller.pause().stop().destroy() }
+     }
+     @Test fun eachBufferLabelSavesTheSameNumericValue() {
+@@ -49,6 +54,7 @@
+             Intent(context, DiPlayActivity::class.java).putExtra("page", "settings")).setup()
+         try {
+             val activity = controller.get()
++            navigateSteamSettings(activity, SteamSettingsSection.AUDIO)
+             val control = texts(activity.window.decorView).single { it.text.contains(activity.getString(R.string.music_buffer)) && it.isClickable }
+             control.performClick()
+             val dialog = org.robolectric.shadows.ShadowAlertDialog.getLatestAlertDialog()
+--- a/common/src/test/java/com/shilapi/xcertplay/LocationReportingSettingsTest.kt
++++ b/common/src/test/java/com/shilapi/xcertplay/LocationReportingSettingsTest.kt
+@@ -122,6 +122,7 @@
+     private fun openSettings() {
+         controller = Robolectric.buildActivity(DiPlayActivity::class.java,
+             Intent(context, DiPlayActivity::class.java).putExtra("page", "settings")).setup()
++        navigateSteamSettings(activity, SteamSettingsSection.LOCATION)
+     }
+ 
+     private fun locationSwitch(): Switch = descendants(activity.window.decorView)
+--- /dev/null
++++ b/common/src/test/java/com/shilapi/xcertplay/SteamGlassSettingsTest.kt
+@@ -0,0 +1,120 @@
++package com.shilapi.xcertplay
++
++import android.content.Intent
++import android.os.Bundle
++import android.view.View
++import android.view.ViewGroup
++import android.widget.HorizontalScrollView
++import android.widget.ScrollView
++import android.widget.Switch
++import android.widget.TextView
++import com.shilapi.xcertplay.host.R
++import org.junit.Assert.*
++import org.junit.Test
++import org.junit.runner.RunWith
++import org.robolectric.Robolectric
++import org.robolectric.RuntimeEnvironment
++import org.robolectric.annotation.Config
++import org.robolectric.util.ReflectionHelpers
++import java.util.Locale
++
++/** Tests select the same category controls used by a driver; no private renderer calls. */
++internal fun navigateSteamSettings(activity: DiPlayActivity, section: SteamSettingsSection) {
++    val navigation = activity.window.decorView.findViewWithTag<View>("steam_settings_${section.name.lowercase(Locale.ROOT)}")
++    requireNotNull(navigation) { "Missing category: $section" }.performClick()
++}
++
++@RunWith(RobolectricTestRunner::class)
++@Config(sdk = [32], qualifiers = "zh-rCN-w1280dp-h720dp")
++class SteamGlassSettingsTest {
++    private fun intent() = Intent(RuntimeEnvironment.getApplication(), DiPlayActivity::class.java).putExtra("page", "settings")
++    private fun views(view: View): Sequence<View> = sequence {
++        yield(view)
++        if (view is ViewGroup) for (i in 0 until view.childCount) yieldAll(views(view.getChildAt(i)))
++    }
++    private fun labels(activity: DiPlayActivity) = views(activity.window.decorView).filterIsInstance<TextView>()
++
++    @Test fun wideLayoutKeepsCategoriesOutsideTheDetailScroll() {
++        val controller = Robolectric.buildActivity(DiPlayActivity::class.java, intent()).setup()
++        try {
++            val activity = controller.get()
++            val navigation = activity.window.decorView.findViewWithTag<View>("steam_settings_navigation")
++            val scroll = ReflectionHelpers.getField<ScrollView>(activity, "rootScroll")
++            assertFalse(views(scroll).any { it === navigation })
++            assertFalse(views(activity.window.decorView).any { it is HorizontalScrollView })
++            assertEquals(6, views(navigation).count { it.tag?.toString()?.startsWith("steam_settings_") == true } - 1)
++        } finally { controller.pause().stop().destroy() }
++    }
++
++    @Test @Config(qualifiers = "zh-rCN-w393dp-h852dp")
++    fun narrowLayoutUsesHorizontalCategoriesAndOneVisibleSection() {
++        val controller = Robolectric.buildActivity(DiPlayActivity::class.java, intent()).setup()
++        try {
++            val activity = controller.get()
++            assertEquals(1, views(activity.window.decorView).count { it is HorizontalScrollView })
++            assertTrue(labels(activity).any { it.text.toString().contains(activity.getString(R.string.resolution)) })
++            assertFalse(labels(activity).any { it.text.toString().contains(activity.getString(R.string.music_buffer)) })
++            navigateSteamSettings(activity, SteamSettingsSection.AUDIO)
++            assertTrue(labels(activity).any { it.text.toString().contains("100 毫秒") })
++            assertFalse(labels(activity).any { it.text.toString().contains(activity.getString(R.string.resolution)) })
++        } finally { controller.pause().stop().destroy() }
++    }
++
++    @Test fun categoryChangesDoNotRewriteSavedPreferences() {
++        val controller = Robolectric.buildActivity(DiPlayActivity::class.java, intent()).setup()
++        try {
++            val activity = controller.get()
++            AirPlayPersistence.saveMediaBufferMillis(activity, 500)
++            AirPlayPersistence.saveDisplayScaleTenths(activity, 6)
++            for (section in SteamSettingsSection.entries) navigateSteamSettings(activity, section)
++            assertEquals(500, AirPlayPersistence.loadMediaBufferMillis(activity))
++            assertEquals(6, AirPlayPersistence.loadDisplayScaleTenths(activity))
++        } finally { controller.pause().stop().destroy() }
++    }
++
++    @Test fun returningFromExtensionsKeepsTheSelectedCategory() {
++        val controller = Robolectric.buildActivity(DiPlayActivity::class.java, intent()).setup()
++        try {
++            val activity = controller.get()
++            navigateSteamSettings(activity, SteamSettingsSection.MORE)
++            labels(activity).single { it.text.toString() == activity.getString(R.string.steam_extensions) }.performClick()
++            assertEquals("features", ReflectionHelpers.getField<String>(activity, "page"))
++            activity.onBackPressedDispatcher.onBackPressed()
++            assertEquals("settings", ReflectionHelpers.getField<String>(activity, "page"))
++            assertTrue(activity.window.decorView.findViewWithTag<View>("steam_settings_more").isSelected)
++        } finally { controller.pause().stop().destroy() }
++    }
++
++    @Test fun recreationRestoresTheSelectedCategory() {
++        val controller = Robolectric.buildActivity(DiPlayActivity::class.java, intent()).setup()
++        val state = Bundle()
++        try {
++            navigateSteamSettings(controller.get(), SteamSettingsSection.AUDIO)
++            controller.saveInstanceState(state)
++        } finally { controller.pause().stop().destroy() }
++        val restored = Robolectric.buildActivity(DiPlayActivity::class.java, intent()).create(state).start().resume().visible()
++        try {
++            assertTrue(restored.get().window.decorView.findViewWithTag<View>("steam_settings_audio").isSelected)
++            assertTrue(labels(restored.get()).any { it.text.toString().contains("100 毫秒") })
++        } finally { restored.pause().stop().destroy() }
++    }
++
++    @Test @Config(qualifiers = "zh-rCN-w393dp-h852dp")
++    fun controlsGrowToFitLargerText() {
++        val controller = Robolectric.buildActivity(DiPlayActivity::class.java, intent()).setup()
++        try {
++            val activity = controller.get()
++            navigateSteamSettings(activity, SteamSettingsSection.CONNECTION)
++            val toggle = views(activity.window.decorView).filterIsInstance<Switch>().single {
++                it.contentDescription == activity.getString(R.string.connect_when_diplay_opens)
++            }
++            val line = toggle.parent as ViewGroup
++            val text = views(line).filterIsInstance<TextView>().first { it !== toggle }
++            text.textSize = 36f
++            line.measure(View.MeasureSpec.makeMeasureSpec(320, View.MeasureSpec.EXACTLY),
++                View.MeasureSpec.makeMeasureSpec(0, View.MeasureSpec.UNSPECIFIED))
++            assertTrue(line.measuredHeight >= text.measuredHeight)
++            assertTrue(toggle.measuredHeight >= (48 * activity.resources.displayMetrics.density).toInt())
++        } finally { controller.pause().stop().destroy() }
++    }
++}
+--- a/mobile/build.gradle.kts
++++ b/mobile/build.gradle.kts
+@@ -17,8 +17,8 @@
+         applicationId = "com.shihab.diplay.steam"
+         minSdk = 28
+         targetSdk = 37
+-        versionCode = 46
+-        versionName = "0.2.27"
++        versionCode = 47
++        versionName = "0.2.28"
+         ndk { abiFilters += listOf("arm64-v8a", "armeabi-v7a", "x86_64") }
+ 
+     }
+--- /dev/null
++++ b/tools/check-steam-settings.py
+@@ -0,0 +1,124 @@
++#!/usr/bin/env python3
++"""Offline resource and lexical checks only; not an Android/Kotlin compiler."""
++from pathlib import Path
++from collections import Counter
++import json
++import re
++import sys
++import xml.etree.ElementTree as ET
++
++ROOT = Path(__file__).resolve().parents[1]
++RES = ROOT / 'common/src/main/res'
++errors = []
++xml_files = list(RES.rglob('*.xml'))
++for path in xml_files:
++    try:
++        ET.parse(path)
++    except ET.ParseError as problem:
++        errors.append(f'{path.relative_to(ROOT)}: {problem}')
++
++def resources(folder):
++    return [(node.tag, node.attrib.get('name'))
++            for path in folder.glob('*.xml') for node in ET.parse(path).getroot()
++            if node.attrib.get('name')]
++
++for folder in RES.glob('values*'):
++    duplicates = [name for name, count in Counter(resources(folder)).items() if count > 1]
++    if duplicates:
++        errors.append(f'{folder.relative_to(ROOT)}: duplicate resources {duplicates}')
++base_strings = {name for kind, name in resources(RES / 'values') if kind == 'string'}
++for path in [RES / 'values/steam_settings.xml', RES / 'values-zh-rCN/steam_settings.xml']:
++    if not path.exists():
++        errors.append(f'Missing {path}')
++        continue
++    strings = {node.attrib['name']: node.text or '' for node in ET.parse(path).getroot()}
++    if not set(strings).issubset(base_strings):
++        errors.append(f'{path}: strings missing from base locale')
++base = {node.attrib['name']: node.text or '' for node in ET.parse(RES / 'values/steam_settings.xml').getroot()}
++zh = {node.attrib['name']: node.text or '' for node in ET.parse(RES / 'values-zh-rCN/steam_settings.xml').getroot()}
++for name, value in base.items():
++    if name not in zh or re.findall(r'%\d+\$[ds]', value) != re.findall(r'%\d+\$[ds]', zh.get(name, '')):
++        errors.append(f'Locale placeholder mismatch: {name}')
++
++# Remove comments/literals before balancing delimiters. This deliberately does not
++# claim to type-check Kotlin or validate expressions in interpolated strings.
++def delimiters(text, filename):
++    stack = []
++    index = 0
++    while index < len(text):
++        if text.startswith('//', index):
++            stop = text.find('\n', index)
++            index = len(text) if stop < 0 else stop + 1
++            continue
++        if text.startswith('/*', index):
++            depth = 1
++            index += 2
++            while index < len(text) and depth:
++                if text.startswith('/*', index):
++                    depth += 1
++                    index += 2
++                elif text.startswith('*/', index):
++                    depth -= 1
++                    index += 2
++                else:
++                    index += 1
++            if depth:
++                errors.append(f'{filename}: unclosed comment')
++            continue
++        if text.startswith('"""', index):
++            stop = text.find('"""', index + 3)
++            if stop < 0:
++                errors.append(f'{filename}: unclosed multiline string')
++                return
++            index = stop + 3
++            continue
++        if text[index] in ['"', "'", '`']:
++            quote = text[index]
++            index += 1
++            while index < len(text) and text[index] != quote:
++                index += 2 if text[index] == '\\' and quote != '`' else 1
++            if index >= len(text):
++                errors.append(f'{filename}: unclosed literal')
++                return
++            index += 1
++            continue
++        char = text[index]
++        if char in '([{':
++            stack.append((char, index))
++        elif char in ')]}':
++            if not stack or stack[-1][0] != dict(zip(')]}', '([{'))[char]:
++                errors.append(f'{filename}: unmatched {char} at offset {index}')
++                return
++            stack.pop()
++        index += 1
++    if stack:
++        errors.append(f'{filename}: unclosed delimiters {stack}')
++
++changed = [ROOT / relative for relative in [
++    'common/src/main/java/com/shilapi/xcertplay/DiPlayActivity.kt',
++    'common/src/main/java/com/shilapi/xcertplay/SteamGlass.kt',
++    'common/src/test/java/com/shilapi/xcertplay/CarPlayCustomizationTest.kt',
++    'common/src/test/java/com/shilapi/xcertplay/LocationReportingSettingsTest.kt',
++    'common/src/test/java/com/shilapi/xcertplay/BydVehicleDataSettingsTest.kt',
++    'common/src/test/java/com/shilapi/xcertplay/BydSettingsReconnectTest.kt',
++    'common/src/test/java/com/shilapi/xcertplay/SteamGlassSettingsTest.kt',
++    'mobile/build.gradle.kts',
++]]
++for path in changed:
++    text = path.read_text()
++    delimiters(text, path.relative_to(ROOT))
++    for name in set(re.findall(r'R\.string\.(steam_\w+)', text)):
++        if name not in base_strings:
++            errors.append(f'{path}: missing {name}')
++result = {
++    'version': '0.2.28',
++    'check_type': 'offline_resource_and_lexical_checks_only',
++    'resource_xml_files': len(xml_files),
++    'kotlin_files_checked': len(changed),
++    'errors': errors,
++    'status': 'passed' if not errors else 'failed',
++    'kotlin_compilation_performed': False,
++    'android_tests_executed': False,
++}
++print(json.dumps(result, ensure_ascii=False, indent=2))
++sys.exit(bool(errors))
+--- /dev/null
++++ b/validation/0.2.27-unit-tests.json
+@@ -0,0 +1,17 @@
++{
++  "version": "0.2.27",
++  "results": {
++    "common": {
++      "tests": 275,
++      "failures": 0,
++      "errors": 0
++    },
++    "shared": {
++      "tests": 507,
++      "failures": 0,
++      "errors": 0
++    }
++  },
++  "total_tests": 782,
++  "real_phone_tested": false
++}--- /dev/null
++++ b/validation/build-attempt-0.2.28.txt
+@@ -0,0 +1,7 @@
++Command: ./gradlew --version
++Required: JDK 25, Android SDK 37, Gradle 9.5.0
++Local: JDK 17; no Android SDK or cached Gradle
++Result: exit 1
++Downloading https://services.gradle.org/distributions/gradle-9.5.0-bin.zip
++java.net.SocketException: Network is unreachable
++No Android compilation or Android tests ran. No APK was generated.
+--- /dev/null
++++ b/validation/static-checks-0.2.28.json
+@@ -0,0 +1,10 @@
++{
++  "version": "0.2.28",
++  "check_type": "offline_resource_and_lexical_checks_only",
++  "resource_xml_files": 52,
++  "kotlin_files_checked": 8,
++  "errors": [],
++  "status": "passed",
++  "kotlin_compilation_performed": false,
++  "android_tests_executed": false
++}
+--- a/validation/unit-tests.json
++++ b/validation/unit-tests.json
+@@ -1,17 +1,11 @@
+ {
+-  "version": "0.2.27",
+-  "results": {
+-    "common": {
+-      "tests": 275,
+-      "failures": 0,
+-      "errors": 0
+-    },
+-    "shared": {
+-      "tests": 507,
+-      "failures": 0,
+-      "errors": 0
+-    }
+-  },
+-  "total_tests": 782,
+-  "real_phone_tested": false
+-}+  "version": "0.2.28",
++  "status": "not_run",
++  "current_results": null,
++  "new_robolectric_tests": 6,
++  "reason": "JDK 25, Android SDK 37 and Gradle 9.5.0 unavailable; wrapper download failed with Network is unreachable.",
++  "baseline_results_file": "0.2.27-unit-tests.json",
++  "baseline_results_apply_to": "0.2.27 only",
++  "real_phone_tested": false,
++  "apk_produced": false
++}

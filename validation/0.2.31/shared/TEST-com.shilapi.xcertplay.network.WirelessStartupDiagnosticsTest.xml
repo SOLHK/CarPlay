@@ -1,0 +1,12 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<testsuite name="com.shilapi.xcertplay.network.WirelessStartupDiagnosticsTest" tests="6" skipped="0" failures="0" errors="0" timestamp="2026-10-05T10:53:42.415Z" hostname="e7822a2ead4f" time="0.004">
+  <properties/>
+  <testcase name="observerExportsSummaryAndAllFourSnapshotLinesSeparately" classname="com.shilapi.xcertplay.network.WirelessStartupDiagnosticsTest" time="0.002"/>
+  <testcase name="distinguishesSilentWifiHandoffFromAcceptedTcpAndActiveSession" classname="com.shilapi.xcertplay.network.WirelessStartupDiagnosticsTest" time="0.001"/>
+  <testcase name="startupTimersMeasureTheFirstRequestAndFirstAcceptedTcpWithoutChangingStages" classname="com.shilapi.xcertplay.network.WirelessStartupDiagnosticsTest" time="0.0"/>
+  <testcase name="closedObserverCannotBeStartedAndCannotFailTeardown" classname="com.shilapi.xcertplay.network.WirelessStartupDiagnosticsTest" time="0.0"/>
+  <testcase name="addressInventoryCountsAlternativeFamiliesWithoutExportingAddresses" classname="com.shilapi.xcertplay.network.WirelessStartupDiagnosticsTest" time="0.001"/>
+  <testcase name="observerFailureAndCloseDoNotAffectTheConnectionOrLeakErrorDetails" classname="com.shilapi.xcertplay.network.WirelessStartupDiagnosticsTest" time="0.0"/>
+  <system-out><![CDATA[]]></system-out>
+  <system-err><![CDATA[]]></system-err>
+</testsuite>

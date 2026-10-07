@@ -1,0 +1,13 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<testsuite name="com.shilapi.xcertplay.airplay.CarPlayClusterDisplayTest" tests="7" skipped="0" failures="0" errors="0" timestamp="2026-10-05T00:56:34.437Z" hostname="06d2ee2f5f86" time="0.005">
+  <properties/>
+  <testcase name="scaledStreamsKeepThePanelAspect" classname="com.shilapi.xcertplay.airplay.CarPlayClusterDisplayTest" time="0.002"/>
+  <testcase name="theDashboardCanAskForTheTurnCardInstead" classname="com.shilapi.xcertplay.airplay.CarPlayClusterDisplayTest" time="0.001"/>
+  <testcase name="markerStepsMoveTheWholeSafeArea" classname="com.shilapi.xcertplay.airplay.CarPlayClusterDisplayTest" time="0.0"/>
+  <testcase name="defaultClusterIsAdvertisedAsAnInputlessMapScreen" classname="com.shilapi.xcertplay.airplay.CarPlayClusterDisplayTest" time="0.0"/>
+  <testcase name="theCarSitsNearThePanelCentre" classname="com.shilapi.xcertplay.airplay.CarPlayClusterDisplayTest" time="0.001"/>
+  <testcase name="markerStepsAreBounded" classname="com.shilapi.xcertplay.airplay.CarPlayClusterDisplayTest" time="0.0"/>
+  <testcase name="nearAnEdgeTheSafeAreaShrinksAroundTheMarker" classname="com.shilapi.xcertplay.airplay.CarPlayClusterDisplayTest" time="0.001"/>
+  <system-out><![CDATA[]]></system-out>
+  <system-err><![CDATA[]]></system-err>
+</testsuite>

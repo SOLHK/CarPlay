@@ -1,0 +1,14 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<testsuite name="com.shilapi.xcertplay.airplay.AirPlayInfoPlistTest" tests="8" skipped="0" failures="0" errors="0" timestamp="2026-10-05T00:56:34.344Z" hostname="06d2ee2f5f86" time="0.006">
+  <properties/>
+  <testcase name="mainAltAndHighAudioStreamsAreDeclared" classname="com.shilapi.xcertplay.airplay.AirPlayInfoPlistTest" time="0.002"/>
+  <testcase name="drivingSideAndDisplayValuesAreAdvertised" classname="com.shilapi.xcertplay.airplay.AirPlayInfoPlistTest" time="0.0"/>
+  <testcase name="safeAreaInsetsReachTheAirPlayViewArea" classname="com.shilapi.xcertplay.airplay.AirPlayInfoPlistTest" time="0.001"/>
+  <testcase name="defaultDisplayIncludesFullViewAndSafeAreas" classname="com.shilapi.xcertplay.airplay.AirPlayInfoPlistTest" time="0.0"/>
+  <testcase name="squareOemIconIsAdvertisedWithItsOriginalBytes" classname="com.shilapi.xcertplay.airplay.AirPlayInfoPlistTest" time="0.0"/>
+  <testcase name="reportedSafeAreaUsesActivityMappingAndEvenAlignment" classname="com.shilapi.xcertplay.airplay.AirPlayInfoPlistTest" time="0.001"/>
+  <testcase name="microphoneInputsAreAdvertisedOnlyWhenEnabled" classname="com.shilapi.xcertplay.airplay.AirPlayInfoPlistTest" time="0.001"/>
+  <testcase name="hevcCapabilityIsAdvertisedOnlyWhenEnabled" classname="com.shilapi.xcertplay.airplay.AirPlayInfoPlistTest" time="0.0"/>
+  <system-out><![CDATA[]]></system-out>
+  <system-err><![CDATA[]]></system-err>
+</testsuite>

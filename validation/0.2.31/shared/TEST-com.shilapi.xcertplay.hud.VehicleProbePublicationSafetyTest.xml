@@ -1,0 +1,7 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<testsuite name="com.shilapi.xcertplay.hud.VehicleProbePublicationSafetyTest" tests="1" skipped="0" failures="0" errors="0" timestamp="2026-10-05T10:53:32.365Z" hostname="e7822a2ead4f" time="0.01">
+  <properties/>
+  <testcase name="candidateHeldForLosingGearMustNotReplaceThePublishedBattery" classname="com.shilapi.xcertplay.hud.VehicleProbePublicationSafetyTest" time="0.009"/>
+  <system-out><![CDATA[]]></system-out>
+  <system-err><![CDATA[]]></system-err>
+</testsuite>

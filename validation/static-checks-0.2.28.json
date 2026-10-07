@@ -1,0 +1,10 @@
+{
+  "version": "0.2.28",
+  "check_type": "offline_resource_and_lexical_checks_only",
+  "resource_xml_files": 52,
+  "kotlin_files_checked": 8,
+  "errors": [],
+  "status": "passed",
+  "kotlin_compilation_performed": false,
+  "android_tests_executed": false
+}

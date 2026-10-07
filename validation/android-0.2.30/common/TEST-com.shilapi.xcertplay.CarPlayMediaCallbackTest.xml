@@ -1,0 +1,11 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<testsuite name="com.shilapi.xcertplay.CarPlayMediaCallbackTest" tests="5" skipped="0" failures="0" errors="0" timestamp="2026-10-05T01:04:22.011Z" hostname="06d2ee2f5f86" time="0.092">
+  <properties/>
+  <testcase name="aHeldKeySendsOnePress" classname="com.shilapi.xcertplay.CarPlayMediaCallbackTest" time="0.03"/>
+  <testcase name="nowPlayingFieldsBecomeAndroidMediaMetadata" classname="com.shilapi.xcertplay.CarPlayMediaCallbackTest" time="0.02"/>
+  <testcase name="controllerPlayAndPauseAreExplicit" classname="com.shilapi.xcertplay.CarPlayMediaCallbackTest" time="0.011"/>
+  <testcase name="hardwarePlayAndPauseKeysToggle" classname="com.shilapi.xcertplay.CarPlayMediaCallbackTest" time="0.011"/>
+  <testcase name="positionAndPlayStateDoNotRepublishMetadata" classname="com.shilapi.xcertplay.CarPlayMediaCallbackTest" time="0.015"/>
+  <system-out><![CDATA[]]></system-out>
+  <system-err><![CDATA[]]></system-err>
+</testsuite>

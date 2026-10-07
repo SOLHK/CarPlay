@@ -1,0 +1,11 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<testsuite name="com.shilapi.xcertplay.ProcessExitDiagnosticsTest" tests="5" skipped="0" failures="0" errors="0" timestamp="2026-10-04T03:47:28.676Z" hostname="784f64faa022" time="0.296">
+  <properties/>
+  <testcase name="onlyOwnPackageAndThreeRecentExitsAreRequested" classname="com.shilapi.xcertplay.ProcessExitDiagnosticsTest" time="0.247"/>
+  <testcase name="exitHistoryIsBoundedAndReportsDistinctCausesWithoutIdentifiers" classname="com.shilapi.xcertplay.ProcessExitDiagnosticsTest" time="0.017"/>
+  <testcase name="androidNineDoesNotQueryTheAndroidElevenService" classname="com.shilapi.xcertplay.ProcessExitDiagnosticsTest" time="0.006"/>
+  <testcase name="missingFutureTimestampsAndUnknownReasonsRemainUnknown" classname="com.shilapi.xcertplay.ProcessExitDiagnosticsTest" time="0.006"/>
+  <testcase name="unavailableOrBrokenFirmwareCannotBreakReportExportOrLeakErrorMessages" classname="com.shilapi.xcertplay.ProcessExitDiagnosticsTest" time="0.005"/>
+  <system-out><![CDATA[]]></system-out>
+  <system-err><![CDATA[]]></system-err>
+</testsuite>

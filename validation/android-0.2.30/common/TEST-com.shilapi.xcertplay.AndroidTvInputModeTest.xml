@@ -1,0 +1,9 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<testsuite name="com.shilapi.xcertplay.AndroidTvInputModeTest" tests="3" skipped="0" failures="0" errors="0" timestamp="2026-10-05T01:03:47.130Z" hostname="06d2ee2f5f86" time="3.056">
+  <properties/>
+  <testcase name="televisionUsesRemoteNavigationEvenWhenItReportsTouch" classname="com.shilapi.xcertplay.AndroidTvInputModeTest" time="2.0"/>
+  <testcase name="touchscreenKeepsAndroidNavigation" classname="com.shilapi.xcertplay.AndroidTvInputModeTest" time="0.036"/>
+  <testcase name="nonTouchHeadUnitUsesRemoteNavigation" classname="com.shilapi.xcertplay.AndroidTvInputModeTest" time="0.022"/>
+  <system-out><![CDATA[]]></system-out>
+  <system-err><![CDATA[]]></system-err>
+</testsuite>

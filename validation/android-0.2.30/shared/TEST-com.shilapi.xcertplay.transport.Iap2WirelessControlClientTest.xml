@@ -1,0 +1,12 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<testsuite name="com.shilapi.xcertplay.transport.Iap2WirelessControlClientTest" tests="6" skipped="0" failures="0" errors="0" timestamp="2026-10-05T00:56:40.327Z" hostname="06d2ee2f5f86" time="0.004">
+  <properties/>
+  <testcase name="accessoryWiFiConfigurationMatchesLiviVector" classname="com.shilapi.xcertplay.transport.Iap2WirelessControlClientTest" time="0.002"/>
+  <testcase name="wirelessCarPlayUpdateReadsBooleanAvailability" classname="com.shilapi.xcertplay.transport.Iap2WirelessControlClientTest" time="0.0"/>
+  <testcase name="carPlayStartSessionMatchesLiviWirelessVector" classname="com.shilapi.xcertplay.transport.Iap2WirelessControlClientTest" time="0.001"/>
+  <testcase name="wiredIdentificationKeepsCarPlayStartSessionDeclaration" classname="com.shilapi.xcertplay.transport.Iap2WirelessControlClientTest" time="0.0"/>
+  <testcase name="availabilityFlagsDoNotExportTransportIdentifiers" classname="com.shilapi.xcertplay.transport.Iap2WirelessControlClientTest" time="0.001"/>
+  <testcase name="wirelessIdentificationAdvertisesTransportComponentsWithoutUsbHost" classname="com.shilapi.xcertplay.transport.Iap2WirelessControlClientTest" time="0.0"/>
+  <system-out><![CDATA[]]></system-out>
+  <system-err><![CDATA[]]></system-err>
+</testsuite>

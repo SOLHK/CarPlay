@@ -1,0 +1,7 @@
+Command: ./gradlew --version
+Required: JDK 25, Android SDK 37, Gradle 9.5.0
+Local: JDK 17; no Android SDK or cached Gradle
+Result: exit 1
+Downloading https://services.gradle.org/distributions/gradle-9.5.0-bin.zip
+java.net.SocketException: Network is unreachable
+No Android compilation or Android tests ran. No APK was generated.
