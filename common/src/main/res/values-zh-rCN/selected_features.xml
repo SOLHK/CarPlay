@@ -1,0 +1,34 @@
+<?xml version='1.0' encoding='utf-8'?>
+<resources>
+    <string name="wheel_keys_service_on">方向盘按键服务：已开启</string>
+    <string name="wheel_keys_service_off">方向盘按键服务：已关闭</string>
+    <string name="wheel_keys_enable_adb">开启方向盘按键服务 · ADB</string>
+    <string name="wheel_keys_adb_failed">ADB 不可用：%1$s</string>
+    <string name="wheel_keys_open_settings">打开无障碍设置</string>
+    <string name="wheel_keys_no_settings">此车机没有无障碍设置页面，请使用 ADB 按钮。</string>
+    <string name="wheel_key_assign">%1$s按键：%2$s · 点按以更改</string>
+    <string name="wheel_key_press">现在请按下用于%1$s的方向盘按键…</string>
+    <string name="wheel_key_role_siri">Siri</string>
+    <string name="wheel_key_none">无</string>
+    <string name="wheel_siri_key">方向盘 Siri 按键</string>
+    <string name="wheel_siri_key_description">在 CarPlay 显示于屏幕时，用你选择的方向盘按键打开 Siri。车辆自身保留的按键只能配合方向盘按键服务使用，该服务在 CarPlay 处于后台时也可使用。未连接 CarPlay 或通话时，该按键保留车辆原有功能。</string>
+    <string name="wheel_key_service_label">CarPlay 方向盘按键</string>
+    <string name="wheel_key_service_description">用选定的方向盘按键打开 Siri，并可接收 CarPlay 通话按键。只接收按键，不读取屏幕内容。</string>
+    <string name="call_echo_cancellation">通话回声消除（实验性）</string>
+    <string name="call_echo_cancellation_description">尝试减少 CarPlay 通话中发送给对方的扬声器回声。效果取决于车载主机。下次连接 CarPlay 时生效。</string>
+    <string name="call_voice_filter">更清晰的通话人声（实验性）</string>
+    <string name="call_voice_filter_description">削减 CarPlay 通话音频的低音。这可能改变人声的音色。下次连接 CarPlay 时生效。</string>
+    <string name="default_connection_mode">默认连接模式</string>
+    <string name="default_connection_last_used">上次使用</string>
+    <string name="default_connection_wireless">无线</string>
+    <string name="default_connection_usb">USB</string>
+    <string name="default_connection_description">打开 CarPlay 时，使用默认连接模式和选定的 iPhone。手动连接按钮使用你选择的模式。</string>
+    <string name="audio_focus_auto_yield">暂时失去音频焦点时静音媒体</string>
+    <string name="carplay_call_audio">通话音频（实验性）</string>
+    <string name="carplay_call_vehicle">比亚迪通话显示和方向盘控制</string>
+    <string name="carplay_calls_on_dashboard">仪表盘显示 CarPlay 通话</string>
+    <string name="carplay_calls_on_dashboard_description">来电和通话中的 CarPlay 通话会在仪表盘上显示来电者，并在仪表盘和抬头显示器上显示通话时长，与比亚迪原厂 CarPlay 应用相同。通话期间车辆还会降低风扇风速。立即生效。需要主机开启网络 ADB。</string>
+    <string name="carplay_call_controls_experimental">CarPlay 通话按键（实验性）</string>
+    <string name="carplay_call_controls_experimental_description">启用尚未验证的 DiLink 3 通话、语音和播放/暂停按键。仍需实车测试。默认关闭；仪表通话卡片为独立设置。</string>
+    <string name="audio_focus_auto_yield_desc">启用音频焦点后，在 Android 音频被打断（包括来电）时静音媒体，重新获得焦点后恢复。如果车机不恢复音频焦点，请关闭此选项。更改在重新连接后生效。</string>
+</resources>

@@ -177,6 +177,11 @@ class DiPlayActivity : ComponentActivity() {
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
+        if (savedInstanceState == null && isLauncherIntent(intent) && CarPlayBackgroundSession.hasSession()) {
+            openProjection(); finish(); return
+        }
+        CarPlayCallKeys.install(this)
+        WheelKeyService.restoreIfNeeded(this)
         RuntimeDiagnostics.start(this)
         CarPlayProfileDefaults.apply(this)
         languagePreferenceAtCreate = AppLocale.preference(this)
@@ -212,6 +217,11 @@ class DiPlayActivity : ComponentActivity() {
 
     override fun onNewIntent(intent: Intent) {
         super.onNewIntent(intent); setIntent(intent)
+        if (isLauncherIntent(intent) && CarPlayBackgroundSession.hasSession()) {
+            page = "home"
+            openedFromSettings = false
+            openProjection(); finish(); return
+        }
         rememberSettingsScroll()
         openedFromSettings = false
         page = intent.getStringExtra("page") ?: "home"; render()
@@ -264,11 +274,12 @@ class DiPlayActivity : ComponentActivity() {
             startCarHotspotOnLaunch()
             if (setupError == null && !CarPlayBackgroundSession.hasSession() &&
                 DiPlayPreferences.autoConnect(this) && intent.getStringExtra("page") == null) {
-                handler.post { connect(AirPlayPersistence.loadWirelessEnabled(this)) }
+                handler.post { connect(DiPlayPreferences.autoConnectWireless(this)) }
             }
         }
     }
     override fun onPause() {
+        cancelSiriLearning()
         pausedForAdbSwitchChange = adbSwitchChangePending
         handler.removeCallbacks(tick)
         audioPreviews.forEach { it.stop() }
@@ -631,7 +642,13 @@ class DiPlayActivity : ComponentActivity() {
                     card.addView(button(getString(R.string.open_connection_setup), false) { openSettingsChild("connection") }, matchButton(12, 60))
                 }
                 section(content, getString(R.string.automatic_connection), R.drawable.ic_dp_automation) { card ->
-                    toggle(card, getString(R.string.connect_when_diplay_opens), getString(R.string.use_your_last_connection_type_and_selected_iphone), DiPlayPreferences.autoConnect(this)) { DiPlayPreferences.saveAutoConnect(this, it) }
+                    toggle(card, getString(R.string.connect_when_diplay_opens), getString(R.string.default_connection_description), DiPlayPreferences.autoConnect(this)) { DiPlayPreferences.saveAutoConnect(this, it) }
+                    val modes = DefaultConnectionMode.entries
+                    choice(card, getString(R.string.default_connection_mode), listOf(
+                        getString(R.string.default_connection_last_used), getString(R.string.default_connection_wireless),
+                        getString(R.string.default_connection_usb)), modes.indexOf(DiPlayPreferences.defaultConnectionMode(this)), reconnects = false) {
+                        DiPlayPreferences.saveDefaultConnectionMode(this, modes[it])
+                    }
                     adbToggle(card, R.string.open_after_the_car_starts,
                         R.string.availability_depends_on_your_head_unit_s_startup_settings,
                         read = { AirPlayPersistence.loadAutoStartOnBoot(this) },
@@ -657,6 +674,8 @@ class DiPlayActivity : ComponentActivity() {
             SteamSettingsSection.AUDIO -> {
                 section(content, getString(R.string.audio_routing)) { card ->
                     toggle(card, getString(R.string.contrib_audio_home_toggle_audio_focus), getString(R.string.contrib_audio_home_toggle_audio_focus_desc), AirPlayPersistence.loadAudioFocusEnabled(this)) { AirPlayPersistence.saveAudioFocusEnabled(this, it) }
+                    toggle(card, getString(R.string.audio_focus_auto_yield), getString(R.string.audio_focus_auto_yield_desc),
+                        AirPlayPersistence.loadAudioFocusAutoYield(this)) { AirPlayPersistence.saveAudioFocusAutoYield(this, it) }
                     if (resources.getBoolean(R.bool.config_advanced_audio_channel_mapping)) {
                         toggle(card, getString(R.string.advanced_audio_channel_mapping),
                             getString(R.string.use_usage_content_type_routing_instead_of_stream_type),
@@ -675,6 +694,27 @@ class DiPlayActivity : ComponentActivity() {
                         bufferPresets.indexOf(AirPlayPersistence.loadMediaBufferMillis(this)).coerceAtLeast(0)) {
                         AirPlayPersistence.saveMediaBufferMillis(this, bufferPresets[it])
                     }
+                }
+                section(content, getString(R.string.carplay_call_audio)) { card ->
+                    toggle(card, getString(R.string.call_echo_cancellation), getString(R.string.call_echo_cancellation_description),
+                        AirPlayPersistence.loadCallEchoCancellation(this)) { AirPlayPersistence.saveCallEchoCancellation(this, it) }
+                    toggle(card, getString(R.string.call_voice_filter), getString(R.string.call_voice_filter_description),
+                        AirPlayPersistence.loadCallVoiceFilter(this)) { AirPlayPersistence.saveCallVoiceFilter(this, it) }
+                }
+                section(content, getString(R.string.wheel_siri_key)) { card -> wheelSiriControls(card) }
+                section(content, getString(R.string.carplay_call_vehicle)) { card ->
+                    toggle(card, getString(R.string.carplay_calls_on_dashboard), getString(R.string.carplay_calls_on_dashboard_description),
+                        BydOutputSettings.carPlayCalls(this)) {
+                        BydOutputSettings.setCarPlayCalls(this, it)
+                        if (it) checkAdbState(mayAsk = true)
+                        BydNavigationOutputs.carPlayCallsChanged(it)
+                    }
+                    toggle(card, getString(R.string.carplay_call_controls_experimental), getString(R.string.carplay_call_controls_experimental_description),
+                        BydOutputSettings.carPlayCallControls(this)) {
+                        BydOutputSettings.setCarPlayCallControls(this, it)
+                        WheelKeyService.restoreIfNeeded(this)
+                    }
+                    wheelKeyServiceControls(card)
                 }
             }
             SteamSettingsSection.LOCATION -> {
@@ -2652,7 +2692,79 @@ class DiPlayActivity : ComponentActivity() {
     private fun matchButton(top: Int = 0, height: Int = 68) = LinearLayout.LayoutParams(-1, if (usesSteamGlass()) -2 else dp(height)).apply { topMargin = dp(top) }
     private fun space(height: Int) = View(this).apply { layoutParams = LinearLayout.LayoutParams(1, dp(height)) }
     private fun dp(value: Int) = if (usesSteamGlass()) (value * resources.displayMetrics.density).roundToInt() else ResponsiveUi.dp(this, value)
+    private var learntSiriInWindow: ((WheelKey) -> Unit)? = null
+    private var siriLearningCancelled: (() -> Unit)? = null
+    private val learningPresses = WheelKeyPresses()
+    private val endSiriLearning = Runnable { cancelSiriLearning() }
+    private fun cancelSiriLearning() {
+        learntSiriInWindow = null
+        val cancelled = siriLearningCancelled
+        siriLearningCancelled = null
+        cancelled?.invoke()
+        handler.removeCallbacks(endSiriLearning)
+        WheelKeyService.cancelLearning()
+    }
+    override fun dispatchKeyEvent(event: android.view.KeyEvent): Boolean {
+        if (event.action != android.view.KeyEvent.ACTION_DOWN && event.action != android.view.KeyEvent.ACTION_UP) return super.dispatchKeyEvent(event)
+        val action = learningPresses.filter(Triple(event.deviceId, event.keyCode, event.scanCode),
+            event.action == android.view.KeyEvent.ACTION_DOWN, event.repeatCount == 0) {
+            val done = learntSiriInWindow ?: return@filter WheelKeyDisposition.PASS
+            if (event.keyCode == android.view.KeyEvent.KEYCODE_BACK) return@filter WheelKeyDisposition.PASS
+            if (inCall(this) || !WheelSiriSettings.enabled(this)) {
+                cancelSiriLearning(); return@filter WheelKeyDisposition.PASS
+            }
+            val key = WheelKey.of(event)
+            cancelSiriLearning()
+            WheelSiriSettings.assign(this, key)
+            done(key)
+            WheelKeyDisposition.CONSUME
+        }
+        return action != WheelKeyDisposition.PASS || super.dispatchKeyEvent(event)
+    }
+    private fun wheelSiriControls(card: LinearLayout) {
+        toggle(card, getString(R.string.wheel_siri_key), getString(R.string.wheel_siri_key_description), WheelSiriSettings.enabled(this)) {
+            WheelSiriSettings.setEnabled(this, it); render()
+        }
+        if (!WheelSiriSettings.enabled(this)) return
+        lateinit var assign: android.widget.Button
+        fun title() = getString(R.string.wheel_key_assign, getString(R.string.wheel_key_role_siri),
+            WheelSiriSettings.key(this)?.toString() ?: getString(R.string.wheel_key_none))
+        assign = button(title(), false) {
+            cancelSiriLearning()
+            val done = { _: WheelKey -> runOnUiThread { assign.text = title() } }
+            val started = WheelKeyService.learn(cancelled = { runOnUiThread { assign.text = title() } }, done = done)
+            if (!started && !inCall(this)) {
+                learntSiriInWindow = done
+                siriLearningCancelled = { assign.text = title() }
+                handler.postDelayed(endSiriLearning, WheelKeyService.LEARNING_TIMEOUT_MILLIS)
+            }
+            assign.text = getString(R.string.wheel_key_press, getString(R.string.wheel_key_role_siri))
+        }
+        card.addView(assign, matchButton(10, 56))
+        wheelKeyServiceControls(card)
+    }
+    private fun wheelKeyServiceControls(card: LinearLayout) {
+        val connected = WheelKeyService.connected()
+        card.addView(label(getString(if (connected) R.string.wheel_keys_service_on else R.string.wheel_keys_service_off), 14, if (connected) MUTED else WARNING))
+        if (!connected) {
+            card.addView(button(getString(R.string.wheel_keys_enable_adb), false) {
+                Thread({
+                    val access = runCatching { WheelKeyService.enableOverAdb(this) }.getOrNull()
+                    runOnUiThread {
+                        if (access != com.shilapi.xcertplay.adb.LocalAdb.Access.READY) toast(getString(R.string.wheel_keys_adb_failed, access?.name ?: "unavailable"))
+                        render()
+                    }
+                }, "carplay-wheel-enable").start()
+            }, matchButton(10, 56))
+            card.addView(button(getString(R.string.wheel_keys_open_settings), false) {
+                runCatching { startActivity(Intent(Settings.ACTION_ACCESSIBILITY_SETTINGS)) }.onFailure { toast(getString(R.string.wheel_keys_no_settings)) }
+            }, matchButton(10, 56))
+        }
+    }
+
     companion object {
+        internal fun isLauncherIntent(intent: Intent): Boolean =
+            intent.action == Intent.ACTION_MAIN && intent.hasCategory(Intent.CATEGORY_LAUNCHER) && !intent.hasExtra("page")
         private const val BYD_VEHICLE_TAG = "DiPlay-BYD13"
         private const val VEHICLE_VALIDATION_RETRY_MILLIS = 500L
         private const val ADB_KEY_SAVE_WAIT_MILLIS = 500L

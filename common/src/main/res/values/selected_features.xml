@@ -1,0 +1,34 @@
+<?xml version='1.0' encoding='utf-8'?>
+<resources>
+    <string name="wheel_keys_service_on">Wheel key service: on</string>
+    <string name="wheel_keys_service_off">Wheel key service: off</string>
+    <string name="wheel_keys_enable_adb">Turn on the wheel key service · ADB</string>
+    <string name="wheel_keys_adb_failed">ADB is not available: %1$s</string>
+    <string name="wheel_keys_open_settings">Open accessibility settings</string>
+    <string name="wheel_keys_no_settings">This head unit has no accessibility settings screen. Use the ADB button.</string>
+    <string name="wheel_key_assign">Key for %1$s: %2$s · tap to change</string>
+    <string name="wheel_key_press">Press the wheel key for %1$s now…</string>
+    <string name="wheel_key_role_siri">Siri</string>
+    <string name="wheel_key_none">none</string>
+    <string name="wheel_siri_key">Siri key on the wheel</string>
+    <string name="wheel_siri_key_description">Opens Siri with a wheel key you choose while CarPlay is on the screen. A key that the car keeps for itself works only with the wheel key service, which also works when CarPlay is in the background. Without CarPlay, or during a call, the key keeps the car\'s own action.</string>
+    <string name="wheel_key_service_label">CarPlay steering-wheel keys</string>
+    <string name="wheel_key_service_description">Use the assigned wheel key to open Siri and optionally handle CarPlay call keys. Receives keys only; does not read screen content.</string>
+    <string name="call_echo_cancellation">Call echo cancellation (experimental)</string>
+    <string name="call_echo_cancellation_description">Tries to reduce speaker echo sent to the other person during CarPlay calls. Results depend on the head unit. Applies at the next CarPlay connection.</string>
+    <string name="call_voice_filter">Clearer call voices (experimental)</string>
+    <string name="call_voice_filter_description">Cuts bass from CarPlay call audio. This may change how voices sound. Applies at the next CarPlay connection.</string>
+    <string name="default_connection_mode">Default connection mode</string>
+    <string name="default_connection_last_used">Last used</string>
+    <string name="default_connection_wireless">Wireless</string>
+    <string name="default_connection_usb">USB</string>
+    <string name="default_connection_description">Use the default connection mode and selected iPhone when CarPlay opens. Manual connection buttons use the mode you choose.</string>
+    <string name="audio_focus_auto_yield">Mute media on temporary focus loss</string>
+    <string name="carplay_call_audio">Call audio (experimental)</string>
+    <string name="carplay_call_vehicle">BYD call display and wheel controls</string>
+    <string name="carplay_calls_on_dashboard">CarPlay calls on the dashboard</string>
+    <string name="carplay_calls_on_dashboard_description">Incoming and ongoing CarPlay calls show the caller on the instrument cluster, with the call time on the cluster and the head-up display, like BYD’s own CarPlay app. The car also turns the fan down during the call. Applies at once. Needs ADB over network on the head unit.</string>
+    <string name="carplay_call_controls_experimental">CarPlay call keys (experimental)</string>
+    <string name="carplay_call_controls_experimental_description">Opt in to unverified DiLink 3 call, voice and play/pause keys. Vehicle testing is still required. Disabled by default; dashboard call cards are a separate setting.</string>
+    <string name="audio_focus_auto_yield_desc">When audio focus is enabled, mute media during Android audio interruptions, including calls. Restore audio when focus returns. Disable if your head unit does not return focus. Changes apply on reconnect.</string>
+</resources>

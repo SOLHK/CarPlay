@@ -18,6 +18,20 @@ class CarPlayMediaCallbackTest {
     private val sent = mutableListOf<Int>()
     private val callback = CarPlayMediaCallback { index, _ -> sent += index }
 
+    @Test fun experimentalPlayPauseKeyNeedsOptInAndStopsAfterDisable() {
+        var enabled = false
+        val experimental = CarPlayMediaCallback(experimentalDiLink3Keys = { enabled }) { index, _ -> sent += index }
+        val key = button(KeyEvent(0, 0, KeyEvent.ACTION_DOWN, 331, 0))
+        experimental.onMediaButtonEvent(key)
+        assertEquals(emptyList<Int>(), sent)
+        enabled = true
+        experimental.onMediaButtonEvent(key)
+        assertEquals(listOf(CarPlayMediaButton.PLAY_PAUSE), sent)
+        enabled = false
+        experimental.onMediaButtonEvent(key)
+        assertEquals(listOf(CarPlayMediaButton.PLAY_PAUSE), sent)
+    }
+
     @Test
     fun controllerPlayAndPauseAreExplicit() {
         callback.onPlay()

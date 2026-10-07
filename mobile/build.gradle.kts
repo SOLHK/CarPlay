@@ -17,8 +17,8 @@ android {
         applicationId = "com.shihab.diplay.steam"
         minSdk = 28
         targetSdk = 37
-        versionCode = 50
-        versionName = "0.2.31"
+        versionCode = 51
+        versionName = "0.2.32"
         ndk { abiFilters += listOf("arm64-v8a", "armeabi-v7a", "x86_64") }
 
     }
@@ -41,7 +41,7 @@ android {
     buildTypes {
         debug {
             applicationIdSuffix = ".hudtest"
-            versionNameSuffix = "-hud-test"
+            versionNameSuffix = "-selected-features-test"
         }
         release {
             optimization {

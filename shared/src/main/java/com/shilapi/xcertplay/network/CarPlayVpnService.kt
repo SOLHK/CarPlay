@@ -55,6 +55,7 @@ class CarPlayVpnService : VpnService() {
     private val sessions = mutableSetOf<AirPlaySession>()
     @Volatile private var attachment: AirPlayAttachment? = null
     private var serverSocket: ServerSocket? = null
+    private val additionalServerSockets = mutableListOf<ServerSocket>()
     private var bridge: Ipv6NcmBridge? = null
     private var tun: ParcelFileDescriptor? = null
     private var attachGeneration = 0
@@ -129,6 +130,7 @@ class CarPlayVpnService : VpnService() {
         mfi: MfiAuthenticator?,
         listener: AirPlaySessionListener,
         media: AirPlayMediaHandler,
+        additionalBindAddresses: List<InetAddress> = emptyList(),
     ): AttachResult {
         if (active.get()) {
             Log.i(TAG, "replacing stale local-only Wi-Fi attachment")
@@ -141,6 +143,14 @@ class CarPlayVpnService : VpnService() {
                 generation,
                 AirPlayAttachment(bindAddress, config, identity, pairings, mfi, listener, media),
             )
+            val port = checkNotNull(serverSocket).localPort
+            additionalBindAddresses.distinct().filter { it != bindAddress }.forEach { address ->
+                val server = ServerSocket()
+                additionalServerSockets += server // Own it before bind so failures are closed too.
+                server.reuseAddress = true
+                server.bind(java.net.InetSocketAddress(address, port))
+                Thread({ acceptLoop(generation, server) }, "airplay-accept-secondary").apply { isDaemon = true; start() }
+            }
             AttachResult.Started
         } catch (error: Exception) {
             releaseLocked()
@@ -194,7 +204,7 @@ class CarPlayVpnService : VpnService() {
                 socket.keepAlive = true
                 socket.setSoLinger(true, 0)
                 val session = synchronized(this) {
-                    if (!active.get()) {
+                    if (!active.get() || generation != attachGeneration) {
                         socket.close()
                         return
                     }
@@ -292,6 +302,8 @@ class CarPlayVpnService : VpnService() {
         attachGeneration += 1
         active.set(false)
         attachment = null
+        additionalServerSockets.forEach { runCatching { it.close() } }
+        additionalServerSockets.clear()
         serverSocket?.close()
         serverSocket = null
         closeSessionsLocked()

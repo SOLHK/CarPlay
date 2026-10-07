@@ -57,9 +57,14 @@ object BydNavigationOutputs {
         }
         BydClusterMapPause.initialize(app)
         BydClusterSong.attach(app)
+        BydCarPlayCall.attach(app)
     }
 
     internal fun onFrame(frame: Iap2Frame) {
+        if (frame.messageId == CarPlayCallState.CALL_STATE_UPDATE) {
+            BydCarPlayCall.onFrame(frame)
+            return
+        }
         if (frame.messageId == ClusterSongState.NOW_PLAYING_UPDATE) {
             BydClusterSong.onFrame(frame)
             return
@@ -107,8 +112,12 @@ object BydNavigationOutputs {
     fun clusterSongChanged(enabled: Boolean) = BydClusterSong.settingChanged(enabled)
 
     /** Best effort while alive; Android does not guarantee callbacks before force-stop. */
+    fun carPlayCallsChanged(enabled: Boolean) = BydCarPlayCall.settingChanged(enabled)
+    fun carPlaySessionStarted() = BydCarPlayCall.sessionStarted()
+    fun carPlayCall(): CarPlayCallCard? = BydCarPlayCall.current()
+
     fun endNow() {
-        standalone.clear(); hud.clear(); cluster.clear(); BydClusterSong.end()
+        standalone.clear(); hud.clear(); cluster.clear(); BydClusterSong.end(); BydCarPlayCall.end()
         synchronized(overlayLock) { overlayRoute.clear() }
         refreshTurnOverlay()
     }

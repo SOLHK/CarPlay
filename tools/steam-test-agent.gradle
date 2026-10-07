@@ -1,8 +1,15 @@
-// JDK 25 tests: set MOCKITO_AGENT_JAR to the resolved mockito-core jar.
-// ./gradlew --init-script tools/steam-test-agent.gradle :shared:testDebugUnitTest :common:testDebugUnitTest
+// JDK 25: attach Mockito before tests start instead of using dynamic self-attachment.
+// ./gradlew --no-configuration-cache --init-script tools/steam-test-agent.gradle :shared:testDebugUnitTest :common:testDebugUnitTest
 allprojects {
     tasks.withType(Test).configureEach {
-        def jarPath = System.getenv('MOCKITO_AGENT_JAR')
-        if (project.name == 'common' && jarPath) jvmArgs "-javaagent:${jarPath}"
+        maxHeapSize = '1024m'
+        maxParallelForks = 1
+        doFirst {
+            def explicitJar = System.getenv('MOCKITO_AGENT_JAR')
+            def agent = explicitJar ?: classpath.files.find {
+                it.name.startsWith('mockito-core-') && it.name.endsWith('.jar')
+            }?.absolutePath
+            if (agent) jvmArgs "-javaagent:${agent}"
+        }
     }
 }
