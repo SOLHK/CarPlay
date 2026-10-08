@@ -30,11 +30,23 @@ jobs:
           set -euo pipefail
           release_id=$(gh api "repos/${GITHUB_REPOSITORY}/releases/tags/v0.2.33" --jq .id)
           test "$release_id" = 406518529
-          gh release upload v0.2.33 \
-            CarPlay-0.2.33.apk \
-            CarPlay-0.2.33-source-and-tests.zip \
-            SHA256SUMS.txt \
-            --repo "$GITHUB_REPOSITORY" --clobber
+          gh api "repos/${GITHUB_REPOSITORY}/releases/${release_id}" > "$RUNNER_TEMP/carplay-release.json"
+          python - <<'PY' > "$RUNNER_TEMP/carplay-upload-files.txt"
+          import hashlib, json, os
+          from pathlib import Path
+          release = json.loads((Path(os.environ['RUNNER_TEMP']) / 'carplay-release.json').read_text())
+          assets = {asset['name']: asset for asset in release['assets']}
+          for name in ['CarPlay-0.2.33.apk', 'CarPlay-0.2.33-source-and-tests.zip', 'SHA256SUMS.txt']:
+              local = Path(name)
+              remote = assets.get(name, {})
+              digest = 'sha256:' + hashlib.sha256(local.read_bytes()).hexdigest()
+              if remote.get('size') != local.stat().st_size or remote.get('digest') != digest:
+                  print(name)
+          PY
+          mapfile -t upload_files < "$RUNNER_TEMP/carplay-upload-files.txt"
+          if (( ${#upload_files[@]} )); then
+            gh release upload v0.2.33 "${upload_files[@]}" --repo "$GITHUB_REPOSITORY" --clobber
+          fi
           gh api "repos/${GITHUB_REPOSITORY}/releases/${release_id}" > "$RUNNER_TEMP/carplay-release.json"
           python - <<'PY'
           import hashlib, json, os
