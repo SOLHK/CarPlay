@@ -1,0 +1,10 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<testsuite name="com.shilapi.xcertplay.airplay.CarPlayMediaEngineTest" tests="4" skipped="0" failures="0" errors="0" timestamp="2026-10-08T01:21:56.483Z" hostname="fb3fb179fe46" time="0.007">
+  <properties/>
+  <testcase name="videoRemoteControlSessionsAreAcceptedOnlyWithVideoInCar" classname="com.shilapi.xcertplay.airplay.CarPlayMediaEngineTest" time="0.003"/>
+  <testcase name="screenStreamTeardownReportsInactive" classname="com.shilapi.xcertplay.airplay.CarPlayMediaEngineTest" time="0.001"/>
+  <testcase name="streamConnectionIdUsesUnsignedDecimalForHkdfSalt" classname="com.shilapi.xcertplay.airplay.CarPlayMediaEngineTest" time="0.0"/>
+  <testcase name="sessionCloseReportsAllScreenStreamsInactive" classname="com.shilapi.xcertplay.airplay.CarPlayMediaEngineTest" time="0.002"/>
+  <system-out><![CDATA[]]></system-out>
+  <system-err><![CDATA[]]></system-err>
+</testsuite>

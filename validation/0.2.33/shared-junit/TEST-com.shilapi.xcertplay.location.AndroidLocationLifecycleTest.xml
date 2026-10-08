@@ -1,0 +1,9 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<testsuite name="com.shilapi.xcertplay.location.AndroidLocationLifecycleTest" tests="3" skipped="0" failures="0" errors="0" timestamp="2026-10-08T01:22:07.266Z" hostname="fb3fb179fe46" time="0.114">
+  <properties/>
+  <testcase name="disablingProviderInvalidatesItsCachedPosition" classname="com.shilapi.xcertplay.location.AndroidLocationLifecycleTest" time="0.09"/>
+  <testcase name="stoppedProviderCannotEmitLateCallbacks" classname="com.shilapi.xcertplay.location.AndroidLocationLifecycleTest" time="0.01"/>
+  <testcase name="lateOlderCallbackCannotReplaceCurrentFix" classname="com.shilapi.xcertplay.location.AndroidLocationLifecycleTest" time="0.011"/>
+  <system-out><![CDATA[]]></system-out>
+  <system-err><![CDATA[]]></system-err>
+</testsuite>

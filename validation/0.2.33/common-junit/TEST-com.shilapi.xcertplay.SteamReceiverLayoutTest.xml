@@ -1,0 +1,15 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<testsuite name="com.shilapi.xcertplay.SteamReceiverLayoutTest" tests="9" skipped="0" failures="0" errors="0" timestamp="2026-10-08T01:22:47.507Z" hostname="fb3fb179fe46" time="6.353">
+  <properties/>
+  <testcase name="connectionMethodCanSwitchBackToWifiDirectWithoutErasingHotspotDetails" classname="com.shilapi.xcertplay.SteamReceiverLayoutTest" time="3.406"/>
+  <testcase name="homeHasNewLayoutAndThreeAlignedShortcuts" classname="com.shilapi.xcertplay.SteamReceiverLayoutTest" time="0.289"/>
+  <testcase name="wideConnectionPageShowsTheMainActionBesideTheSetup" classname="com.shilapi.xcertplay.SteamReceiverLayoutTest" time="0.223"/>
+  <testcase name="allSettingsAndChildPagesUseTheSameGlassFamily" classname="com.shilapi.xcertplay.SteamReceiverLayoutTest" time="1.324"/>
+  <testcase name="largeSystemFontsUseOneDetailColumnAndKeepTextUnclipped" classname="com.shilapi.xcertplay.SteamReceiverLayoutTest" time="0.318"/>
+  <testcase name="narrowHomeStacksItsShortcutsAndKeepsTextWithinBounds" classname="com.shilapi.xcertplay.SteamReceiverLayoutTest" time="0.208"/>
+  <testcase name="longErrorAndLargerTextStayScrollableOnNarrowScreens" classname="com.shilapi.xcertplay.SteamReceiverLayoutTest" time="0.086"/>
+  <testcase name="waitingPageKeepsRecoveryActionsBelowTheErrorAndCallsTheRightAction" classname="com.shilapi.xcertplay.SteamReceiverLayoutTest" time="0.139"/>
+  <testcase name="narrowSettingsKeepEveryCategoryReachable" classname="com.shilapi.xcertplay.SteamReceiverLayoutTest" time="0.265"/>
+  <system-out><![CDATA[]]></system-out>
+  <system-err><![CDATA[]]></system-err>
+</testsuite>

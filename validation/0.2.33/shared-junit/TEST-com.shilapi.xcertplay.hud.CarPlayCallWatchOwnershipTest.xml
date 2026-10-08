@@ -1,0 +1,22 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<testsuite name="com.shilapi.xcertplay.hud.CarPlayCallWatchOwnershipTest" tests="16" skipped="0" failures="0" errors="0" timestamp="2026-10-08T01:22:07.099Z" hostname="fb3fb179fe46" time="0.026">
+  <properties/>
+  <testcase name="failedEndTurnsAnActiveJournalIntoPendingCleanupBeforeTheSetter" classname="com.shilapi.xcertplay.hud.CarPlayCallWatchOwnershipTest" time="0.003"/>
+  <testcase name="readyClaimJournalsDirtyOwnershipBeforeTheSetterAndCannotBeCancelledAsPristine" classname="com.shilapi.xcertplay.hud.CarPlayCallWatchOwnershipTest" time="0.003"/>
+  <testcase name="aPositivelyDeadPristineAppWithoutAnInitializedChildDoesNotBlockFutureCalls" classname="com.shilapi.xcertplay.hud.CarPlayCallWatchOwnershipTest" time="0.002"/>
+  <testcase name="oldWatcherCannotUpdateOrEndTheNewCall" classname="com.shilapi.xcertplay.hud.CarPlayCallWatchOwnershipTest" time="0.001"/>
+  <testcase name="successfulOwnedEndRetiresTheTokenAndPreventsLaterTimerWrites" classname="com.shilapi.xcertplay.hud.CarPlayCallWatchOwnershipTest" time="0.001"/>
+  <testcase name="anotherVariantCannotHaveItsTokenDeletedByTheOldProcess" classname="com.shilapi.xcertplay.hud.CarPlayCallWatchOwnershipTest" time="0.001"/>
+  <testcase name="missingDeadForeignOrLateWatcherReadinessCannotPermitTheFirstSetter" classname="com.shilapi.xcertplay.hud.CarPlayCallWatchOwnershipTest" time="0.002"/>
+  <testcase name="pristineRetirementAndConcurrentFirstMutationUseTheSameOwnershipLock" classname="com.shilapi.xcertplay.hud.CarPlayCallWatchOwnershipTest" time="0.005"/>
+  <testcase name="callerCannotDeleteAnUnrelatedFile" classname="com.shilapi.xcertplay.hud.CarPlayCallWatchOwnershipTest" time="0.001"/>
+  <testcase name="failingHardwareEndKeepsOwnershipForACompensationRetry" classname="com.shilapi.xcertplay.hud.CarPlayCallWatchOwnershipTest" time="0.001"/>
+  <testcase name="prepareRefusesLiveOrUncertainForeignReservationsAndEveryDirtyForeignRecord" classname="com.shilapi.xcertplay.hud.CarPlayCallWatchOwnershipTest" time="0.001"/>
+  <testcase name="cleanupIsJournaledBeforeAFirstShowCanMutateOrThrow" classname="com.shilapi.xcertplay.hud.CarPlayCallWatchOwnershipTest" time="0.001"/>
+  <testcase name="watcherCleanupFailureKeepsTheJournalAndRetriesWithoutResettingAForeignOwner" classname="com.shilapi.xcertplay.hud.CarPlayCallWatchOwnershipTest" time="0.001"/>
+  <testcase name="preparedAppDeathAndCancellationNeverEnterAnIdleSetter" classname="com.shilapi.xcertplay.hud.CarPlayCallWatchOwnershipTest" time="0.001"/>
+  <testcase name="immediateNextCallCannotReuseThePreviousWatchersToken" classname="com.shilapi.xcertplay.hud.CarPlayCallWatchOwnershipTest" time="0.0"/>
+  <testcase name="missingOldTokenAndOldChildExitCannotDeleteNewReadinessOrBlockRecovery" classname="com.shilapi.xcertplay.hud.CarPlayCallWatchOwnershipTest" time="0.002"/>
+  <system-out><![CDATA[]]></system-out>
+  <system-err><![CDATA[]]></system-err>
+</testsuite>

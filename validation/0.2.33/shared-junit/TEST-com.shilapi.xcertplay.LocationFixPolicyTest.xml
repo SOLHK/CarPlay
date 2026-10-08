@@ -1,0 +1,10 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<testsuite name="com.shilapi.xcertplay.LocationFixPolicyTest" tests="4" skipped="0" failures="0" errors="0" timestamp="2026-10-08T01:21:48.863Z" hostname="fb3fb179fe46" time="0.029">
+  <properties/>
+  <testcase name="nmeaPreservesUtcAndOmitsUnmeasuredValues" classname="com.shilapi.xcertplay.LocationFixPolicyTest" time="0.006"/>
+  <testcase name="selectsFreshAccurateFixAcrossGpsAndFused" classname="com.shilapi.xcertplay.LocationFixPolicyTest" time="0.006"/>
+  <testcase name="rejectsJumpButReacquiresAfterOutage" classname="com.shilapi.xcertplay.LocationFixPolicyTest" time="0.005"/>
+  <testcase name="withholdsStaleNetworkFutureAndUnknownAccuracy" classname="com.shilapi.xcertplay.LocationFixPolicyTest" time="0.005"/>
+  <system-out><![CDATA[]]></system-out>
+  <system-err><![CDATA[]]></system-err>
+</testsuite>

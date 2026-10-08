@@ -1,0 +1,10 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<testsuite name="com.shilapi.xcertplay.transport.WirelessControlDeadlineTest" tests="4" skipped="0" failures="0" errors="0" timestamp="2026-10-08T01:22:11.867Z" hostname="fb3fb179fe46" time="0.002">
+  <properties/>
+  <testcase name="bringUpRemainsBoundedEvenIfTheCallerHasAValidSessionProof" classname="com.shilapi.xcertplay.transport.WirelessControlDeadlineTest" time="0.001"/>
+  <testcase name="aLiveSessionKeepsControlUpdatesAfterTheOriginalDeadlineButEndsWhenProofIsWithdrawn" classname="com.shilapi.xcertplay.transport.WirelessControlDeadlineTest" time="0.0"/>
+  <testcase name="anUnprovenSessionTimesOutWithoutExtendingTheDeadline" classname="com.shilapi.xcertplay.transport.WirelessControlDeadlineTest" time="0.001"/>
+  <testcase name="explicitTunnelNoTimeoutStillUsesBoundedReceivePolls" classname="com.shilapi.xcertplay.transport.WirelessControlDeadlineTest" time="0.0"/>
+  <system-out><![CDATA[]]></system-out>
+  <system-err><![CDATA[]]></system-err>
+</testsuite>

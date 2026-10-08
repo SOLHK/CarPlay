@@ -1,0 +1,14 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<testsuite name="com.shilapi.xcertplay.network.CarPlayVpnScopeTest" tests="8" skipped="0" failures="0" errors="0" timestamp="2026-10-08T01:22:11.146Z" hostname="fb3fb179fe46" time="0.145">
+  <properties/>
+  <testcase name="platformEstablishmentFailureDoesNotRetryOrKeepAttachmentState[28]" classname="com.shilapi.xcertplay.network.CarPlayVpnScopeTest" time="0.037"/>
+  <testcase name="runtimePackageIsAllowedBeforeEstablishAndRevokedConsentCleansUp[28]" classname="com.shilapi.xcertplay.network.CarPlayVpnScopeTest" time="0.006"/>
+  <testcase name="allowlistRejectionNeverEstablishesAnUnrestrictedTunnel[28]" classname="com.shilapi.xcertplay.network.CarPlayVpnScopeTest" time="0.006"/>
+  <testcase name="rejectedWiredReplacementClosesWirelessListenerAndAllowsFreshWirelessAttach[28]" classname="com.shilapi.xcertplay.network.CarPlayVpnScopeTest" time="0.01"/>
+  <testcase name="platformEstablishmentFailureDoesNotRetryOrKeepAttachmentState" classname="com.shilapi.xcertplay.network.CarPlayVpnScopeTest" time="0.053"/>
+  <testcase name="runtimePackageIsAllowedBeforeEstablishAndRevokedConsentCleansUp" classname="com.shilapi.xcertplay.network.CarPlayVpnScopeTest" time="0.009"/>
+  <testcase name="allowlistRejectionNeverEstablishesAnUnrestrictedTunnel" classname="com.shilapi.xcertplay.network.CarPlayVpnScopeTest" time="0.007"/>
+  <testcase name="rejectedWiredReplacementClosesWirelessListenerAndAllowsFreshWirelessAttach" classname="com.shilapi.xcertplay.network.CarPlayVpnScopeTest" time="0.008"/>
+  <system-out><![CDATA[]]></system-out>
+  <system-err><![CDATA[]]></system-err>
+</testsuite>

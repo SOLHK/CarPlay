@@ -1,0 +1,14 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<testsuite name="com.shilapi.xcertplay.media.MicrophoneSourceFallbackTest" tests="8" skipped="0" failures="0" errors="0" timestamp="2026-10-08T01:22:08.682Z" hostname="fb3fb179fe46" time="0.136">
+  <properties/>
+  <testcase name="telephonyCreationFailureDoesNotRetryOrLeaveTheCallModeActive[28]" classname="com.shilapi.xcertplay.media.MicrophoneSourceFallbackTest" time="0.022"/>
+  <testcase name="bothUnsupportedSourcesFailOnceAndALaterStreamCanStart[28]" classname="com.shilapi.xcertplay.media.MicrophoneSourceFallbackTest" time="0.016"/>
+  <testcase name="siriCreationFailureRetriesCommunicationOnceWithoutCallEffectsOrModeChanges[28]" classname="com.shilapi.xcertplay.media.MicrophoneSourceFallbackTest" time="0.011"/>
+  <testcase name="siriInitializationFailureReleasesRejectedRecorderBeforeFallbackCapture[28]" classname="com.shilapi.xcertplay.media.MicrophoneSourceFallbackTest" time="0.013"/>
+  <testcase name="telephonyCreationFailureDoesNotRetryOrLeaveTheCallModeActive" classname="com.shilapi.xcertplay.media.MicrophoneSourceFallbackTest" time="0.02"/>
+  <testcase name="bothUnsupportedSourcesFailOnceAndALaterStreamCanStart" classname="com.shilapi.xcertplay.media.MicrophoneSourceFallbackTest" time="0.02"/>
+  <testcase name="siriCreationFailureRetriesCommunicationOnceWithoutCallEffectsOrModeChanges" classname="com.shilapi.xcertplay.media.MicrophoneSourceFallbackTest" time="0.012"/>
+  <testcase name="siriInitializationFailureReleasesRejectedRecorderBeforeFallbackCapture" classname="com.shilapi.xcertplay.media.MicrophoneSourceFallbackTest" time="0.013"/>
+  <system-out><![CDATA[]]></system-out>
+  <system-err><![CDATA[]]></system-err>
+</testsuite>

@@ -1,0 +1,20 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<testsuite name="com.shilapi.xcertplay.media.AudioFocusAutoYieldTest" tests="14" skipped="0" failures="0" errors="0" timestamp="2026-10-08T01:22:07.392Z" hostname="fb3fb179fe46" time="1.097">
+  <properties/>
+  <testcase name="lastTrackReleaseClearsLossAndRejectsOldRequestCallbacks[28]" classname="com.shilapi.xcertplay.media.AudioFocusAutoYieldTest" time="0.12"/>
+  <testcase name="optionOffKeepsTransientAudioAndFocusOffIgnoresForwardedEvents[28]" classname="com.shilapi.xcertplay.media.AudioFocusAutoYieldTest" time="0.012"/>
+  <testcase name="transientLossMutesOnlyMediaAndGainPreservesUserStreamVolume[28]" classname="com.shilapi.xcertplay.media.AudioFocusAutoYieldTest" time="0.006"/>
+  <testcase name="sinkFocusTeardownRejectsLateWorkerAcquisitionAndQueuedCallbacks[28]" classname="com.shilapi.xcertplay.media.AudioFocusAutoYieldTest" time="0.004"/>
+  <testcase name="newMediaTrackInheritsLossWhilePhoneTrackRemainsAudible[28]" classname="com.shilapi.xcertplay.media.AudioFocusAutoYieldTest" time="0.004"/>
+  <testcase name="duckingAlsoAppliesOnlyToMediaAndNewTracksInheritIt[28]" classname="com.shilapi.xcertplay.media.AudioFocusAutoYieldTest" time="0.004"/>
+  <testcase name="failedReplacementRequestDoesNotRestoreMutedMedia[28]" classname="com.shilapi.xcertplay.media.AudioFocusAutoYieldTest" time="0.003"/>
+  <testcase name="lastTrackReleaseClearsLossAndRejectsOldRequestCallbacks" classname="com.shilapi.xcertplay.media.AudioFocusAutoYieldTest" time="0.795"/>
+  <testcase name="optionOffKeepsTransientAudioAndFocusOffIgnoresForwardedEvents" classname="com.shilapi.xcertplay.media.AudioFocusAutoYieldTest" time="0.013"/>
+  <testcase name="transientLossMutesOnlyMediaAndGainPreservesUserStreamVolume" classname="com.shilapi.xcertplay.media.AudioFocusAutoYieldTest" time="0.007"/>
+  <testcase name="sinkFocusTeardownRejectsLateWorkerAcquisitionAndQueuedCallbacks" classname="com.shilapi.xcertplay.media.AudioFocusAutoYieldTest" time="0.006"/>
+  <testcase name="newMediaTrackInheritsLossWhilePhoneTrackRemainsAudible" classname="com.shilapi.xcertplay.media.AudioFocusAutoYieldTest" time="0.005"/>
+  <testcase name="duckingAlsoAppliesOnlyToMediaAndNewTracksInheritIt" classname="com.shilapi.xcertplay.media.AudioFocusAutoYieldTest" time="0.006"/>
+  <testcase name="failedReplacementRequestDoesNotRestoreMutedMedia" classname="com.shilapi.xcertplay.media.AudioFocusAutoYieldTest" time="0.006"/>
+  <system-out><![CDATA[]]></system-out>
+  <system-err><![CDATA[]]></system-err>
+</testsuite>

@@ -1,0 +1,11 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<testsuite name="com.shilapi.xcertplay.CarPlayRemoteKeysTest" tests="5" skipped="0" failures="0" errors="0" timestamp="2026-10-08T01:22:38.586Z" hostname="fb3fb179fe46" time="0.08">
+  <properties/>
+  <testcase name="unrelatedKeyIsNotConsumedWithoutController" classname="com.shilapi.xcertplay.CarPlayRemoteKeysTest" time="0.01"/>
+  <testcase name="unsuccessfulNavigationSendsRemainAvailableToAndroid" classname="com.shilapi.xcertplay.CarPlayRemoteKeysTest" time="0.009"/>
+  <testcase name="aHeldDirectionIsBoundedAndReleasesWithoutAnExtraWheelStep" classname="com.shilapi.xcertplay.CarPlayRemoteKeysTest" time="0.034"/>
+  <testcase name="dpadDirectionsSendOnlySignedWheelMovementAndNeverCoordinateChanges" classname="com.shilapi.xcertplay.CarPlayRemoteKeysTest" time="0.012"/>
+  <testcase name="selectAndBackPreservePressAndReleaseWithoutRepeatingHeldPresses" classname="com.shilapi.xcertplay.CarPlayRemoteKeysTest" time="0.01"/>
+  <system-out><![CDATA[]]></system-out>
+  <system-err><![CDATA[]]></system-err>
+</testsuite>

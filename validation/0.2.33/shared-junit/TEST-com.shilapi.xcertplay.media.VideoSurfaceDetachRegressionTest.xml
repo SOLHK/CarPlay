@@ -1,0 +1,12 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<testsuite name="com.shilapi.xcertplay.media.VideoSurfaceDetachRegressionTest" tests="6" skipped="0" failures="0" errors="0" timestamp="2026-10-08T01:22:09.019Z" hostname="fb3fb179fe46" time="1.477">
+  <properties/>
+  <testcase name="destroyingTheOldOutputKeepsTheNewlyAttachedOutputAndCodec[28]" classname="com.shilapi.xcertplay.media.VideoSurfaceDetachRegressionTest" time="0.624"/>
+  <testcase name="textureReleaseRunsAfterNativeCodecReleaseRatherThanAfterEnqueue[28]" classname="com.shilapi.xcertplay.media.VideoSurfaceDetachRegressionTest" time="0.014"/>
+  <testcase name="queuedDetachCompletesEvenWhenTheDecoderWasClosedAndInterrupted[28]" classname="com.shilapi.xcertplay.media.VideoSurfaceDetachRegressionTest" time="0.008"/>
+  <testcase name="destroyingTheOldOutputKeepsTheNewlyAttachedOutputAndCodec" classname="com.shilapi.xcertplay.media.VideoSurfaceDetachRegressionTest" time="0.796"/>
+  <testcase name="textureReleaseRunsAfterNativeCodecReleaseRatherThanAfterEnqueue" classname="com.shilapi.xcertplay.media.VideoSurfaceDetachRegressionTest" time="0.017"/>
+  <testcase name="queuedDetachCompletesEvenWhenTheDecoderWasClosedAndInterrupted" classname="com.shilapi.xcertplay.media.VideoSurfaceDetachRegressionTest" time="0.009"/>
+  <system-out><![CDATA[]]></system-out>
+  <system-err><![CDATA[]]></system-err>
+</testsuite>

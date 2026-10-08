@@ -1,0 +1,11 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<testsuite name="com.shilapi.xcertplay.transport.Iap2LocationReporterTest" tests="5" skipped="0" failures="0" errors="0" timestamp="2026-10-08T01:22:11.555Z" hostname="fb3fb179fe46" time="0.003">
+  <properties/>
+  <testcase name="noFixMeansNothingIsSent" classname="com.shilapi.xcertplay.transport.Iap2LocationReporterTest" time="0.001"/>
+  <testcase name="anInactiveLinkSendsNothingAndDoesNotPoll" classname="com.shilapi.xcertplay.transport.Iap2LocationReporterTest" time="0.0"/>
+  <testcase name="aBurstOfIncomingMessagesStillSendsOneFixASecond" classname="com.shilapi.xcertplay.transport.Iap2LocationReporterTest" time="0.001"/>
+  <testcase name="aSeparateLinkDoesNotInheritAnotherLinksRequest" classname="com.shilapi.xcertplay.transport.Iap2LocationReporterTest" time="0.0"/>
+  <testcase name="aLinkSendsOnlyBetweenItsOwnStartAndStop" classname="com.shilapi.xcertplay.transport.Iap2LocationReporterTest" time="0.0"/>
+  <system-out><![CDATA[]]></system-out>
+  <system-err><![CDATA[]]></system-err>
+</testsuite>

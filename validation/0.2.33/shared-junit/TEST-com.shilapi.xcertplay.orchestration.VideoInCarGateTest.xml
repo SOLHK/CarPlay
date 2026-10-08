@@ -1,0 +1,9 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<testsuite name="com.shilapi.xcertplay.orchestration.VideoInCarGateTest" tests="3" skipped="0" failures="0" errors="0" timestamp="2026-10-08T01:22:11.450Z" hostname="fb3fb179fe46" time="0.002">
+  <properties/>
+  <testcase name="videoIsAllowedOnlyWhileTheGearReadsPark" classname="com.shilapi.xcertplay.orchestration.VideoInCarGateTest" time="0.001"/>
+  <testcase name="observationsDistinguishUnknownParkAndNotPark" classname="com.shilapi.xcertplay.orchestration.VideoInCarGateTest" time="0.001"/>
+  <testcase name="closingTheGateTurnsVideoOff" classname="com.shilapi.xcertplay.orchestration.VideoInCarGateTest" time="0.0"/>
+  <system-out><![CDATA[]]></system-out>
+  <system-err><![CDATA[]]></system-err>
+</testsuite>

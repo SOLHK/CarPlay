@@ -1,0 +1,27 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<testsuite name="com.shilapi.xcertplay.hud.BydCarPlayCallLifecycleTest" tests="21" skipped="0" failures="0" errors="0" timestamp="2026-10-08T01:21:56.658Z" hostname="fb3fb179fe46" time="9.186">
+  <properties/>
+  <testcase name="aMissingChildReadinessRecordCannotPermitVehicleMutation" classname="com.shilapi.xcertplay.hud.BydCarPlayCallLifecycleTest" time="1.022"/>
+  <testcase name="failedActiveUpdateMustCleanUpBeforeShowingAnotherCall" classname="com.shilapi.xcertplay.hud.BydCarPlayCallLifecycleTest" time="0.018"/>
+  <testcase name="refusedWatcherLaunchCannotBeMarkedRunningOrWriteCallFields" classname="com.shilapi.xcertplay.hud.BydCarPlayCallLifecycleTest" time="0.51"/>
+  <testcase name="defaultOffTracksCallWithoutAnyShellOrWatcherMutation" classname="com.shilapi.xcertplay.hud.BydCarPlayCallLifecycleTest" time="0.009"/>
+  <testcase name="refusedEndGetsOnlyOneAutomaticRetryUntilAnExplicitNewCleanupEvent" classname="com.shilapi.xcertplay.hud.BydCarPlayCallLifecycleTest" time="2.211"/>
+  <testcase name="endingASessionWithAnArmedWatcherOnlyCancelsIt" classname="com.shilapi.xcertplay.hud.BydCarPlayCallLifecycleTest" time="0.01"/>
+  <testcase name="vehicleWritesFollowPreparationAndInitializedChildAcknowledgement" classname="com.shilapi.xcertplay.hud.BydCarPlayCallLifecycleTest" time="0.009"/>
+  <testcase name="sessionStartArmsTheWatcherSoTheFirstCallSkipsItsLaunch" classname="com.shilapi.xcertplay.hud.BydCarPlayCallLifecycleTest" time="0.008"/>
+  <testcase name="turningTheOptionOffCancelsAnArmedWatcherAndOnArmsAgain" classname="com.shilapi.xcertplay.hud.BydCarPlayCallLifecycleTest" time="0.01"/>
+  <testcase name="failedFirstShowRetainsCleanupOwnershipAndStartsTheWatcher" classname="com.shilapi.xcertplay.hud.BydCarPlayCallLifecycleTest" time="0.009"/>
+  <testcase name="failedCleanupRemainsRetryableEvenWhenNoCallWasMarkedShown" classname="com.shilapi.xcertplay.hud.BydCarPlayCallLifecycleTest" time="0.02"/>
+  <testcase name="missingCompletionAckCannotMarkAnUnknownWriteAsShown" classname="com.shilapi.xcertplay.hud.BydCarPlayCallLifecycleTest" time="0.014"/>
+  <testcase name="backToBackCallsUseDifferentTokensForWritesWatcherAndCleanup" classname="com.shilapi.xcertplay.hud.BydCarPlayCallLifecycleTest" time="0.015"/>
+  <testcase name="failedWatcherHasOneRealWriterRetryEvenWhenTheCallFrameNeverChanges" classname="com.shilapi.xcertplay.hud.BydCarPlayCallLifecycleTest" time="1.511"/>
+  <testcase name="anEndedCallRearmsWithAFreshToken" classname="com.shilapi.xcertplay.hud.BydCarPlayCallLifecycleTest" time="0.01"/>
+  <testcase name="unknownShowAndCleanupRepliesBlockFurtherCallMutationUntilCleanupIsConfirmed" classname="com.shilapi.xcertplay.hud.BydCarPlayCallLifecycleTest" time="0.01"/>
+  <testcase name="disablingBeforeQueuedUpdateExecutesPreventsLateCallWrites" classname="com.shilapi.xcertplay.hud.BydCarPlayCallLifecycleTest" time="0.008"/>
+  <testcase name="noSessionMeansNoArmedWatcher" classname="com.shilapi.xcertplay.hud.BydCarPlayCallLifecycleTest" time="0.007"/>
+  <testcase name="anEmptyBackgroundLaunchReplyStillNeedsTheChildReadinessRecord" classname="com.shilapi.xcertplay.hud.BydCarPlayCallLifecycleTest" time="0.509"/>
+  <testcase name="disablingTheOptionCancelsTheUnchangedCallRetryWithoutHardwareWrites" classname="com.shilapi.xcertplay.hud.BydCarPlayCallLifecycleTest" time="1.713"/>
+  <testcase name="missingPristineCancelAcknowledgementRetainsItsTokenUntilConfirmedRetry" classname="com.shilapi.xcertplay.hud.BydCarPlayCallLifecycleTest" time="1.511"/>
+  <system-out><![CDATA[]]></system-out>
+  <system-err><![CDATA[]]></system-err>
+</testsuite>

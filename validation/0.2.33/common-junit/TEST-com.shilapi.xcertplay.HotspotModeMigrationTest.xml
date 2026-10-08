@@ -1,0 +1,12 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<testsuite name="com.shilapi.xcertplay.HotspotModeMigrationTest" tests="6" skipped="0" failures="0" errors="0" timestamp="2026-10-08T01:22:43.391Z" hostname="fb3fb179fe46" time="0.255">
+  <properties/>
+  <testcase name="olderAndroidDoesNotFallBackToRemovedLocalMode" classname="com.shilapi.xcertplay.HotspotModeMigrationTest" time="0.054"/>
+  <testcase name="freshOlderAndroidStillUsesSupportedCarHotspot" classname="com.shilapi.xcertplay.HotspotModeMigrationTest" time="0.014"/>
+  <testcase name="existingWifiDirectSelectionIsPreserved" classname="com.shilapi.xcertplay.HotspotModeMigrationTest" time="0.02"/>
+  <testcase name="explicitlySavedCarHotspotIsNeverOverwrittenByTheNewDefault" classname="com.shilapi.xcertplay.HotspotModeMigrationTest" time="0.022"/>
+  <testcase name="freshInstallUsesWifiDirectWithoutRequiringCarHotspotCredentials" classname="com.shilapi.xcertplay.HotspotModeMigrationTest" time="0.106"/>
+  <testcase name="oldLocalSelectionMigratesWithoutLosingCarHotspotDetails" classname="com.shilapi.xcertplay.HotspotModeMigrationTest" time="0.03"/>
+  <system-out><![CDATA[]]></system-out>
+  <system-err><![CDATA[]]></system-err>
+</testsuite>

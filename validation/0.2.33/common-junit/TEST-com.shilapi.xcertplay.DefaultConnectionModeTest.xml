@@ -1,0 +1,19 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<testsuite name="com.shilapi.xcertplay.DefaultConnectionModeTest" tests="10" skipped="0" failures="0" errors="0" timestamp="2026-10-08T01:22:39.823Z" hostname="fb3fb179fe46" time="2.66">
+  <properties/>
+  <testcase name="initialLaunchUsesTheFixedDefaultInsteadOfTheLastManualTransport[28]" classname="com.shilapi.xcertplay.DefaultConnectionModeTest" time="0.76"/>
+  <testcase name="settingsSavePersistsChoiceAndCancelKeepsSavedDefault[28]" classname="com.shilapi.xcertplay.DefaultConnectionModeTest" time="0.481"/>
+  <testcase name="fixedDefaultSurvivesManualTransportChangesWithoutChangingAutoConnectOrPhone[28]" classname="com.shilapi.xcertplay.DefaultConnectionModeTest" time="0.016"/>
+  <testcase name="existingInstallationsKeepLastUsedBehaviorAndUnknownValuesFallBack[28]" classname="com.shilapi.xcertplay.DefaultConnectionModeTest" time="0.012"/>
+  <testcase name="openingSettingsDoesNotAutoConnectOrChangeTheLastTransport[28]" classname="com.shilapi.xcertplay.DefaultConnectionModeTest" time="0.161"/>
+  <testcase name="initialLaunchUsesTheFixedDefaultInsteadOfTheLastManualTransport" classname="com.shilapi.xcertplay.DefaultConnectionModeTest" time="0.602"/>
+  <testcase name="settingsSavePersistsChoiceAndCancelKeepsSavedDefault" classname="com.shilapi.xcertplay.DefaultConnectionModeTest" time="0.395"/>
+  <testcase name="fixedDefaultSurvivesManualTransportChangesWithoutChangingAutoConnectOrPhone" classname="com.shilapi.xcertplay.DefaultConnectionModeTest" time="0.077"/>
+  <testcase name="existingInstallationsKeepLastUsedBehaviorAndUnknownValuesFallBack" classname="com.shilapi.xcertplay.DefaultConnectionModeTest" time="0.012"/>
+  <testcase name="openingSettingsDoesNotAutoConnectOrChangeTheLastTransport" classname="com.shilapi.xcertplay.DefaultConnectionModeTest" time="0.12"/>
+  <system-out><![CDATA[]]></system-out>
+  <system-err><![CDATA[Invalid ID 0x00000000.
+Invalid ID 0x00000000.
+Invalid ID 0x00000000.
+]]></system-err>
+</testsuite>

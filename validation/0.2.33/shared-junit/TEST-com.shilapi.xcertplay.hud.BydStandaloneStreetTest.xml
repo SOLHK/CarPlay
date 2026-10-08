@@ -1,0 +1,11 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<testsuite name="com.shilapi.xcertplay.hud.BydStandaloneStreetTest" tests="5" skipped="0" failures="0" errors="0" timestamp="2026-10-08T01:22:06.934Z" hostname="fb3fb179fe46" time="0.027">
+  <properties/>
+  <testcase name="textIsBoundedWithoutBreakingUnicodePairs" classname="com.shilapi.xcertplay.hud.BydStandaloneStreetTest" time="0.002"/>
+  <testcase name="matchesActualArm64EncoderEnglishAndArabicVectors" classname="com.shilapi.xcertplay.hud.BydStandaloneStreetTest" time="0.001"/>
+  <testcase name="everyBoundaryHasCorrectLengthChecksumPaddingAndReceiverBound" classname="com.shilapi.xcertplay.hud.BydStandaloneStreetTest" time="0.022"/>
+  <testcase name="blankAndControlsReplacePriorTextWithSafeWhitespace" classname="com.shilapi.xcertplay.hud.BydStandaloneStreetTest" time="0.0"/>
+  <testcase name="changedStreetIsPublishedAndMissingStreetReplacesIt" classname="com.shilapi.xcertplay.hud.BydStandaloneStreetTest" time="0.002"/>
+  <system-out><![CDATA[]]></system-out>
+  <system-err><![CDATA[]]></system-err>
+</testsuite>

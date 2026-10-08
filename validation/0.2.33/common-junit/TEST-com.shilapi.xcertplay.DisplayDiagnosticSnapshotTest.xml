@@ -1,0 +1,10 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<testsuite name="com.shilapi.xcertplay.DisplayDiagnosticSnapshotTest" tests="4" skipped="0" failures="0" errors="0" timestamp="2026-10-08T01:22:43.252Z" hostname="fb3fb179fe46" time="0.136">
+  <properties/>
+  <testcase name="requestedSizeSurvivesAFallbackAndSubsequentPreferenceReset" classname="com.shilapi.xcertplay.DisplayDiagnosticSnapshotTest" time="0.036"/>
+  <testcase name="reconnectClearsOldOutputAndRejectsLateCallbacks" classname="com.shilapi.xcertplay.DisplayDiagnosticSnapshotTest" time="0.046"/>
+  <testcase name="actualOutputAndPhoneVersionsSurviveReportRedaction" classname="com.shilapi.xcertplay.DisplayDiagnosticSnapshotTest" time="0.03"/>
+  <testcase name="onlySupportedMetadataIsStoredAndItIsBounded" classname="com.shilapi.xcertplay.DisplayDiagnosticSnapshotTest" time="0.01"/>
+  <system-out><![CDATA[]]></system-out>
+  <system-err><![CDATA[]]></system-err>
+</testsuite>

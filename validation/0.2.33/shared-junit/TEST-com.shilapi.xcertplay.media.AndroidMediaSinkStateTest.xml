@@ -1,0 +1,8 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<testsuite name="com.shilapi.xcertplay.media.AndroidMediaSinkStateTest" tests="2" skipped="0" failures="0" errors="0" timestamp="2026-10-08T01:22:07.381Z" hostname="fb3fb179fe46" time="0.005">
+  <properties/>
+  <testcase name="recreatingTheScreenRestoresItsActiveVideoState" classname="com.shilapi.xcertplay.media.AndroidMediaSinkStateTest" time="0.003"/>
+  <testcase name="lateAudioPacketsAndStartCallbacksCannotRecreateAClosedRenderer" classname="com.shilapi.xcertplay.media.AndroidMediaSinkStateTest" time="0.002"/>
+  <system-out><![CDATA[]]></system-out>
+  <system-err><![CDATA[]]></system-err>
+</testsuite>

@@ -1,0 +1,7 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<testsuite name="com.shilapi.xcertplay.airplay.AirPlayControlDiagnosticsTest" tests="1" skipped="0" failures="0" errors="0" timestamp="2026-10-08T01:21:53.662Z" hostname="fb3fb179fe46" time="0.003">
+  <properties/>
+  <testcase name="identifiesNegotiationWithoutRequestHeadersQueriesOrBodyContents" classname="com.shilapi.xcertplay.airplay.AirPlayControlDiagnosticsTest" time="0.003"/>
+  <system-out><![CDATA[]]></system-out>
+  <system-err><![CDATA[]]></system-err>
+</testsuite>

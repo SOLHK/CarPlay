@@ -1,0 +1,12 @@
+{
+  "version": "0.2.33",
+  "check_type": "offline_resource_and_lexical_checks_only",
+  "resource_xml_files": 58,
+  "source_files_checked": 13,
+  "kotlin_files_checked": 11,
+  "java_files_checked": 2,
+  "errors": [],
+  "status": "passed",
+  "kotlin_compilation_performed": false,
+  "android_tests_executed": false
+}

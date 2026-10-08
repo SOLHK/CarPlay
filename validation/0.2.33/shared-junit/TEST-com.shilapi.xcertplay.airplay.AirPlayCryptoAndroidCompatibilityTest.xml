@@ -1,0 +1,9 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<testsuite name="com.shilapi.xcertplay.airplay.AirPlayCryptoAndroidCompatibilityTest" tests="3" skipped="0" failures="0" errors="0" timestamp="2026-10-08T01:21:53.667Z" hostname="fb3fb179fe46" time="2.309">
+  <properties/>
+  <testcase name="olderSupportedAndroidDoesNotStageIntoDirectBuffers[28]" classname="com.shilapi.xcertplay.airplay.AirPlayCryptoAndroidCompatibilityTest" time="0.569"/>
+  <testcase name="olderSupportedAndroidDoesNotStageIntoDirectBuffers" classname="com.shilapi.xcertplay.airplay.AirPlayCryptoAndroidCompatibilityTest" time="0.793"/>
+  <testcase name="android12UsesTheDirectBufferPath" classname="com.shilapi.xcertplay.airplay.AirPlayCryptoAndroidCompatibilityTest" time="0.783"/>
+  <system-out><![CDATA[]]></system-out>
+  <system-err><![CDATA[]]></system-err>
+</testsuite>

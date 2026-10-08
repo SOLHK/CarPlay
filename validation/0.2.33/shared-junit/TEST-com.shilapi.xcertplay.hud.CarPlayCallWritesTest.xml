@@ -1,0 +1,14 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<testsuite name="com.shilapi.xcertplay.hud.CarPlayCallWritesTest" tests="8" skipped="0" failures="0" errors="0" timestamp="2026-10-08T01:22:07.126Z" hostname="fb3fb179fe46" time="0.02">
+  <properties/>
+  <testcase name="refusedWriteStopsAndSetsAcceptedOnesBackToIdleNewestFirst" classname="com.shilapi.xcertplay.hud.CarPlayCallWritesTest" time="0.017"/>
+  <testcase name="missingFeaturesAloneStillShowTheRest" classname="com.shilapi.xcertplay.hud.CarPlayCallWritesTest" time="0.0"/>
+  <testcase name="firstWriteRefusedAlsoCompensatesThatAttempt" classname="com.shilapi.xcertplay.hud.CarPlayCallWritesTest" time="0.0"/>
+  <testcase name="aSetterThatMutatesBeforeReportingFailureIsAlsoCompensated" classname="com.shilapi.xcertplay.hud.CarPlayCallWritesTest" time="0.001"/>
+  <testcase name="refusedNameUndoesTheCallState" classname="com.shilapi.xcertplay.hud.CarPlayCallWritesTest" time="0.0"/>
+  <testcase name="allAcceptedWritesEveryFeatureAndTheName" classname="com.shilapi.xcertplay.hud.CarPlayCallWritesTest" time="0.0"/>
+  <testcase name="missingFeatureIsSkippedAndNotUndone" classname="com.shilapi.xcertplay.hud.CarPlayCallWritesTest" time="0.0"/>
+  <testcase name="aThrowingUndoDoesNotPreventCompensationOfTheRemainingWrites" classname="com.shilapi.xcertplay.hud.CarPlayCallWritesTest" time="0.001"/>
+  <system-out><![CDATA[]]></system-out>
+  <system-err><![CDATA[]]></system-err>
+</testsuite>

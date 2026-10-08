@@ -1,0 +1,16 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<testsuite name="com.shilapi.xcertplay.CarHotspotAdbGrantTest" tests="10" skipped="0" failures="0" errors="0" timestamp="2026-10-08T01:22:29.216Z" hostname="fb3fb179fe46" time="1.123">
+  <properties/>
+  <testcase name="emptyShellOutputDoesNotImplyPermissionWasGranted" classname="com.shilapi.xcertplay.CarHotspotAdbGrantTest" time="0.143"/>
+  <testcase name="unapprovedProbeDoesNotOfferTheKeyOrRunShellCommands" classname="com.shilapi.xcertplay.CarHotspotAdbGrantTest" time="0.071"/>
+  <testcase name="deniedKeyDoesNotRunAnyPermissionCommand" classname="com.shilapi.xcertplay.CarHotspotAdbGrantTest" time="0.044"/>
+  <testcase name="authorizedProbeDoesNotReadVehicleDataOrGrantPermissions" classname="com.shilapi.xcertplay.CarHotspotAdbGrantTest" time="0.065"/>
+  <testcase name="permissionsAreNotRequestedUntilTheNewKeyIsApproved" classname="com.shilapi.xcertplay.CarHotspotAdbGrantTest" time="0.136"/>
+  <testcase name="bootPermissionIsASeparateExplicitGrant" classname="com.shilapi.xcertplay.CarHotspotAdbGrantTest" time="0.1"/>
+  <testcase name="explicitHotspotGrantOffersTheKeyAndOnlyRequestsWriteSettings" classname="com.shilapi.xcertplay.CarHotspotAdbGrantTest" time="0.176"/>
+  <testcase name="ordinaryVehicleSwitchOnlyConnectsWithoutGrantingAppPermissions" classname="com.shilapi.xcertplay.CarHotspotAdbGrantTest" time="0.089"/>
+  <testcase name="bothPermissionsUseTheSameApprovedConnection" classname="com.shilapi.xcertplay.CarHotspotAdbGrantTest" time="0.191"/>
+  <testcase name="existingPermissionIsNotGrantedAgain" classname="com.shilapi.xcertplay.CarHotspotAdbGrantTest" time="0.1"/>
+  <system-out><![CDATA[]]></system-out>
+  <system-err><![CDATA[]]></system-err>
+</testsuite>

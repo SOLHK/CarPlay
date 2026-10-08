@@ -1,0 +1,23 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<testsuite name="com.shilapi.xcertplay.network.ManualHotspotReadinessTest" tests="17" skipped="0" failures="0" errors="0" timestamp="2026-10-08T01:22:11.305Z" hostname="fb3fb179fe46" time="0.011">
+  <properties/>
+  <testcase name="switchedOffOrMissingAddressesAreNotReady" classname="com.shilapi.xcertplay.network.ManualHotspotReadinessTest" time="0.004"/>
+  <testcase name="missingPermissionsDoNotPretendUpstreamsAreAbsent" classname="com.shilapi.xcertplay.network.ManualHotspotReadinessTest" time="0.0"/>
+  <testcase name="ethernetFirstWaitsForStableWireless" classname="com.shilapi.xcertplay.network.ManualHotspotReadinessTest" time="0.001"/>
+  <testcase name="vehicleRuntimeWlanDoesNotNeedToMatchStaleFirmwareRegexes" classname="com.shilapi.xcertplay.network.ManualHotspotReadinessTest" time="0.001"/>
+  <testcase name="staApConcurrencyRejectsWifiUpstream" classname="com.shilapi.xcertplay.network.ManualHotspotReadinessTest" time="0.0"/>
+  <testcase name="addressAndIdentityChangesRestartStability" classname="com.shilapi.xcertplay.network.ManualHotspotReadinessTest" time="0.0"/>
+  <testcase name="emptyRuntimeListAndUnavailablePatternsRemainDistinct" classname="com.shilapi.xcertplay.network.ManualHotspotReadinessTest" time="0.0"/>
+  <testcase name="unmatchedLegacyNamesStillCannotAuthorizeEthernetOrSta" classname="com.shilapi.xcertplay.network.ManualHotspotReadinessTest" time="0.0"/>
+  <testcase name="alreadyRunningHotspotDoesNotNeedANewInterface" classname="com.shilapi.xcertplay.network.ManualHotspotReadinessTest" time="0.0"/>
+  <testcase name="cancelledGenerationStopsAtNextWakeWithoutSelecting" classname="com.shilapi.xcertplay.network.ManualHotspotReadinessTest" time="0.001"/>
+  <testcase name="matchedLegacyPlatformOwnershipStillAllowsVendorInterface" classname="com.shilapi.xcertplay.network.ManualHotspotReadinessTest" time="0.0"/>
+  <testcase name="platformOwnershipAllowsVendorBridgeAndEthernet" classname="com.shilapi.xcertplay.network.ManualHotspotReadinessTest" time="0.0"/>
+  <testcase name="ethernetWithoutOwnershipTimesOut" classname="com.shilapi.xcertplay.network.ManualHotspotReadinessTest" time="0.001"/>
+  <testcase name="dualStackPrefersIpv4AndKeepsTheScopedLinkLocalFallback" classname="com.shilapi.xcertplay.network.ManualHotspotReadinessTest" time="0.0"/>
+  <testcase name="absentDefaultNetworkDoesNotHideAnObservedSta" classname="com.shilapi.xcertplay.network.ManualHotspotReadinessTest" time="0.0"/>
+  <testcase name="cancellationDuringSamplingCannotReturnReady" classname="com.shilapi.xcertplay.network.ManualHotspotReadinessTest" time="0.001"/>
+  <testcase name="changingDefaultResamplesThenAllowsStableApEvidenceConflict" classname="com.shilapi.xcertplay.network.ManualHotspotReadinessTest" time="0.001"/>
+  <system-out><![CDATA[]]></system-out>
+  <system-err><![CDATA[]]></system-err>
+</testsuite>

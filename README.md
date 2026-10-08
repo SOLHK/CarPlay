@@ -2,6 +2,16 @@
 
 本版修复画面资源释放竞态和导航音频收尾检查，减少音视频分配与界面绘制开销，统一应用界面并重新分组设置。音乐默认缓冲保持 **100 ms**。完整说明见 [0.2.33 界面与流畅度改进](CARPLAY-0.2.33-UI-AND-SMOOTHNESS.md)。
 
+## 下载与安装
+
+- [下载 CarPlay 0.2.33 APK](https://github.com/SOLHK/CarPlay/releases/download/v0.2.33/CarPlay-0.2.33.apk)
+- [下载完整源码与测试报告](https://github.com/SOLHK/CarPlay/releases/download/v0.2.33/CarPlay-0.2.33-source-and-tests.zip)
+- [发布说明与 SHA-256 校验文件](https://github.com/SOLHK/CarPlay/releases/tag/v0.2.33)
+
+安装包为 `com.shihab.diplay.steam.hudtest`，版本 `0.2.33-ui-test`，最低 Android 9。APK 包含连接认证，使用此前测试版的同一签名，可直接覆盖此前测试版并保留设置。请安装到车机。
+
+源码保留上游许可与说明；独立构建需要按 [构建指南](docs/BUILD.md) 提供外部认证输入。APK 校验结果与 1062 项测试报告见 [验证记录](validation/0.2.33)。
+
 ![0.2.33 首页 Android 渲染预览](validation/ui-0.2.33/home-wide.png)
 
 

@@ -1,0 +1,16 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<testsuite name="com.shilapi.xcertplay.DiagnosticRedactorTest" tests="10" skipped="0" failures="0" errors="0" timestamp="2026-10-08T01:22:42.601Z" hostname="fb3fb179fe46" time="0.646">
+  <properties/>
+  <testcase name="safeWifiMetadataSurvivesWithoutWeakeningCredentialFilters" classname="com.shilapi.xcertplay.DiagnosticRedactorTest" time="0.001"/>
+  <testcase name="failuresSurviveLaterSuccessfulSessionsAndOldestHistoryExpires" classname="com.shilapi.xcertplay.DiagnosticRedactorTest" time="0.003"/>
+  <testcase name="additionalTroubleshootingMetadataSurvivesSavedReportWithoutPayloads" classname="com.shilapi.xcertplay.DiagnosticRedactorTest" time="0.002"/>
+  <testcase name="logRotationIsBoundedAndRedactionHappensBeforeDisk" classname="com.shilapi.xcertplay.DiagnosticRedactorTest" time="0.617"/>
+  <testcase name="savedDriveReportKeepsMediaPerformanceCounters" classname="com.shilapi.xcertplay.DiagnosticRedactorTest" time="0.002"/>
+  <testcase name="connectionTimingAndCachedServiceMetadataSurviveWithoutPersonalIdentifiers" classname="com.shilapi.xcertplay.DiagnosticRedactorTest" time="0.0"/>
+  <testcase name="payloadAndCredentialLinesNeverReachReports" classname="com.shilapi.xcertplay.DiagnosticRedactorTest" time="0.0"/>
+  <testcase name="boundedMicrophoneStartFailureAndCaptureCountersSurviveRedaction" classname="com.shilapi.xcertplay.DiagnosticRedactorTest" time="0.019"/>
+  <testcase name="stateTransitionsSurviveWithoutAddressesOrIdentifiers" classname="com.shilapi.xcertplay.DiagnosticRedactorTest" time="0.0"/>
+  <testcase name="startupAndAirPlayMilestonesSurviveExportWithoutWeakeningPayloadFilters" classname="com.shilapi.xcertplay.DiagnosticRedactorTest" time="0.0"/>
+  <system-out><![CDATA[]]></system-out>
+  <system-err><![CDATA[]]></system-err>
+</testsuite>

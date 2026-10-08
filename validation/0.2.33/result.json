@@ -1,0 +1,87 @@
+{
+  "file": "CarPlay-0.2.33-100ms-ui-test.apk",
+  "size_bytes": 50226949,
+  "sha256": "3c00239ac93c5884fd6dcd70cb7e421662c71463360dbf491f5500fab3a5cb5b",
+  "package": "com.shihab.diplay.steam.hudtest",
+  "version_name": "0.2.33-ui-test",
+  "version_code": 52,
+  "min_android_api": 28,
+  "default_music_buffer_ms_verified_in_apk_dex": 100,
+  "native_echo_abis": [
+    "arm64-v8a",
+    "armeabi-v7a",
+    "x86_64"
+  ],
+  "signature_matches_previous_100ms_test_apk": true,
+  "authentication_assets_match_previous_verified_official_assets": true,
+  "signature_verified": true,
+  "zip_alignment_16kb_verified": true,
+  "unit_tests": {
+    "shared": {
+      "tests": 717,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0
+    },
+    "common": {
+      "tests": 345,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0
+    }
+  },
+  "total_unit_tests_passed": 1062,
+  "device_connection_tested": false,
+  "upstream_features_release": "https://github.com/shihabal3amri/DiPlay/releases/tag/v0.2.14",
+  "authentication_provenance": {
+    "source_release": "https://github.com/shihabal3amri/DiPlay/releases/tag/v0.2.11",
+    "source_apk": "https://github.com/shihabal3amri/DiPlay/releases/download/v0.2.11/DiPlay-0.2.11.apk",
+    "source_apk_sha256": "57a3f5daf02af82f636baee26f28a475e04013de8174176c62d97d300498e4c9",
+    "published_checksum_verified": true
+  },
+  "validated_at_utc": "2026-10-08T01:25:51.948279+00:00",
+  "lint_errors": 0,
+  "lint_warnings": 18,
+  "ui_render_previews": [
+    "about-wide.png",
+    "audio-wide.png",
+    "connection-error-narrow-large-text.png",
+    "connection-error-wide.png",
+    "connection-setup-wide.png",
+    "connection-waiting-wide.png",
+    "extensions-wide.png",
+    "home-narrow.png",
+    "home-wide.png",
+    "settings-large-text.png",
+    "settings-narrow.png",
+    "settings-wide.png",
+    "voice-wide.png"
+  ],
+  "gradle_build_succeeded": true,
+  "ui_render_reviewed": true,
+  "ui_preview_font_scale_test": 1.5,
+  "video_queue_stress_checks": {
+    "status": "passed",
+    "checks": 6,
+    "random_operations": 100000,
+    "concurrent_frames": 240000,
+    "control_jobs_verified": 1200,
+    "android_decoder_exercised": false
+  },
+  "native_library_load_segment_min_alignment_bytes": {
+    "lib/arm64-v8a/libandroidx.graphics.path.so": 16384,
+    "lib/arm64-v8a/liblocal_hotspot_radio.so": 16384,
+    "lib/arm64-v8a/libspeex_echo.so": 16384,
+    "lib/arm64-v8a/libxcertplay_i2c.so": 16384,
+    "lib/armeabi-v7a/libandroidx.graphics.path.so": 16384,
+    "lib/armeabi-v7a/liblocal_hotspot_radio.so": 4096,
+    "lib/armeabi-v7a/libspeex_echo.so": 4096,
+    "lib/armeabi-v7a/libxcertplay_i2c.so": 4096,
+    "lib/x86_64/libandroidx.graphics.path.so": 16384,
+    "lib/x86_64/liblocal_hotspot_radio.so": 16384,
+    "lib/x86_64/libspeex_echo.so": 16384,
+    "lib/x86_64/libxcertplay_i2c.so": 16384
+  },
+  "source_commit": "b80272faf3cf4d9ff74525b3eda34a98a9d95e42",
+  "source_base_commit": "fdb218cb30c094c9a3bfeb8e2a463bf82bcfed43"
+}

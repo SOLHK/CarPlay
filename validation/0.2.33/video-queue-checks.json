@@ -1,0 +1,8 @@
+{
+  "status": "passed",
+  "checks": 6,
+  "random_operations": 100000,
+  "concurrent_frames": 240000,
+  "control_jobs_verified": 1200,
+  "android_decoder_exercised": false
+}

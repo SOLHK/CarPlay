@@ -1,0 +1,11 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<testsuite name="com.shilapi.xcertplay.airplay.CarPlayUiScaleTest" tests="5" skipped="0" failures="0" errors="0" timestamp="2026-10-08T01:21:56.493Z" hostname="fb3fb179fe46" time="0.001">
+  <properties/>
+  <testcase name="smallerCanvasMatchesTheLiveVerifiedProfile" classname="com.shilapi.xcertplay.airplay.CarPlayUiScaleTest" time="0.0"/>
+  <testcase name="reducedResolutionRemainsASeparateBaseForTheCanvas" classname="com.shilapi.xcertplay.airplay.CarPlayUiScaleTest" time="0.0"/>
+  <testcase name="defaultUnknownAndExcessiveRequestsDoNotAlterTheExistingDisplay" classname="com.shilapi.xcertplay.airplay.CarPlayUiScaleTest" time="0.0"/>
+  <testcase name="negotiatedDisplayAndAreasUseTheSameCanvas" classname="com.shilapi.xcertplay.airplay.CarPlayUiScaleTest" time="0.0"/>
+  <testcase name="safeAndViewAreasKeepTheirPositionOnTheTouchSurface" classname="com.shilapi.xcertplay.airplay.CarPlayUiScaleTest" time="0.001"/>
+  <system-out><![CDATA[]]></system-out>
+  <system-err><![CDATA[]]></system-err>
+</testsuite>

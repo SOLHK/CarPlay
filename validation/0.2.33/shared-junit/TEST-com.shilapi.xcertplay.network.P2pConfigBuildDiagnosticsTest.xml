@@ -1,0 +1,15 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<testsuite name="com.shilapi.xcertplay.network.P2pConfigBuildDiagnosticsTest" tests="9" skipped="0" failures="0" errors="0" timestamp="2026-10-08T01:22:11.318Z" hostname="fb3fb179fe46" time="0.03">
+  <properties/>
+  <testcase name="linkageFailureIsPreservedAndReportsOneLocationWithoutPrivateMessages" classname="com.shilapi.xcertplay.network.P2pConfigBuildDiagnosticsTest" time="0.026"/>
+  <testcase name="unrelatedExceptionMessagesAndConfigurationStringsAreNeverRead" classname="com.shilapi.xcertplay.network.P2pConfigBuildDiagnosticsTest" time="0.001"/>
+  <testcase name="aDifferentReturnDescriptorDoesNotAuthorizeCompatibilityRecovery" classname="com.shilapi.xcertplay.network.P2pConfigBuildDiagnosticsTest" time="0.0"/>
+  <testcase name="onlyTheReportedAndroidTenBuilderFailureIsEligible" classname="com.shilapi.xcertplay.network.P2pConfigBuildDiagnosticsTest" time="0.001"/>
+  <testcase name="cyclicCausesAndUnexpectedFrameTextProduceBoundedIdentifierOnlyOutput" classname="com.shilapi.xcertplay.network.P2pConfigBuildDiagnosticsTest" time="0.0"/>
+  <testcase name="successReturnsTheSameObjectAndIdentifiesTheCompletedBuilderStage" classname="com.shilapi.xcertplay.network.P2pConfigBuildDiagnosticsTest" time="0.001"/>
+  <testcase name="aFrameworkClassSuffixDoesNotMatchTheExactConfigurationDescriptor" classname="com.shilapi.xcertplay.network.P2pConfigBuildDiagnosticsTest" time="0.0"/>
+  <testcase name="callbackFailuresDoNotAlterASuccessfulBuildOrItsOriginalFailure" classname="com.shilapi.xcertplay.network.P2pConfigBuildDiagnosticsTest" time="0.0"/>
+  <testcase name="knownBuilderFailureBecomesTypedWithoutExposingItsPrivateMessage" classname="com.shilapi.xcertplay.network.P2pConfigBuildDiagnosticsTest" time="0.001"/>
+  <system-out><![CDATA[]]></system-out>
+  <system-err><![CDATA[]]></system-err>
+</testsuite>

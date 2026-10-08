@@ -1,0 +1,8 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<testsuite name="com.shilapi.xcertplay.WheelSiriWindowLearningTest" tests="2" skipped="0" failures="0" errors="0" timestamp="2026-10-08T01:22:53.997Z" hostname="fb3fb179fe46" time="0.057">
+  <properties/>
+  <testcase name="cancelLearningClearsCallbacksAndRestoresTheButtonOnce" classname="com.shilapi.xcertplay.WheelSiriWindowLearningTest" time="0.015"/>
+  <testcase name="windowLearningSavesOnePressAndConsumesItsRepeatAndRelease" classname="com.shilapi.xcertplay.WheelSiriWindowLearningTest" time="0.041"/>
+  <system-out><![CDATA[]]></system-out>
+  <system-err><![CDATA[]]></system-err>
+</testsuite>

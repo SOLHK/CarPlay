@@ -1,0 +1,9 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<testsuite name="com.shilapi.xcertplay.media.MediaFailureSummaryTest" tests="3" skipped="0" failures="0" errors="0" timestamp="2026-10-08T01:22:08.657Z" hostname="fb3fb179fe46" time="0.003">
+  <properties/>
+  <testcase name="limitsCauseDepthAndDoesNotExportMessages" classname="com.shilapi.xcertplay.media.MediaFailureSummaryTest" time="0.003"/>
+  <testcase name="cyclicCausesAreBoundedAndForeignStackFramesAreOmitted" classname="com.shilapi.xcertplay.media.MediaFailureSummaryTest" time="0.0"/>
+  <testcase name="keepsTheApiFailureLocationWithoutItsMessageOrSourcePath" classname="com.shilapi.xcertplay.media.MediaFailureSummaryTest" time="0.0"/>
+  <system-out><![CDATA[]]></system-out>
+  <system-err><![CDATA[]]></system-err>
+</testsuite>

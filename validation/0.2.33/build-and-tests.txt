@@ -1,0 +1,202 @@
+To honour the JVM settings for this build a single-use Daemon process will be forked. For more on this, please refer to https://docs.gradle.org/9.5.0/userguide/gradle_daemon.html#sec:disabling_the_daemon in the Gradle documentation.
+Daemon will be stopped at the end of the build 
+> Task :shared:preBuild UP-TO-DATE
+> Task :shared:preDebugBuild UP-TO-DATE
+> Task :shared:generateDebugResources UP-TO-DATE
+> Task :shared:packageDebugResources UP-TO-DATE
+> Task :shared:processDebugNavigationResources UP-TO-DATE
+> Task :shared:parseDebugLocalResources UP-TO-DATE
+> Task :shared:generateDebugRFile UP-TO-DATE
+> Task :shared:javaPreCompileDebug UP-TO-DATE
+> Task :shared:preDebugUnitTestBuild UP-TO-DATE
+> Task :shared:generateDebugUnitTestStubRFile UP-TO-DATE
+> Task :shared:javaPreCompileDebugUnitTest UP-TO-DATE
+> Task :common:preBuild UP-TO-DATE
+> Task :common:preDebugBuild UP-TO-DATE
+> Task :common:generateDebugResources UP-TO-DATE
+> Task :common:packageDebugResources UP-TO-DATE
+> Task :common:processDebugNavigationResources UP-TO-DATE
+> Task :common:parseDebugLocalResources UP-TO-DATE
+> Task :common:generateDebugRFile UP-TO-DATE
+> Task :common:javaPreCompileDebug UP-TO-DATE
+> Task :common:preDebugUnitTestBuild UP-TO-DATE
+> Task :common:writeDebugAarMetadata UP-TO-DATE
+> Task :shared:writeDebugAarMetadata UP-TO-DATE
+> Task :common:checkDebugUnitTestAarMetadata UP-TO-DATE
+> Task :common:mapDebugSourceSetPaths UP-TO-DATE
+> Task :common:compileDebugLibraryResources UP-TO-DATE
+> Task :common:mapDebugUnitTestSourceSetPaths UP-TO-DATE
+> Task :common:generateDebugUnitTestResources UP-TO-DATE
+> Task :common:mergeDebugUnitTestResources UP-TO-DATE
+> Task :common:extractDeepLinksDebug UP-TO-DATE
+> Task :common:processDebugManifest UP-TO-DATE
+> Task :shared:extractDeepLinksDebug UP-TO-DATE
+> Task :shared:processDebugManifest UP-TO-DATE
+> Task :common:mergeDebugUnitTestManifest UP-TO-DATE
+> Task :common:processDebugUnitTestManifest UP-TO-DATE
+> Task :shared:mapDebugSourceSetPaths UP-TO-DATE
+> Task :shared:compileDebugLibraryResources UP-TO-DATE
+> Task :common:processDebugUnitTestResources UP-TO-DATE
+> Task :common:javaPreCompileDebugUnitTest UP-TO-DATE
+> Task :common:generateDebugUnitTestAssets UP-TO-DATE
+> Task :common:generateDebugAssets UP-TO-DATE
+> Task :common:mergeDebugAssets UP-TO-DATE
+> Task :shared:generateDebugAssets UP-TO-DATE
+> Task :shared:mergeDebugAssets UP-TO-DATE
+> Task :common:mergeDebugUnitTestAssets UP-TO-DATE
+> Task :common:packageDebugUnitTestForUnitTest UP-TO-DATE
+> Task :common:generateDebugUnitTestConfig UP-TO-DATE
+> Task :common:checkDebugAarMetadata UP-TO-DATE
+> Task :common:extractDeepLinksForAarDebug UP-TO-DATE
+> Task :common:prepareDebugArtProfile UP-TO-DATE
+> Task :common:prepareLintJarForPublish UP-TO-DATE
+> Task :shared:checkDebugAarMetadata UP-TO-DATE
+> Task :shared:extractDebugAnnotations
+> Task :shared:extractDeepLinksForAarDebug UP-TO-DATE
+> Task :shared:prepareDebugArtProfile UP-TO-DATE
+> Task :shared:prepareLintJarForPublish UP-TO-DATE
+> Task :common:preDebugAndroidTestBuild UP-TO-DATE
+> Task :common:writeDebugLintModelMetadata UP-TO-DATE
+> Task :shared:writeDebugLintModelMetadata UP-TO-DATE
+> Task :common:extractProguardFiles UP-TO-DATE
+> Task :shared:extractProguardFiles UP-TO-DATE
+> Task :mobile:verifyStandaloneAuthentication
+> Task :mobile:rejectBundledCredentials
+> Task :mobile:preBuild
+> Task :mobile:preDebugBuild
+> Task :mobile:generateDebugResources UP-TO-DATE
+> Task :mobile:packageDebugResources UP-TO-DATE
+> Task :mobile:processDebugNavigationResources UP-TO-DATE
+> Task :mobile:parseDebugLocalResources UP-TO-DATE
+> Task :mobile:generateDebugRFile UP-TO-DATE
+> Task :mobile:javaPreCompileDebug UP-TO-DATE
+> Task :mobile:checkDebugAarMetadata UP-TO-DATE
+> Task :mobile:mapDebugSourceSetPaths UP-TO-DATE
+> Task :mobile:compileDebugNavigationResources UP-TO-DATE
+> Task :mobile:mergeDebugResources UP-TO-DATE
+> Task :mobile:createDebugCompatibleScreenManifests UP-TO-DATE
+> Task :mobile:extractDeepLinksDebug UP-TO-DATE
+> Task :mobile:processDebugMainManifest UP-TO-DATE
+> Task :mobile:processDebugManifest UP-TO-DATE
+> Task :mobile:processDebugManifestForPackage UP-TO-DATE
+> Task :mobile:processDebugResources UP-TO-DATE
+> Task :mobile:preDebugAndroidTestBuild SKIPPED
+> Task :mobile:extractProguardFiles UP-TO-DATE
+> Task :mobile:preDebugUnitTestBuild
+> Task :shared:preDebugAndroidTestBuild UP-TO-DATE
+> Task :mobile:mergeDebugNativeDebugMetadata NO-SOURCE
+> Task :mobile:generateDebugAssets UP-TO-DATE
+> Task :mobile:mergeDebugAssets UP-TO-DATE
+> Task :mobile:compressDebugAssets UP-TO-DATE
+> Task :mobile:generateDebugGlobalSynthetics UP-TO-DATE
+> Task :mobile:checkDebugDuplicateClasses UP-TO-DATE
+> Task :mobile:desugarDebugFileDependencies UP-TO-DATE
+> Task :mobile:mergeExtDexDebug UP-TO-DATE
+> Task :common:mergeDebugJniLibFolders UP-TO-DATE
+> Task :common:mergeDebugNativeLibs NO-SOURCE
+> Task :common:copyDebugJniLibsProjectOnly UP-TO-DATE
+> Task :mobile:mergeDebugJniLibFolders UP-TO-DATE
+> Task :shared:configureNdkBuildDebug[arm64-v8a]
+> Task :shared:buildNdkBuildDebug[arm64-v8a]
+> Task :shared:configureNdkBuildDebug[armeabi-v7a]
+> Task :shared:buildNdkBuildDebug[armeabi-v7a]
+> Task :shared:configureNdkBuildDebug[x86_64]
+> Task :shared:buildNdkBuildDebug[x86_64]
+> Task :shared:mergeDebugJniLibFolders UP-TO-DATE
+> Task :shared:mergeDebugNativeLibs UP-TO-DATE
+> Task :shared:copyDebugJniLibsProjectOnly UP-TO-DATE
+> Task :mobile:mergeDebugNativeLibs UP-TO-DATE
+> Task :mobile:stripDebugDebugSymbols UP-TO-DATE
+> Task :mobile:validateSigningDebug UP-TO-DATE
+> Task :mobile:writeDebugAppMetadata UP-TO-DATE
+> Task :mobile:writeDebugSigningConfigVersions UP-TO-DATE
+
+> Task :shared:compileDebugKotlin
+w: file:///workspace/CarPlay-0.2.33/shared/src/main/java/com/shilapi/xcertplay/media/AndroidMediaSink.kt:147:43 'fun setStereoVolume(p0: Float, p1: Float): Int' is deprecated. Deprecated in Java.
+w: file:///workspace/CarPlay-0.2.33/shared/src/main/java/com/shilapi/xcertplay/media/AndroidMediaSink.kt:1205:21 'constructor(p0: Int, p1: Int, p2: Int, p3: Int, p4: Int, p5: Int): AudioTrack' is deprecated. Deprecated in Java.
+
+> Task :shared:compileDebugJavaWithJavac UP-TO-DATE
+> Task :shared:bundleLibRuntimeToJarDebug
+> Task :shared:bundleLibCompileToJarDebug
+> Task :shared:processDebugJavaRes UP-TO-DATE
+> Task :common:compileDebugKotlin
+> Task :common:compileDebugJavaWithJavac UP-TO-DATE
+> Task :common:bundleLibRuntimeToJarDebug
+> Task :common:bundleLibCompileToJarDebug
+> Task :shared:compileDebugUnitTestKotlin
+> Task :shared:compileDebugUnitTestJavaWithJavac NO-SOURCE
+> Task :shared:processDebugUnitTestJavaRes UP-TO-DATE
+WARNING: A restricted method in java.lang.System has been called
+WARNING: java.lang.System::load has been called by org.conscrypt.NativeLibraryUtil in an unnamed module (file:/home/agent/.gradle/caches/modules-2/files-2.1/org.conscrypt/conscrypt-openjdk-uber/2.6.2/65c5977595ee9cc12e6017b9d43b1d2e3d1bab63/conscrypt-openjdk-uber-2.6.2.jar)
+WARNING: Use --enable-native-access=ALL-UNNAMED to avoid a warning for callers in this module
+WARNING: Restricted methods will be blocked in a future release unless native access is enabled
+
+> Task :common:compileDebugUnitTestKotlin
+OpenJDK 64-Bit Server VM warning: Sharing is only supported for boot loader classes because bootstrap classpath has been appended
+OpenJDK 64-Bit Server VM warning: Sharing is only supported for boot loader classes because bootstrap classpath has been appended
+> Task :shared:testDebugUnitTest
+> Task :common:compileDebugUnitTestJavaWithJavac NO-SOURCE
+> Task :common:processDebugJavaRes UP-TO-DATE
+> Task :common:processDebugUnitTestJavaRes UP-TO-DATE
+WARNING: A restricted method in java.lang.System has been called
+WARNING: java.lang.System::load has been called by org.conscrypt.NativeLibraryUtil in an unnamed module (file:/home/agent/.gradle/caches/modules-2/files-2.1/org.conscrypt/conscrypt-openjdk-uber/2.6.2/65c5977595ee9cc12e6017b9d43b1d2e3d1bab63/conscrypt-openjdk-uber-2.6.2.jar)
+WARNING: Use --enable-native-access=ALL-UNNAMED to avoid a warning for callers in this module
+WARNING: Restricted methods will be blocked in a future release unless native access is enabled
+
+OpenJDK 64-Bit Server VM warning: Sharing is only supported for boot loader classes because bootstrap classpath has been appended
+OpenJDK 64-Bit Server VM warning: Sharing is only supported for boot loader classes because bootstrap classpath has been appended
+> Task :common:testDebugUnitTest
+> Task :common:extractDebugAnnotations
+> Task :common:mergeDebugGeneratedProguardFiles UP-TO-DATE
+> Task :common:mergeDebugConsumerProguardFiles UP-TO-DATE
+> Task :common:mergeDebugJavaResource UP-TO-DATE
+> Task :common:syncDebugLibJars
+> Task :common:bundleDebugLocalLintAar
+> Task :shared:mergeDebugGeneratedProguardFiles UP-TO-DATE
+> Task :shared:mergeDebugConsumerProguardFiles UP-TO-DATE
+> Task :shared:mergeDebugJavaResource UP-TO-DATE
+> Task :shared:syncDebugLibJars
+> Task :shared:bundleDebugLocalLintAar
+> Task :common:createFullJarDebug
+> Task :shared:createFullJarDebug
+> Task :common:generateDebugAndroidTestLintModel
+> Task :shared:generateDebugLintModel
+> Task :common:generateDebugLintModel
+> Task :common:generateDebugUnitTestLintModel
+> Task :common:lintAnalyzeDebugAndroidTest
+> Task :shared:lintAnalyzeDebug
+> Task :common:lintAnalyzeDebugUnitTest
+> Task :mobile:compileDebugKotlin
+> Task :mobile:compileDebugJavaWithJavac NO-SOURCE
+> Task :mobile:bundleDebugClassesToCompileJar UP-TO-DATE
+> Task :mobile:generateDebugAndroidTestLintModel
+> Task :mobile:generateDebugLintReportModel
+> Task :mobile:generateDebugUnitTestLintModel
+> Task :mobile:lintAnalyzeDebugAndroidTest
+> Task :mobile:lintAnalyzeDebugUnitTest
+> Task :shared:generateDebugAndroidTestLintModel
+> Task :shared:generateDebugUnitTestLintModel
+> Task :shared:lintAnalyzeDebugAndroidTest
+> Task :shared:lintAnalyzeDebugUnitTest
+> Task :mobile:processDebugJavaRes UP-TO-DATE
+> Task :mobile:mergeDebugJavaResource UP-TO-DATE
+> Task :common:bundleLibRuntimeToDirDebug
+> Task :shared:bundleLibRuntimeToDirDebug
+> Task :mobile:mergeLibDexDebug
+> Task :mobile:dexBuilderDebug UP-TO-DATE
+> Task :mobile:mergeProjectDexDebug UP-TO-DATE
+> Task :mobile:packageDebug
+> Task :mobile:createDebugApkListingFileRedirect UP-TO-DATE
+> Task :mobile:assembleDebug
+> Task :mobile:assembleStandaloneDebug
+> Task :common:lintAnalyzeDebug
+> Task :mobile:lintAnalyzeDebug
+
+> Task :mobile:lintReportDebug
+Wrote HTML report to file:///workspace/CarPlay-0.2.33/mobile/build/reports/lint-results-debug.html
+Wrote SARIF report to file:///workspace/CarPlay-0.2.33/mobile/build/reports/lint-results-debug.sarif
+
+> Task :mobile:lintDebug
+
+BUILD SUCCESSFUL in 4m 46s
+152 actionable tasks: 51 executed, 101 up-to-date

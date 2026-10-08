@@ -1,0 +1,15 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<testsuite name="com.shilapi.xcertplay.WheelKeyPermissionSetupTest" tests="9" skipped="0" failures="0" errors="0" timestamp="2026-10-08T01:22:53.874Z" hostname="fb3fb179fe46" time="0.119">
+  <properties/>
+  <testcase name="healthyServiceIsNotRemovedForRebinding" classname="com.shilapi.xcertplay.WheelKeyPermissionSetupTest" time="0.031"/>
+  <testcase name="nullEmptyOrFailedReadDoesNotWriteTheServiceList" classname="com.shilapi.xcertplay.WheelKeyPermissionSetupTest" time="0.009"/>
+  <testcase name="serviceBindingAfterTheReadIsNotRemovedForRebinding" classname="com.shilapi.xcertplay.WheelKeyPermissionSetupTest" time="0.026"/>
+  <testcase name="disablingTheFeaturesDuringTheRestoreGraceStopsTheRequest" classname="com.shilapi.xcertplay.WheelKeyPermissionSetupTest" time="0.008"/>
+  <testcase name="successfulShellWithoutActualPermissionIsNotSuccess" classname="com.shilapi.xcertplay.WheelKeyPermissionSetupTest" time="0.011"/>
+  <testcase name="malformedOrShellActiveValuesAreRejectedBeforeAnyWrite" classname="com.shilapi.xcertplay.WheelKeyPermissionSetupTest" time="0.007"/>
+  <testcase name="shellFailureStopsFurtherWritesAndDoesNotClaimSuccess" classname="com.shilapi.xcertplay.WheelKeyPermissionSetupTest" time="0.007"/>
+  <testcase name="disablingAfterTheReadStopsAllWrites" classname="com.shilapi.xcertplay.WheelKeyPermissionSetupTest" time="0.007"/>
+  <testcase name="stoppedServiceIsReboundWhileOtherServicesKeepTheirOrder" classname="com.shilapi.xcertplay.WheelKeyPermissionSetupTest" time="0.007"/>
+  <system-out><![CDATA[]]></system-out>
+  <system-err><![CDATA[]]></system-err>
+</testsuite>

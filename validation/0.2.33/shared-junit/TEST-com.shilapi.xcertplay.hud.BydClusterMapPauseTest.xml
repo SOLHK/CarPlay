@@ -1,0 +1,7 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<testsuite name="com.shilapi.xcertplay.hud.BydClusterMapPauseTest" tests="1" skipped="0" failures="0" errors="0" timestamp="2026-10-08T01:22:05.859Z" hostname="fb3fb179fe46" time="1.035">
+  <properties/>
+  <testcase name="initializationDoesNotWaitForAPendingAdbRead" classname="com.shilapi.xcertplay.hud.BydClusterMapPauseTest" time="1.032"/>
+  <system-out><![CDATA[]]></system-out>
+  <system-err><![CDATA[]]></system-err>
+</testsuite>

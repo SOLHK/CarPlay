@@ -1,0 +1,11 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<testsuite name="com.shilapi.xcertplay.media.VoiceFilterTest" tests="5" skipped="0" failures="0" errors="0" timestamp="2026-10-08T01:22:10.498Z" hostname="fb3fb179fe46" time="0.049">
+  <properties/>
+  <testcase name="bothStereoChannelsAreFilteredIndependently" classname="com.shilapi.xcertplay.media.VoiceFilterTest" time="0.021"/>
+  <testcase name="onlyTheGivenRangeIsChanged" classname="com.shilapi.xcertplay.media.VoiceFilterTest" time="0.002"/>
+  <testcase name="deepBassIsCut" classname="com.shilapi.xcertplay.media.VoiceFilterTest" time="0.002"/>
+  <testcase name="speechPassesUnchanged" classname="com.shilapi.xcertplay.media.VoiceFilterTest" time="0.022"/>
+  <testcase name="theCutoffIsAboutThreeDecibelsDown" classname="com.shilapi.xcertplay.media.VoiceFilterTest" time="0.002"/>
+  <system-out><![CDATA[]]></system-out>
+  <system-err><![CDATA[]]></system-err>
+</testsuite>

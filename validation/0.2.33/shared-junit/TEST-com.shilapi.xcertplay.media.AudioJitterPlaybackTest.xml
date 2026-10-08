@@ -1,0 +1,9 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<testsuite name="com.shilapi.xcertplay.media.AudioJitterPlaybackTest" tests="3" skipped="0" failures="0" errors="0" timestamp="2026-10-08T01:22:08.491Z" hostname="fb3fb179fe46" time="0.004">
+  <properties/>
+  <testcase name="default100msDoesNotClaimToHide600msDeliveryGaps" classname="com.shilapi.xcertplay.media.AudioJitterPlaybackTest" time="0.001"/>
+  <testcase name="repeatedUnderrunRecoveryPreservesEveryPcmFrame" classname="com.shilapi.xcertplay.media.AudioJitterPlaybackTest" time="0.001"/>
+  <testcase name="largerMusicPresetCoversLonger600msBursts" classname="com.shilapi.xcertplay.media.AudioJitterPlaybackTest" time="0.002"/>
+  <system-out><![CDATA[]]></system-out>
+  <system-err><![CDATA[]]></system-err>
+</testsuite>

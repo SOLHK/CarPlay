@@ -1,0 +1,17 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<testsuite name="com.shilapi.xcertplay.LauncherIntentTest" tests="8" skipped="0" failures="0" errors="0" timestamp="2026-10-08T01:22:43.759Z" hostname="fb3fb179fe46" time="0.511">
+  <properties/>
+  <testcase name="recreationRetainsSettingsInsteadOfRedirectingToProjection[28]" classname="com.shilapi.xcertplay.LauncherIntentTest" time="0.1"/>
+  <testcase name="launcherDeliveredToExistingSettingsOpensProjectionAndClearsReturnNavigation[28]" classname="com.shilapi.xcertplay.LauncherIntentTest" time="0.128"/>
+  <testcase name="onlyAPlainLauncherIntentReturnsToCarPlay[28]" classname="com.shilapi.xcertplay.LauncherIntentTest" time="0.012"/>
+  <testcase name="freshLauncherReturnsToTheExistingHostWithoutStoppingTheSession[28]" classname="com.shilapi.xcertplay.LauncherIntentTest" time="0.019"/>
+  <testcase name="recreationRetainsSettingsInsteadOfRedirectingToProjection" classname="com.shilapi.xcertplay.LauncherIntentTest" time="0.074"/>
+  <testcase name="launcherDeliveredToExistingSettingsOpensProjectionAndClearsReturnNavigation" classname="com.shilapi.xcertplay.LauncherIntentTest" time="0.089"/>
+  <testcase name="onlyAPlainLauncherIntentReturnsToCarPlay" classname="com.shilapi.xcertplay.LauncherIntentTest" time="0.042"/>
+  <testcase name="freshLauncherReturnsToTheExistingHostWithoutStoppingTheSession" classname="com.shilapi.xcertplay.LauncherIntentTest" time="0.019"/>
+  <system-out><![CDATA[]]></system-out>
+  <system-err><![CDATA[Invalid ID 0x00000000.
+Invalid ID 0x00000000.
+Invalid ID 0x00000000.
+]]></system-err>
+</testsuite>
