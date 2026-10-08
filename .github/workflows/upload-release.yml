@@ -1,0 +1,54 @@
+name: Upload verified CarPlay 0.2.33 release assets
+
+on:
+  push:
+    branches: [release-assets-v0.2.33]
+    paths:
+      - distribution/v0.2.33/**
+      - .github/workflows/upload-release.yml
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  upload:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - name: Verify APK and source archive
+        working-directory: distribution/v0.2.33
+        run: sha256sum --check SHA256SUMS.txt
+      - name: Upload the verified files to the prepared draft release
+        working-directory: distribution/v0.2.33
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set -euo pipefail
+          release_id=$(gh api "repos/${GITHUB_REPOSITORY}/releases/tags/v0.2.33" --jq .id)
+          test "$release_id" = 406518529
+          gh release upload v0.2.33 \
+            CarPlay-0.2.33.apk \
+            CarPlay-0.2.33-source-and-tests.zip \
+            SHA256SUMS.txt \
+            --repo "$GITHUB_REPOSITORY" --clobber
+          gh api "repos/${GITHUB_REPOSITORY}/releases/${release_id}" > "$RUNNER_TEMP/carplay-release.json"
+          python - <<'PY'
+          import hashlib, json, os
+          from pathlib import Path
+          release = json.loads((Path(os.environ['RUNNER_TEMP']) / 'carplay-release.json').read_text())
+          expected = ['CarPlay-0.2.33.apk', 'CarPlay-0.2.33-source-and-tests.zip', 'SHA256SUMS.txt']
+          assets = {asset['name']: asset for asset in release['assets']}
+          for name in expected:
+              local = Path(name)
+              remote = assets[name]
+              assert remote['state'] == 'uploaded', name
+              assert remote['size'] == local.stat().st_size, name
+              digest = remote.get('digest')
+              if digest:
+                  assert digest == 'sha256:' + hashlib.sha256(local.read_bytes()).hexdigest(), name
+              print(name + ': GitHub size and checksum verified')
+          PY
