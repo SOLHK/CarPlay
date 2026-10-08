@@ -116,7 +116,7 @@ for path in changed:
         if name not in base_strings:
             errors.append(f'{path}: missing {name}')
 result = {
-    'version': '0.2.29',
+    'version': re.search(r'versionName\s*=\s*"([^"]+)"', (ROOT / 'mobile/build.gradle.kts').read_text()).group(1),
     'check_type': 'offline_resource_and_lexical_checks_only',
     'resource_xml_files': len(xml_files),
     'source_files_checked': len(changed),

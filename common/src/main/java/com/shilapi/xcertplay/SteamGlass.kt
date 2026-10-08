@@ -10,7 +10,6 @@ import android.graphics.LinearGradient
 import android.graphics.Paint
 import android.graphics.Path
 import android.graphics.PixelFormat
-import android.graphics.RadialGradient
 import android.graphics.Rect
 import android.graphics.RectF
 import android.graphics.Shader
@@ -24,6 +23,7 @@ internal enum class SteamSettingsSection(val title: Int, val hint: Int) {
     CONNECTION(R.string.steam_connection, R.string.steam_connection_hint),
     DISPLAY(R.string.steam_display, R.string.steam_display_hint),
     AUDIO(R.string.steam_audio, R.string.steam_audio_hint),
+    VOICE(R.string.steam_voice, R.string.steam_voice_hint),
     LOCATION(R.string.steam_location, R.string.steam_location_hint),
     TOOLS(R.string.steam_tools, R.string.steam_tools_hint),
     MORE(R.string.steam_more, R.string.steam_more_hint);
@@ -35,17 +35,35 @@ internal enum class SteamSettingsSection(val title: Int, val hint: Int) {
 
 /** Native, static glass shading: no bitmap capture, RenderEffect or animation loop. */
 internal object SteamGlass {
-    val text = Color.rgb(244, 248, 255)
-    val muted = Color.rgb(184, 199, 222)
-    val accent = Color.rgb(189, 219, 255)
+    val background = Color.rgb(12, 18, 29)
+    val text = Color.rgb(238, 244, 252)
+    val muted = Color.rgb(159, 176, 197)
+    val accent = Color.rgb(127, 196, 255)
+    val warning = Color.rgb(255, 203, 142)
     fun dp(context: Context, value: Int) = (value * context.resources.displayMetrics.density + .5f).toInt()
     fun backdrop(): Drawable = AmbientDrawable()
-    fun surface(context: Context, selected: Boolean = false, radius: Int = 24): Drawable =
+    fun surface(context: Context, selected: Boolean = false, radius: Int = 20): Drawable =
         GlassDrawable(context.resources.displayMetrics.density, selected, radius)
     fun action(context: Context, selected: Boolean = false, radius: Int = 18): Drawable =
-        RippleDrawable(ColorStateList.valueOf(0x26D1E9FF), surface(context, selected, radius), null)
+        RippleDrawable(ColorStateList.valueOf(0x287FC4FF), surface(context, selected, radius), null)
+    fun primaryAction(context: Context): Drawable = RippleDrawable(ColorStateList.valueOf(0x280C121D),
+        android.graphics.drawable.GradientDrawable().apply {
+            setColor(accent); cornerRadius = dp(context, 16).toFloat()
+        }, null)
+    fun styleAction(view: android.widget.TextView, primary: Boolean = false) {
+        view.textSize = 16f
+        view.typeface = android.graphics.Typeface.create("sans-serif-medium", android.graphics.Typeface.NORMAL)
+        view.setTextColor(ColorStateList(arrayOf(intArrayOf(-android.R.attr.state_enabled), intArrayOf()),
+            intArrayOf(0xFF667B93.toInt(), if (primary) background else text)))
+        view.background = if (primary) primaryAction(view.context) else action(view.context)
+        view.minimumHeight = dp(view.context, 56)
+        view.minimumWidth = 0
+        view.setPadding(dp(view.context, 16), dp(view.context, 12), dp(view.context, 16), dp(view.context, 12))
+        view.stateListAnimator = null
+        if (view is android.widget.Button) view.isAllCaps = false
+    }
     fun styleDialog(context: Context, dialog: android.app.AlertDialog) {
-        dialog.window?.setBackgroundDrawable(surface(context, selected = true, radius = 28))
+        dialog.window?.setBackgroundDrawable(surface(context, radius = 20))
         dialog.window?.setDimAmount(.55f)
         for (which in listOf(android.app.AlertDialog.BUTTON_POSITIVE,
             android.app.AlertDialog.BUTTON_NEGATIVE, android.app.AlertDialog.BUTTON_NEUTRAL)) {
@@ -58,24 +76,16 @@ internal object SteamGlass {
 
 private class AmbientDrawable : Drawable() {
     private val base = Paint(Paint.ANTI_ALIAS_FLAG)
-    private val glows = Array(3) { Paint(Paint.ANTI_ALIAS_FLAG) }
     override fun onBoundsChange(bounds: Rect) {
         val w = bounds.width().toFloat().coerceAtLeast(1f)
         val h = bounds.height().toFloat().coerceAtLeast(1f)
         base.shader = LinearGradient(0f, 0f, w, h,
-            intArrayOf(Color.rgb(19, 29, 51), Color.rgb(35, 41, 67), Color.rgb(12, 26, 42)), null, Shader.TileMode.CLAMP)
-        val centers = arrayOf(floatArrayOf(w * .12f, h * .22f), floatArrayOf(w * .83f, h * .05f), floatArrayOf(w * .8f, h * .9f))
-        val colors = intArrayOf(0x68778DE3, 0x626F52A8, 0x4845A3B2)
-        glows.forEachIndexed { index, paint ->
-            paint.shader = RadialGradient(centers[index][0], centers[index][1], maxOf(w, h) * .72f,
-                colors[index], Color.TRANSPARENT, Shader.TileMode.CLAMP)
-        }
+            intArrayOf(Color.rgb(17, 29, 46), SteamGlass.background), null, Shader.TileMode.CLAMP)
     }
     override fun draw(canvas: Canvas) {
         canvas.drawRect(bounds, base)
-        glows.forEach { canvas.drawRect(bounds, it) }
     }
-    override fun setAlpha(alpha: Int) { base.alpha = alpha; glows.forEach { it.alpha = alpha }; invalidateSelf() }
+    override fun setAlpha(alpha: Int) { base.alpha = alpha; invalidateSelf() }
     override fun setColorFilter(colorFilter: ColorFilter?) { base.colorFilter = colorFilter; invalidateSelf() }
     @Deprecated("Required by Drawable") override fun getOpacity() = PixelFormat.OPAQUE
 }
@@ -90,10 +100,10 @@ private class GlassDrawable(private val density: Float, private val selected: Bo
         rect.inset(density * .6f, density * .6f)
         val h = bounds.height().toFloat().coerceAtLeast(1f)
         fill.shader = LinearGradient(0f, bounds.top.toFloat(), bounds.width().toFloat(), bounds.top + h,
-            if (selected) intArrayOf(0xA07B9FC4.toInt(), 0x6449699D, 0x585A5D94)
-            else intArrayOf(0x666F809E, 0x323A4B69, 0x3C334D67), null, Shader.TileMode.CLAMP)
+            if (selected) intArrayOf(0xFF223F5D.toInt(), 0xFF1D3046.toInt())
+            else intArrayOf(0xFF1D2B3E.toInt(), 0xFF172335.toInt()), null, Shader.TileMode.CLAMP)
         edge.shader = LinearGradient(bounds.left.toFloat(), bounds.top.toFloat(), bounds.right.toFloat(), bounds.bottom.toFloat(),
-            intArrayOf(if (selected) 0xD8E9F9FF.toInt() else 0xA0D8E9FF.toInt(), 0x225A729B, 0x646F9FB7), null, Shader.TileMode.CLAMP)
+            intArrayOf(if (selected) 0xA07FC4FF.toInt() else 0x555D7795, 0x243F5570), null, Shader.TileMode.CLAMP)
     }
     override fun draw(canvas: Canvas) { canvas.drawRoundRect(rect, radiusPx, radiusPx, fill); canvas.drawRoundRect(rect, radiusPx, radiusPx, edge) }
     override fun setAlpha(alpha: Int) { fill.alpha = alpha; edge.alpha = alpha; invalidateSelf() }
@@ -101,7 +111,7 @@ private class GlassDrawable(private val density: Float, private val selected: Bo
     @Deprecated("Required by Drawable") override fun getOpacity() = PixelFormat.TRANSLUCENT
 }
 
-/** Six original line glyphs, independent of the upstream ic_dp_* artwork. */
+/** Original line glyphs shared by navigation and shortcuts. */
 internal class SteamSettingIcon(context: Context, section: SteamSettingsSection) : View(context) {
     private val glyph = Path().apply {
         when (section) {
@@ -117,6 +127,11 @@ internal class SteamSettingIcon(context: Context, section: SteamSettingsSection)
                 moveTo(3f, 9f); lineTo(7f, 9f); lineTo(12f, 5f); lineTo(12f, 19f); lineTo(7f, 15f); lineTo(3f, 15f); close()
                 moveTo(16f, 8f); quadTo(21f, 12f, 16f, 16f)
             }
+            SteamSettingsSection.VOICE -> {
+                addRoundRect(8f, 3f, 16f, 15f, 4f, 4f, Path.Direction.CW)
+                moveTo(5f, 11f); cubicTo(5f, 22f, 19f, 22f, 19f, 11f)
+                moveTo(12f, 19f); lineTo(12f, 23f)
+            }
             SteamSettingsSection.LOCATION -> {
                 moveTo(4f, 10f); lineTo(21f, 3f); lineTo(14f, 21f); lineTo(11f, 13f); close()
             }
@@ -130,7 +145,7 @@ internal class SteamSettingIcon(context: Context, section: SteamSettingsSection)
         }
     }
     private val paint = Paint(Paint.ANTI_ALIAS_FLAG).apply {
-        color = Color.rgb(191, 220, 251); style = Paint.Style.STROKE
+        color = SteamGlass.accent; style = Paint.Style.STROKE
         strokeWidth = 1.65f; strokeCap = Paint.Cap.ROUND; strokeJoin = Paint.Join.ROUND
     }
     init { importantForAccessibility = IMPORTANT_FOR_ACCESSIBILITY_NO }

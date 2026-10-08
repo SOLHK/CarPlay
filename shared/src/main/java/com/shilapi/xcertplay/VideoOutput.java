@@ -9,7 +9,11 @@ public final class VideoOutput {
  }
  public static String describe(){return "视频输出合并：显示="+shown+"；跳过过时解码画面="+skipped+"；旧画面屏蔽已关闭="+staleDrains+"\n";}
  public static boolean drain(MediaCodec codec,Surface surface,VideoStats stats){
-  RuntimeDiagnostics.draining();MediaCodec.BufferInfo info=new MediaCodec.BufferInfo();int pending=-1;boolean eos=false;int loops=0;long began=System.nanoTime();
+  return drain(codec,surface,stats,new MediaCodec.BufferInfo());
+ }
+ /** Each serial decoder reuses its own metadata rather than allocating at every idle poll. */
+ public static boolean drain(MediaCodec codec,Surface surface,VideoStats stats,MediaCodec.BufferInfo info){
+  RuntimeDiagnostics.draining();int pending=-1;boolean eos=false;int loops=0;long began=System.nanoTime();
   try {
    while(loops++<16&&System.nanoTime()-began<8000000L){
     int index=codec.dequeueOutputBuffer(info,0);

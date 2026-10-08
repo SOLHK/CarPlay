@@ -10,11 +10,17 @@ import androidx.compose.material3.dynamicLightColorScheme
 import androidx.compose.material3.lightColorScheme
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.graphics.Color
+import com.shilapi.xcertplay.SteamGlass
 
 private val DarkColorScheme = darkColorScheme(
-    primary = Purple80,
-    secondary = PurpleGrey80,
-    tertiary = Pink80
+    primary = Color(SteamGlass.accent),
+    onPrimary = Color(SteamGlass.background),
+    secondary = Color(SteamGlass.muted),
+    background = Color(SteamGlass.background),
+    surface = Color(0xFF1D2B3E),
+    onBackground = Color(SteamGlass.text),
+    onSurface = Color(SteamGlass.text),
 )
 
 private val LightColorScheme = lightColorScheme(
@@ -35,9 +41,9 @@ private val LightColorScheme = lightColorScheme(
 
 @Composable
 fun XcertplayTheme(
-    darkTheme: Boolean = isSystemInDarkTheme(),
+    darkTheme: Boolean = true,
     // Dynamic color is available on Android 12+
-    dynamicColor: Boolean = true,
+    dynamicColor: Boolean = false,
     content: @Composable () -> Unit
 ) {
     val colorScheme = when {

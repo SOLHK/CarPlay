@@ -8,6 +8,7 @@ internal sealed interface VideoJob {
     data class Config(val codec: VideoCodec, val codecData: ByteArray) : VideoJob
     data class Frame(val nalus: ByteArray, val receivedNs: Long = System.nanoTime()) : VideoJob
     data class SurfaceChanged(val surface: Surface?) : VideoJob
+    data class DetachSurface(val surface: Surface, val onDetached: () -> Unit) : VideoJob
     data object Resync : VideoJob
 }
 
@@ -23,7 +24,7 @@ internal class VideoReferenceChain {
 
 /** Limit latency and memory without ever dropping a reference frame silently. */
 internal class VideoDecodeQueue(
-    // Wi-Fi delivers frames in bursts after a radio gap; the decoder's 250 ms age check bounds latency.
+    // Wi-Fi delivers frames in bursts after a radio gap; the decoder's age check bounds latency.
     private val maxFrames: Int = 60,
     private val maxBytes: Int = 8 * 1024 * 1024,
 ) {
@@ -33,6 +34,7 @@ internal class VideoDecodeQueue(
 
     fun offer(job: VideoJob) = jobs.offer(job)
     fun discardFrames() = jobs.discardFrames()
+    fun drain(): List<VideoJob> = jobs.drain()
     fun poll(timeoutMillis: Long): VideoJob? = jobs.poll(timeoutMillis)
 }
 

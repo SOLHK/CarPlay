@@ -3,6 +3,9 @@
     <string name="steam_connection">Connection</string>
     <string name="steam_display">Display</string>
     <string name="steam_audio">Audio</string>
+    <string name="steam_voice">Siri &amp; calls</string>
+    <string name="steam_voice_hint">Steering wheel Siri key, call controls and microphone processing.</string>
+    <string name="steam_voice_summary">Siri · hands-free calls</string>
     <string name="steam_location">Location</string>
     <string name="steam_tools">Tools</string>
     <string name="steam_more">More</string>
@@ -17,6 +20,8 @@
     <string name="steam_screen_summary">%1$d fps · %2$d%% resolution</string>
     <string name="steam_audio_summary">%1$d ms music buffer</string>
     <string name="steam_audio_buffer">Music buffer</string>
+    <string name="steam_display_layout">Layout &amp; screen</string>
+    <string name="steam_audio_focus">Playback &amp; focus</string>
     <string name="steam_buffer_ms">%1$d ms</string>
     <string name="steam_buffer_default">%1$d ms · Default</string>
     <string name="steam_extensions">Phone receiver and extensions</string>

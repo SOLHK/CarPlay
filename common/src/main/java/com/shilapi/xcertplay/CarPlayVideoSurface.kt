@@ -24,7 +24,7 @@ internal data class CarPlaySurfaceBounds(val left: Int, val top: Int, val width:
 
 /** Texture wrappers are ours to release; SurfaceHolder surfaces belong to the framework. */
 internal class CarPlayVideoSurfaceOwner<T : Any>(
-    private val detach: (T) -> Unit,
+    private val detach: (T, () -> Unit) -> Unit,
     private val release: (T) -> Unit,
 ) {
     var current: T? = null
@@ -48,10 +48,9 @@ internal class CarPlayVideoSurfaceOwner<T : Any>(
         val releasePrevious = owned
         current = null
         owned = false
-        try {
-            detach(previous)
-        } finally {
-            if (releasePrevious) release(previous)
+        val released = java.util.concurrent.atomic.AtomicBoolean()
+        detach(previous) {
+            if (releasePrevious && released.compareAndSet(false, true)) release(previous)
         }
     }
 }

@@ -45,7 +45,7 @@ internal class SteamConnectionPanel(
         isClickable = true
         val shell = column().apply { setPadding(dp(28), dp(24), dp(28), dp(28)) }
         val header = LinearLayout(context).apply { orientation = LinearLayout.HORIZONTAL; gravity = Gravity.CENTER_VERTICAL }
-        header.addView(text("STEAM  /  CarPlay", 22, true), LinearLayout.LayoutParams(0, -2, 1f))
+        header.addView(text("CarPlay · STEAM", 22, true), LinearLayout.LayoutParams(0, -2, 1f))
         header.addView(action(context.getString(R.string.back), false, onHome), LinearLayout.LayoutParams(dp(96), -2))
         shell.addView(header)
         shell.addView(text(context.getString(R.string.steam_session_title), 30, true).apply {
@@ -54,7 +54,7 @@ internal class SteamConnectionPanel(
         shell.addView(text(context.getString(R.string.steam_session_mode, mode), 14).apply {
             setPadding(0, 0, 0, dp(24))
         })
-        body.background = SteamGlass.surface(context, radius = 32)
+        body.background = SteamGlass.surface(context, radius = 24)
         body.gravity = Gravity.CENTER_VERTICAL
         body.setPadding(dp(24), dp(28), dp(24), dp(28))
         details.addView(stage)
@@ -94,7 +94,7 @@ internal class SteamConnectionPanel(
         this.feedback = feedback
         stage.text = context.getString(feedback.title)
         hint.text = feedback.hint?.let(context::getString) ?: defaultHint()
-        stage.setTextColor(if (feedback.hint != null) 0xFFFFD9AD.toInt() else SteamGlass.text)
+        stage.setTextColor(if (feedback.hint != null) SteamGlass.warning else SteamGlass.text)
         retryButton.visibility = if (feedback.hint != null && !feedback.automaticRetry) View.VISIBLE else View.GONE
         val action = feedback.action
         recoveryButton.visibility = if (action == null) View.GONE else View.VISIBLE
@@ -114,14 +114,14 @@ internal class SteamConnectionPanel(
 
     private fun column() = LinearLayout(context).apply { orientation = LinearLayout.VERTICAL }
     private fun text(value: String, size: Int, bold: Boolean = false) = TextView(context).apply {
-        text = value; textSize = size.toFloat(); setTextColor(if (bold) SteamGlass.text else SteamGlass.muted)
+        text = value; textSize = size.toFloat(); includeFontPadding = false
+        setTextColor(if (bold) SteamGlass.text else SteamGlass.muted)
         typeface = Typeface.create(if (bold) "sans-serif-medium" else "sans-serif", Typeface.NORMAL)
         setLineSpacing(dp(3).toFloat(), 1f)
     }
     private fun action(value: String, primary: Boolean, click: () -> Unit) = Button(context).apply {
-        text = value; textSize = 16f; isAllCaps = false; setTextColor(SteamGlass.text)
-        background = SteamGlass.action(context, primary, 24); stateListAnimator = null
-        minHeight = dp(56); minimumWidth = 0; setPadding(dp(20), dp(12), dp(20), dp(12))
+        text = value
+        SteamGlass.styleAction(this, primary)
         setOnClickListener { click() }
     }
     private fun dp(value: Int) = SteamGlass.dp(context, value)

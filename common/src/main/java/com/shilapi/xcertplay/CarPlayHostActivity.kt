@@ -287,12 +287,20 @@ class CarPlayHostActivity : ComponentActivity() {
     private var externalActivityInProgress = false
     private var sink: AndroidMediaSink? = null
     private var controller: CarPlayController? = null
+    private val retiringSinks = java.util.concurrent.ConcurrentHashMap.newKeySet<AndroidMediaSink>()
+    private val ownedSurfaceTextures = java.util.IdentityHashMap<Surface, SurfaceTexture>()
     private val videoSurfaceOwner = CarPlayVideoSurfaceOwner<Surface>(
-        detach = { surface ->
-            sink?.clearSurface(SCREEN_TYPE_MAIN, surface)
-            sink?.clearSurface(SCREEN_TYPE_ALT, surface)
+        detach = { surface, onDetached ->
+            val owners = (listOfNotNull(sink) + retiringSinks).distinct()
+            val barrier = com.shilapi.xcertplay.media.VideoReleaseBarrier(owners.size, onDetached)
+            owners.forEach { it.detachSurface(surface, barrier.acknowledgement()) }
         },
-        release = { it.release() },
+        release = { surface ->
+            mainHandler.post {
+                surface.release()
+                ownedSurfaceTextures.remove(surface)?.release()
+            }
+        },
     )
     private val currentSurface: Surface? get() = videoSurfaceOwner.current
     private var currentSurfaceTexture: SurfaceTexture? = null
@@ -423,6 +431,7 @@ class CarPlayHostActivity : ComponentActivity() {
                 existing
             } else {
                 Surface(texture).also {
+                    ownedSurfaceTextures[it] = texture
                     videoSurfaceOwner.replace(it, releaseOnDetach = true)
                     currentSurfaceTexture = texture
                 }
@@ -439,11 +448,12 @@ class CarPlayHostActivity : ComponentActivity() {
         }
 
         override fun onSurfaceTextureDestroyed(texture: SurfaceTexture): Boolean {
-            if (currentSurfaceTexture !== texture) return true
+            if (currentSurfaceTexture !== texture) return ownedSurfaceTextures.values.none { it === texture }
             currentSurface?.let(videoSurfaceOwner::clear)
             currentSurfaceTexture = null
             appendLog("Texture surface destroyed")
-            return true
+            // Retain the producer until every codec confirms detach; its wrapper alone is insufficient.
+            return false
         }
 
         override fun onSurfaceTextureUpdated(texture: SurfaceTexture) = Unit
@@ -466,8 +476,14 @@ class CarPlayHostActivity : ComponentActivity() {
         }
 
         override fun surfaceDestroyed(holder: SurfaceHolder) {
-            videoSurfaceOwner.clear(holder.surface)
-            appendLog("SurfaceView video surface destroyed")
+            val surface = holder.surface
+            val owners = (listOfNotNull(sink) + retiringSinks).distinct()
+            val barrier = com.shilapi.xcertplay.media.VideoReleaseBarrier(owners.size)
+            owners.forEach { it.detachSurface(surface, barrier.acknowledgement()) }
+            // SurfaceHolder owns this resource: Android requires consumers to detach before return.
+            val confirmed = barrier.await(800)
+            videoSurfaceOwner.clear(surface)
+            appendLog("SurfaceView video surface destroyed detachConfirmed=$confirmed")
         }
     }
 
@@ -3660,6 +3676,7 @@ class CarPlayHostActivity : ComponentActivity() {
         handshakeResetInProgress = true
         val oldController = controller
         val oldSink = sink
+        oldSink?.let { retiringSinks.add(it) }
         CarPlayMediaKeys.detach(oldController)
         CarPlayBackgroundSession.clear(oldController, keepOwner = true)
         controller = null
@@ -3677,6 +3694,7 @@ class CarPlayHostActivity : ComponentActivity() {
                     "elapsedMs=${((System.nanoTime() - started) / 1_000_000L).coerceAtLeast(0)}",
             )
             oldSink?.close()
+            oldSink?.whenVideoReleased { retiringSinks.remove(oldSink) }
             runOnUiThread {
                 if (!shuttingDown.get() && generation == restartGeneration) {
                     handshakeResetInProgress = false
@@ -3745,6 +3763,7 @@ class CarPlayHostActivity : ComponentActivity() {
         mainHandler.removeCallbacks(applyDisplaySize)
         val oldController = controller
         val oldSink = sink
+        oldSink?.let { retiringSinks.add(it) }
         CarPlayMediaKeys.detach(oldController)
         CarPlayBackgroundSession.clear(oldController)
         controller = null
@@ -3755,6 +3774,7 @@ class CarPlayHostActivity : ComponentActivity() {
             oldController?.close()
             val clean = oldController?.awaitClosed(CONTROLLER_CLOSE_TIMEOUT_MILLIS) ?: true
             oldSink?.close()
+            oldSink?.whenVideoReleased { retiringSinks.remove(oldSink) }
             airPlayCommandExecutor.shutdown()
             if (terminateProcess) {
                 applicationContext.stopService(Intent(applicationContext, CarPlayVpnService::class.java))

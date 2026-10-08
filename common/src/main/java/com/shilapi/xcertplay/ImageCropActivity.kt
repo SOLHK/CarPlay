@@ -48,7 +48,8 @@ class ImageCropActivity : Activity() {
 
         cropView = SquareCropView(this)
         statusView = TextView(this).apply {
-            setTextColor(Color.WHITE)
+            setTextColor(SteamGlass.text)
+            background = SteamGlass.surface(this@ImageCropActivity, radius = 16)
             textSize = 16f
             gravity = Gravity.CENTER
             setPadding(dp(12), dp(8), dp(12), dp(8))
@@ -62,6 +63,7 @@ class ImageCropActivity : Activity() {
         }
         controls.addView(
             Button(this).apply {
+                SteamGlass.styleAction(this)
                 text = getString(R.string.cancel)
                 isAllCaps = false
                 setOnClickListener {
@@ -73,6 +75,7 @@ class ImageCropActivity : Activity() {
         )
         controls.addView(
             Button(this).apply {
+                SteamGlass.styleAction(this, primary = true)
                 text = getString(R.string.save_1_1)
                 isAllCaps = false
                 setOnClickListener { saveCrop() }
@@ -83,7 +86,7 @@ class ImageCropActivity : Activity() {
         )
 
         val root = FrameLayout(this).apply {
-            setBackgroundColor(Color.BLACK)
+            background = SteamGlass.backdrop()
             addView(
                 cropView,
                 FrameLayout.LayoutParams(

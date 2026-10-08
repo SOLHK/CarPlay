@@ -102,7 +102,7 @@ class SteamGlassSettingsTest {
             val scroll = ReflectionHelpers.getField<ScrollView>(activity, "rootScroll")
             assertFalse(views(scroll).any { it === navigation })
             assertFalse(views(activity.window.decorView).any { it is HorizontalScrollView })
-            assertEquals(6, views(navigation).count { it.tag?.toString()?.startsWith("steam_settings_") == true } - 1)
+            assertEquals(SteamSettingsSection.entries.size, views(navigation).count { it.tag?.toString()?.startsWith("steam_settings_") == true } - 1)
         } finally { controller.pause().stop().destroy() }
     }
 
@@ -175,6 +175,38 @@ class SteamGlassSettingsTest {
                 View.MeasureSpec.makeMeasureSpec(0, View.MeasureSpec.UNSPECIFIED))
             assertTrue(line.measuredHeight >= text.measuredHeight)
             assertTrue(toggle.measuredHeight >= (48 * activity.resources.displayMetrics.density).toInt())
+        } finally { controller.pause().stop().destroy() }
+    }
+
+    @Test fun leavingTheSiriPageCancelsLearningBeforeAnyOtherKeyCanBeAssigned() {
+        WheelSiriSettings.setEnabled(RuntimeEnvironment.getApplication(), true)
+        val controller = Robolectric.buildActivity(DiPlayActivity::class.java, intent()).setup()
+        try {
+            val activity = controller.get()
+            navigateSteamSettings(activity, SteamSettingsSection.VOICE)
+            val assign = labels(activity).single { it.isClickable && it.text.toString().contains("点按以更改") }
+            assign.performClick()
+            assertNotNull(ReflectionHelpers.getField<Any?>(activity, "learntSiriInWindow"))
+            navigateSteamSettings(activity, SteamSettingsSection.AUDIO)
+            assertNull(ReflectionHelpers.getField<Any?>(activity, "learntSiriInWindow"))
+            activity.dispatchKeyEvent(android.view.KeyEvent(android.view.KeyEvent.ACTION_DOWN, android.view.KeyEvent.KEYCODE_F1))
+            activity.dispatchKeyEvent(android.view.KeyEvent(android.view.KeyEvent.ACTION_UP, android.view.KeyEvent.KEYCODE_F1))
+            assertNull(WheelSiriSettings.key(activity))
+        } finally { controller.pause().stop().destroy() }
+    }
+
+    @Test fun tappingASwitchRowChangesItsPreferenceOnce() {
+        val controller = Robolectric.buildActivity(DiPlayActivity::class.java, intent()).setup()
+        try {
+            val activity = controller.get()
+            navigateSteamSettings(activity, SteamSettingsSection.AUDIO)
+            val control = views(activity.window.decorView).filterIsInstance<Switch>().single {
+                it.contentDescription == activity.getString(R.string.contrib_audio_home_toggle_audio_focus)
+            }
+            val before = AirPlayPersistence.loadAudioFocusEnabled(activity)
+            (control.parent as View).performClick()
+            assertEquals(!before, AirPlayPersistence.loadAudioFocusEnabled(activity))
+            assertEquals(!before, control.isChecked)
         } finally { controller.pause().stop().destroy() }
     }
 }

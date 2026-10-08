@@ -1,6 +1,8 @@
 package com.shilapi.xcertplay.media;
 
 import java.util.ArrayDeque;
+import java.util.ArrayList;
+import java.util.List;
 import java.util.Iterator;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.locks.Condition;
@@ -69,6 +71,18 @@ final class BoundedVideoJobQueue<T> {
         lock.lock();
         try { discardFramesLocked(); }
         finally { lock.unlock(); }
+    }
+
+    /** Shutdown must collect detach acknowledgements even with the interrupt flag set. */
+    List<T> drain() {
+        lock.lock();
+        try {
+            List<T> pending = new ArrayList<>(jobs);
+            jobs.clear();
+            frames = 0;
+            bytes = 0;
+            return pending;
+        } finally { lock.unlock(); }
     }
 
     private void discardFramesLocked() {

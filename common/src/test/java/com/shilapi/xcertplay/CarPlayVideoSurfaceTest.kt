@@ -15,7 +15,7 @@ class CarPlayVideoSurfaceTest {
         val holder = Any()
         val events = mutableListOf<Pair<String, Any>>()
         val owner = CarPlayVideoSurfaceOwner<Any>(
-            detach = { events.add("detach" to it) }, release = { events.add("release" to it) })
+            detach = { surface, done -> events.add("detach" to surface); done() }, release = { events.add("release" to it) })
         owner.replace(texture, releaseOnDetach = true)
         owner.replace(holder, releaseOnDetach = false)
         assertEquals(listOf("detach" to texture, "release" to texture), events)
@@ -33,7 +33,7 @@ class CarPlayVideoSurfaceTest {
         val detached = mutableListOf<Any>()
         val released = mutableListOf<Any>()
         val owner = CarPlayVideoSurfaceOwner<Any>(
-            detach = { detached.add(it) }, release = { released.add(it) })
+            detach = { surface, done -> detached.add(surface); done() }, release = { released.add(it) })
         owner.replace(old, releaseOnDetach = false)
         owner.replace(recreated, releaseOnDetach = false)
         owner.replace(recreated, releaseOnDetach = false)
@@ -41,6 +41,26 @@ class CarPlayVideoSurfaceTest {
         assertSame(recreated, owner.current)
         assertEquals(listOf(old), detached)
         assertTrue(released.isEmpty())
+    }
+
+    @Test fun oldWindowCannotReleaseUntilBothDecodersDetachOrClearTheNewWindow() {
+        val old = Any()
+        val current = Any()
+        val acknowledgements = mutableListOf<() -> Unit>()
+        val released = mutableListOf<Any>()
+        val owner = CarPlayVideoSurfaceOwner<Any>(
+            detach = { _, done -> acknowledgements.add(done) }, release = released::add)
+        owner.replace(old, true)
+        owner.replace(current, true)
+        assertTrue(released.isEmpty())
+        owner.clear(old)
+        assertSame(current, owner.current)
+        acknowledgements[0](); acknowledgements[0]()
+        assertEquals(listOf(old), released)
+        owner.clear()
+        assertEquals(listOf(old), released)
+        acknowledgements[1]()
+        assertEquals(listOf(old, current), released)
     }
 
     @Test fun fittedSurfaceAndTouchContentShareLetterboxBounds() {

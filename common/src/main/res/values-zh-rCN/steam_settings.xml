@@ -3,6 +3,9 @@
     <string name="steam_connection">连接</string>
     <string name="steam_display">画面</string>
     <string name="steam_audio">声音</string>
+    <string name="steam_voice">Siri 与通话</string>
+    <string name="steam_voice_hint">设置方向盘 Siri 按键、通话控制与麦克风处理。</string>
+    <string name="steam_voice_summary">语音助手 · 免提通话</string>
     <string name="steam_location">定位</string>
     <string name="steam_tools">工具</string>
     <string name="steam_more">更多</string>
@@ -17,6 +20,8 @@
     <string name="steam_screen_summary">%1$d fps · %2$d%% 分辨率</string>
     <string name="steam_audio_summary">音乐缓冲 %1$d 毫秒</string>
     <string name="steam_audio_buffer">音乐缓冲</string>
+    <string name="steam_display_layout">界面与屏幕</string>
+    <string name="steam_audio_focus">播放与焦点</string>
     <string name="steam_buffer_ms">%1$d 毫秒</string>
     <string name="steam_buffer_default">%1$d 毫秒 · 默认</string>
     <string name="steam_extensions">手机接收与上游扩展</string>

@@ -307,6 +307,8 @@ class DiPlayActivity : ComponentActivity() {
 
     private fun render() {
         if (isFinishing || isDestroyed) return
+        // The learning callback belongs to controls about to be replaced, never to another page.
+        cancelSiriLearning()
         // A restore still waiting for layout keeps its target: the old page was never laid out.
         val previousScrollY = (pendingScrollY ?: rootScroll?.scrollY)?.takeIf {
             renderedPage == page && (page != "settings" || renderedSettingsSection == settingsSection)
@@ -327,13 +329,13 @@ class DiPlayActivity : ComponentActivity() {
             isFillViewport = true; clipToPadding = false
         }
         rootScroll = scroll
-        val content = column().apply { setPadding(dp(if (resources.configuration.screenWidthDp >= 760) 28 else 16), dp(24), dp(if (resources.configuration.screenWidthDp >= 760) 28 else 16), dp(28)) }
+        val content = column().apply { setPadding(dp(if (resources.configuration.screenWidthDp >= 760) 32 else 16), dp(20), dp(if (resources.configuration.screenWidthDp >= 760) 32 else 16), dp(28)) }
         scroll.addView(content)
         val header = row().apply { gravity = Gravity.CENTER_VERTICAL }
         header.addView(SteamSettingIcon(this, SteamSettingsSection.DISPLAY), LinearLayout.LayoutParams(dp(32), dp(32)).apply { marginEnd = dp(12) })
         val brand = column().apply {
-            addView(label(if (resources.configuration.screenWidthDp >= 760) "STEAM  /  CarPlay" else "CarPlay", 23, TEXT, true))
-            addView(label("STEAM · ${version()}", 12, MUTED))
+            addView(label("CarPlay", 22, TEXT, true))
+            addView(label("STEAM · ${version().substringBefore('-')}", 12, MUTED))
         }
         header.addView(brand, LinearLayout.LayoutParams(0, -2, 1f))
         if (page == "home") header.addView(button(getString(R.string.settings), false) {
@@ -346,7 +348,7 @@ class DiPlayActivity : ComponentActivity() {
         }.apply { tag = "steam_home_carhome"; contentDescription = getString(if (page == "home") R.string.car_home else R.string.back) },
             LinearLayout.LayoutParams(dp(if (page == "home" && resources.configuration.screenWidthDp >= 760) 104 else 72), -2))
         content.addView(header)
-        content.addView(space(24))
+        content.addView(space(28))
         when (page) {
             "connection" -> connectionSetup(content)
             "about" -> about(content)
@@ -373,22 +375,19 @@ class DiPlayActivity : ComponentActivity() {
     private fun home(content: LinearLayout) {
         val wide = resources.configuration.screenWidthDp >= 760
         content.tag = "steam_home_workspace"
-        content.addView(label(getString(R.string.steam_home_title), if (wide) 34 else 28, TEXT, true))
-        content.addView(label(getString(R.string.steam_home_hint), 16, MUTED).apply { setPadding(0, dp(8), 0, dp(24)) })
+        content.addView(label(getString(R.string.steam_home_title), if (wide) 32 else 26, TEXT, true))
+        content.addView(label(getString(R.string.steam_home_hint), 15, MUTED).apply { setPadding(0, dp(8), 0, dp(24)) })
         val deck = card().apply {
             tag = "steam_home_deck"
             orientation = if (wide) LinearLayout.HORIZONTAL else LinearLayout.VERTICAL
             gravity = Gravity.CENTER_VERTICAL
-            background = SteamGlass.surface(this@DiPlayActivity, radius = 32)
-            setPadding(dp(28), dp(24), dp(28), dp(24))
+            background = SteamGlass.surface(this@DiPlayActivity, radius = 24)
+            setPadding(dp(if (wide) 32 else 20), dp(28), dp(if (wide) 32 else 20), dp(28))
         }
-        deck.addView(SteamLinkArtwork(this), LinearLayout.LayoutParams(if (wide) dp(230) else -1, dp(if (wide) 208 else 116)).apply {
-            if (wide) marginEnd = dp(32) else bottomMargin = dp(12)
-        })
         val controls = column()
         controls.addView(label(getString(R.string.steam_wireless_label), 12, ACCENT, true).apply { letterSpacing = .08f })
         status = label(getString(R.string.ready_when_you_are), 26, TEXT, true).apply {
-            tag = "steam_home_status"; setPadding(0, dp(8), 0, dp(16))
+            tag = "steam_home_status"; setPadding(0, dp(10), 0, dp(20))
         }
         controls.addView(status)
         connectButton = button(getString(R.string.connect_phone), true) {
@@ -396,7 +395,7 @@ class DiPlayActivity : ComponentActivity() {
                 connect(AirPlayPersistence.loadWirelessEnabled(this))
             else if (CarPlayBackgroundSession.hasSession()) openProjection() else connect(true)
         }.apply { tag = "steam_home_connect"; minHeight = dp(64) }
-        controls.addView(connectButton, matchButton())
+        controls.addView(connectButton, LinearLayout.LayoutParams(if (wide) dp(320) else -1, -2))
         controls.addView(label(getString(if (AirPlayPersistence.loadWirelessHotspotMode(this) == WirelessHotspotMode.MANUAL)
             R.string.steam_mode_manual_hint else R.string.steam_mode_p2p_hint), 14, MUTED).apply {
             setPadding(0, dp(12), 0, 0)
@@ -413,20 +412,27 @@ class DiPlayActivity : ComponentActivity() {
         }.apply { visibility = View.GONE }
         controls.addView(disconnectButton, matchButton(10))
         deck.addView(controls, LinearLayout.LayoutParams(if (wide) 0 else -1, -2, if (wide) 1f else 0f))
+        if (wide) deck.addView(SteamLinkArtwork(this), LinearLayout.LayoutParams(dp(256), dp(210)).apply {
+            marginStart = dp(32)
+        })
         content.addView(deck)
         content.addView(space(20))
         val shortcuts = if (wide) row() else column()
         shortcuts.tag = "steam_home_shortcuts"
         fun shortcut(title: String, value: String, section: SteamSettingsSection, tag: String, click: () -> Unit) = row().apply {
             this.tag = tag; gravity = Gravity.CENTER_VERTICAL
-            background = SteamGlass.action(this@DiPlayActivity, radius = 24)
-            minimumHeight = dp(88); setPadding(dp(20), dp(18), dp(20), dp(18))
+            background = SteamGlass.action(this@DiPlayActivity, radius = 20)
+            minimumHeight = dp(96); setPadding(dp(20), dp(20), dp(20), dp(20))
             isFocusable = true; contentDescription = "$title, $value"; setOnClickListener { click() }
             addView(SteamSettingIcon(this@DiPlayActivity, section), LinearLayout.LayoutParams(dp(26), dp(26)).apply { marginEnd = dp(14) })
             addView(column().apply {
                 addView(label(title, 16, TEXT, true))
                 addView(label(value, 13, MUTED).apply { setPadding(0, dp(4), 0, 0) })
             }, LinearLayout.LayoutParams(0, -2, 1f))
+            addView(ImageView(this@DiPlayActivity).apply {
+                setImageResource(R.drawable.ic_steam_chevron)
+                importantForAccessibility = View.IMPORTANT_FOR_ACCESSIBILITY_NO
+            }, LinearLayout.LayoutParams(dp(16), dp(24)).apply { marginStart = dp(8) })
         }
         val items = listOf(
             shortcut(getString(R.string.steam_mode_title), wirelessModeName(), SteamSettingsSection.CONNECTION, "steam_home_mode") { page = "connection"; render() },
@@ -479,6 +485,7 @@ class DiPlayActivity : ComponentActivity() {
         SteamSettingsSection.DISPLAY -> getString(R.string.steam_screen_summary,
             AirPlayPersistence.loadFps(this), AirPlayPersistence.loadDisplayScaleTenths(this) * 10)
         SteamSettingsSection.AUDIO -> getString(R.string.steam_audio_summary, AirPlayPersistence.loadMediaBufferMillis(this))
+        SteamSettingsSection.VOICE -> getString(R.string.steam_voice_summary)
         SteamSettingsSection.LOCATION -> getString(R.string.steam_location_summary)
         SteamSettingsSection.TOOLS -> getString(R.string.steam_diagnostics_summary)
         SteamSettingsSection.MORE -> getString(R.string.steam_brand_version, version())
@@ -507,6 +514,7 @@ class DiPlayActivity : ComponentActivity() {
         // Retain header, navigation, backdrop and scroll host; only rebuild setting controls.
         workspace.sections.removeAllViews()
         settings(workspace.sections)
+        reflowSettingsCards(workspace.sections)
         if (existing == null) setContentView(workspace.root, ViewGroup.LayoutParams(-1, -1))
         renderedPage = page
         renderedSettingsSection = selectedSection
@@ -541,16 +549,38 @@ class DiPlayActivity : ComponentActivity() {
         if (view.text.toString() != text) view.text = text
     }
 
+    /** Two readable card columns on large car screens; stack cards for small windows or large text. */
+    private fun reflowSettingsCards(parent: LinearLayout) {
+        if (resources.configuration.screenWidthDp < 1180 || resources.configuration.fontScale > 1.2f ||
+            settingsSection !in setOf(SteamSettingsSection.DISPLAY, SteamSettingsSection.AUDIO, SteamSettingsSection.VOICE)) return
+        val cards = (0 until parent.childCount).map(parent::getChildAt)
+        if (cards.size < 2) return
+        parent.removeAllViews()
+        val grid = row().apply { tag = "steam_settings_columns"; gravity = Gravity.TOP }
+        val first = column()
+        val second = column()
+        cards.forEachIndexed { index, card ->
+            // Routing occupies the first audio column; focus and buffer share the other.
+            val target = if (settingsSection == SteamSettingsSection.AUDIO) {
+                if (index == 0) first else second
+            } else if (index % 2 == 0) first else second
+            target.addView(card)
+        }
+        grid.addView(first, LinearLayout.LayoutParams(0, -2, 1f))
+        grid.addView(second, LinearLayout.LayoutParams(0, -2, 1f).apply { marginStart = dp(16) })
+        parent.addView(grid)
+    }
+
     private fun createSettingsWorkspace(): SettingsWorkspace {
         val wide = resources.configuration.screenWidthDp >= 760
         val shell = column().apply {
             background = SteamGlass.backdrop()
-            setPadding(dp(if (wide) 24 else 16), dp(16), dp(if (wide) 24 else 16), 0)
+            setPadding(dp(if (wide) 24 else 16), dp(20), dp(if (wide) 24 else 16), 0)
         }
         val header = row().apply { gravity = Gravity.CENTER_VERTICAL; setPadding(0, 0, 0, dp(16)) }
         val titles = column().apply {
-            addView(label(getString(R.string.settings), 28, TEXT, true))
-            addView(label("CarPlay · Steam", 13, MUTED).apply { setPadding(0, dp(4), 0, 0) })
+            addView(label(getString(R.string.settings), 24, TEXT, true))
+            addView(label("CarPlay · STEAM", 12, MUTED).apply { setPadding(0, dp(4), 0, 0) })
         }
         header.addView(titles, LinearLayout.LayoutParams(0, -2, 1f))
         header.addView(button(getString(R.string.steam_done), false) {
@@ -570,8 +600,8 @@ class DiPlayActivity : ComponentActivity() {
             val selected = section == settingsSection
             val item = row().apply {
                 gravity = Gravity.CENTER_VERTICAL
-                minimumHeight = dp(56)
-                setPadding(dp(14), dp(10), dp(14), dp(10))
+                minimumHeight = dp(58)
+                setPadding(dp(14), dp(12), dp(14), dp(12))
                 background = SteamGlass.action(this@DiPlayActivity, selected, 18)
                 isSelected = selected
                 isFocusable = true
@@ -622,7 +652,7 @@ class DiPlayActivity : ComponentActivity() {
         }
         if (wide) {
             val body = row()
-            body.addView(navigationScroll, LinearLayout.LayoutParams(dp(200), -1).apply { marginEnd = dp(24) })
+            body.addView(navigationScroll, LinearLayout.LayoutParams(dp(208), -1).apply { marginEnd = dp(24) })
             body.addView(scroll, LinearLayout.LayoutParams(0, -1, 1f))
             shell.addView(body, LinearLayout.LayoutParams(-1, 0, 1f))
         } else {
@@ -662,10 +692,12 @@ class DiPlayActivity : ComponentActivity() {
             }
             SteamSettingsSection.DISPLAY -> {
                 section(content, getString(R.string.display_and_performance), R.drawable.ic_dp_display) { card ->
-                    carPlaySizeControl(card)
                     choice(card, getString(R.string.resolution), listOf(getString(R.string.resolution_native), getString(R.string.s_80_lighter_load), getString(R.string.s_60_lightest_load)), listOf(10, 8, 6).indexOf(AirPlayPersistence.loadDisplayScaleTenths(this)).coerceAtLeast(0)) { AirPlayPersistence.saveDisplayScaleTenths(this, listOf(10, 8, 6)[it]) }
                     choice(card, getString(R.string.frame_rate), listOf(getString(R.string.s_30_fps_lighter_load), getString(R.string.s_60_fps_smoother_motion)), if (AirPlayPersistence.loadFps(this) == 60) 1 else 0) { AirPlayPersistence.saveFps(this, if (it == 1) 60 else 30) }
                     toggle(card, getString(R.string.efficient_video), getString(R.string.use_hevc_leave_off_for_the_widest_head_unit_compatibility), AirPlayPersistence.loadHevcEnabled(this)) { AirPlayPersistence.saveHevcEnabled(this, it) }
+                }
+                section(content, getString(R.string.steam_display_layout)) { card ->
+                    carPlaySizeControl(card)
                     toggle(card, getString(R.string.full_screen), getString(R.string.hide_the_car_s_system_bars_while_carplay_is_open), AirPlayPersistence.loadHideTopBar(this) && AirPlayPersistence.loadHideBottomBar(this)) {
                         AirPlayPersistence.saveHideTopBar(this, it); AirPlayPersistence.saveHideBottomBar(this, it)
                     }
@@ -673,9 +705,6 @@ class DiPlayActivity : ComponentActivity() {
             }
             SteamSettingsSection.AUDIO -> {
                 section(content, getString(R.string.audio_routing)) { card ->
-                    toggle(card, getString(R.string.contrib_audio_home_toggle_audio_focus), getString(R.string.contrib_audio_home_toggle_audio_focus_desc), AirPlayPersistence.loadAudioFocusEnabled(this)) { AirPlayPersistence.saveAudioFocusEnabled(this, it) }
-                    toggle(card, getString(R.string.audio_focus_auto_yield), getString(R.string.audio_focus_auto_yield_desc),
-                        AirPlayPersistence.loadAudioFocusAutoYield(this)) { AirPlayPersistence.saveAudioFocusAutoYield(this, it) }
                     if (resources.getBoolean(R.bool.config_advanced_audio_channel_mapping)) {
                         toggle(card, getString(R.string.advanced_audio_channel_mapping),
                             getString(R.string.use_usage_content_type_routing_instead_of_stream_type),
@@ -688,6 +717,11 @@ class DiPlayActivity : ComponentActivity() {
                     card.addView(space(10))
                     navigationChannelControl(card)
                 }
+                section(content, getString(R.string.steam_audio_focus)) { card ->
+                    toggle(card, getString(R.string.contrib_audio_home_toggle_audio_focus), getString(R.string.contrib_audio_home_toggle_audio_focus_desc), AirPlayPersistence.loadAudioFocusEnabled(this)) { AirPlayPersistence.saveAudioFocusEnabled(this, it) }
+                    toggle(card, getString(R.string.audio_focus_auto_yield), getString(R.string.audio_focus_auto_yield_desc),
+                        AirPlayPersistence.loadAudioFocusAutoYield(this)) { AirPlayPersistence.saveAudioFocusAutoYield(this, it) }
+                }
                 section(content, getString(R.string.steam_audio_buffer)) { card ->
                     val bufferPresets = com.shilapi.xcertplay.media.MediaAudioBuffer.presets
                     choice(card, getString(R.string.music_buffer), bufferPresets.map { getString(if (it == com.shilapi.xcertplay.media.MediaAudioBuffer.DEFAULT_MILLIS) R.string.steam_buffer_default else R.string.steam_buffer_ms, it) },
@@ -695,13 +729,15 @@ class DiPlayActivity : ComponentActivity() {
                         AirPlayPersistence.saveMediaBufferMillis(this, bufferPresets[it])
                     }
                 }
+            }
+            SteamSettingsSection.VOICE -> {
+                section(content, getString(R.string.wheel_siri_key)) { card -> wheelSiriControls(card) }
                 section(content, getString(R.string.carplay_call_audio)) { card ->
                     toggle(card, getString(R.string.call_echo_cancellation), getString(R.string.call_echo_cancellation_description),
                         AirPlayPersistence.loadCallEchoCancellation(this)) { AirPlayPersistence.saveCallEchoCancellation(this, it) }
                     toggle(card, getString(R.string.call_voice_filter), getString(R.string.call_voice_filter_description),
                         AirPlayPersistence.loadCallVoiceFilter(this)) { AirPlayPersistence.saveCallVoiceFilter(this, it) }
                 }
-                section(content, getString(R.string.wheel_siri_key)) { card -> wheelSiriControls(card) }
                 section(content, getString(R.string.carplay_call_vehicle)) { card ->
                     toggle(card, getString(R.string.carplay_calls_on_dashboard), getString(R.string.carplay_calls_on_dashboard_description),
                         BydOutputSettings.carPlayCalls(this)) {
@@ -1128,28 +1164,28 @@ class DiPlayActivity : ComponentActivity() {
         content.tag = "steam_connection_setup_workspace"
         content.addView(label(getString(R.string.steam_setup_title), 30, TEXT, true))
         content.addView(label(getString(R.string.steam_setup_hint), 16, MUTED).apply { setPadding(0, dp(8), 0, dp(24)) })
-        section(content, "01  /  ${getString(R.string.steam_mode_title)}") { card -> wirelessLinkControls(card) }
-        val wide = resources.configuration.screenWidthDp >= 760
-        val lower = if (wide) row().apply { gravity = Gravity.TOP } else column()
-        val phone = column()
-        section(phone, "02  /  ${getString(R.string.steam_pair_step)}") { card ->
+        val wide = resources.configuration.screenWidthDp >= 1180 && resources.configuration.fontScale <= 1.2f
+        val workspace = if (wide) row().apply { gravity = Gravity.TOP } else column()
+        val method = column()
+        val actions = column()
+        section(method, "01  /  ${getString(R.string.steam_mode_title)}") { card -> wirelessLinkControls(card) }
+        section(actions, "02  /  ${getString(R.string.steam_pair_step)}") { card ->
             card.addView(label(getString(R.string.keep_bluetooth_and_wi_fi_on_your_iphone_pair_with_the_car), 15, MUTED))
             card.addView(button("${getString(R.string.choose_iphone_prefix)}${DiPlayPreferences.phoneName(this)}", false) { choosePhone() }, matchButton(12))
             card.addView(button(getString(R.string.review_app_permissions), false) {
                 openSystem(Intent(Settings.ACTION_APPLICATION_DETAILS_SETTINGS, Uri.parse("package:$packageName")))
             }, matchButton(12))
         }
-        val connect = column()
-        section(connect, "03  /  ${getString(R.string.steam_ready_step)}") { card ->
+        section(actions, "03  /  ${getString(R.string.steam_ready_step)}") { card ->
             card.addView(label(getString(R.string.return_from_car_settings_to_diplay_then_connect_accept_the), 15, MUTED))
             card.addView(button(getString(R.string.connect_phone), true) { connect(true) }.apply { tag = "steam_setup_connect" }, matchButton(12))
             card.addView(button(getString(R.string.connect_with_usb), false) { connect(false) }, matchButton(12))
         }
-        lower.addView(phone, LinearLayout.LayoutParams(if (wide) 0 else -1, -2, if (wide) 1f else 0f))
-        lower.addView(connect, LinearLayout.LayoutParams(if (wide) 0 else -1, -2, if (wide) 1f else 0f).apply {
+        workspace.addView(method, LinearLayout.LayoutParams(if (wide) 0 else -1, -2, if (wide) 1.35f else 0f))
+        workspace.addView(actions, LinearLayout.LayoutParams(if (wide) 0 else -1, -2, if (wide) 1f else 0f).apply {
             if (wide) marginStart = dp(18)
         })
-        content.addView(lower)
+        content.addView(workspace)
     }
 
     private fun wirelessLinkControls(parent: LinearLayout) {
@@ -1234,10 +1270,10 @@ class DiPlayActivity : ComponentActivity() {
     }
 
     private fun mediaChannelControl(parent: LinearLayout) {
-        val summary: (Int) -> String = {
-            getString(R.string.contrib_audio_home_choice_summary, getString(R.string.contrib_audio_home_media_channel_label), channelLabel(it))
+        val summary: (Int) -> CharSequence = {
+            settingsChoiceText(getString(R.string.contrib_audio_home_media_channel_label), channelLabel(it))
         }
-        val control = button(summary(AirPlayPersistence.loadMediaAudioChannel(this)), false) {}
+        val control = valueButton(summary(AirPlayPersistence.loadMediaAudioChannel(this)))
         control.setOnClickListener {
             val current = AirPlayPersistence.loadMediaAudioChannel(this)
             showChannelDialog(
@@ -1251,10 +1287,10 @@ class DiPlayActivity : ComponentActivity() {
     }
 
     private fun navigationChannelControl(parent: LinearLayout) {
-        val summary: (Int) -> String = {
-            getString(R.string.contrib_audio_home_choice_summary, getString(R.string.contrib_audio_home_nav_channel_label), channelLabel(it))
+        val summary: (Int) -> CharSequence = {
+            settingsChoiceText(getString(R.string.contrib_audio_home_nav_channel_label), channelLabel(it))
         }
-        val control = button(summary(AirPlayPersistence.loadNavigationAudioChannel(this)), false) {}
+        val control = valueButton(summary(AirPlayPersistence.loadNavigationAudioChannel(this)))
         control.setOnClickListener {
             val current = AirPlayPersistence.loadNavigationAudioChannel(this)
             showChannelDialog(
@@ -1291,14 +1327,14 @@ class DiPlayActivity : ComponentActivity() {
             .show().also { styleSettingsDialog(it) }
     }
 
-    private fun applyMediaChannel(value: Int, previous: Int, control: Button, summary: (Int) -> String) {
+    private fun applyMediaChannel(value: Int, previous: Int, control: Button, summary: (Int) -> CharSequence) {
         if (value == previous) return
         AirPlayPersistence.saveMediaAudioChannel(this, value)
         control.text = summary(value)
         if (CarPlayBackgroundSession.hasSession()) connect(AirPlayPersistence.loadWirelessEnabled(this))
     }
 
-    private fun applyNavigationChannel(value: Int, previous: Int, control: Button, summary: (Int) -> String) {
+    private fun applyNavigationChannel(value: Int, previous: Int, control: Button, summary: (Int) -> CharSequence) {
         if (value == previous) return
         AirPlayPersistence.saveNavigationAudioChannel(this, value)
         control.text = summary(value)
@@ -2610,12 +2646,15 @@ class DiPlayActivity : ComponentActivity() {
             control.thumbTintList = ColorStateList(arrayOf(intArrayOf(-android.R.attr.state_enabled), intArrayOf(android.R.attr.state_checked), intArrayOf()),
                 intArrayOf(0xFF66788F.toInt(), 0xFFF4FAFF.toInt(), 0xFFB9C7D9.toInt()))
             control.trackTintList = ColorStateList(arrayOf(intArrayOf(-android.R.attr.state_enabled), intArrayOf(android.R.attr.state_checked), intArrayOf()),
-                intArrayOf(0x333F526B, 0xFF658DB9.toInt(), 0xFF3B4C66.toInt()))
+                intArrayOf(0x333F526B, 0xFF407BA8.toInt(), 0xFF3B4C66.toInt()))
             control.minimumWidth = dp(52)
             control.showText = false
         }
         line.addView(control)
-        parent.addView(line)
+        line.isFocusable = enabled
+        line.setOnClickListener { if (control.isEnabled) control.toggle() }
+        line.background = SteamGlass.action(this, radius = 14)
+        parent.addView(line, LinearLayout.LayoutParams(-1, -2).apply { bottomMargin = dp(8) })
         return control
     }
     // [announcesReconnect] labels a choice whose [save] reconnects by itself.
@@ -2657,6 +2696,14 @@ class DiPlayActivity : ComponentActivity() {
         text.setSpan(android.text.style.ForegroundColorSpan(MUTED), 0, title.length, android.text.Spanned.SPAN_EXCLUSIVE_EXCLUSIVE)
         return text
     }
+    private fun valueButton(value: CharSequence) = button("", false) {}.apply {
+        text = value
+        minHeight = dp(76)
+        textAlignment = View.TEXT_ALIGNMENT_GRAVITY
+        gravity = Gravity.START or Gravity.CENTER_VERTICAL
+        setCompoundDrawablesRelativeWithIntrinsicBounds(0, 0, R.drawable.ic_steam_chevron, 0)
+        compoundDrawablePadding = dp(12)
+    }
     private fun styleSettingsDialog(dialog: AlertDialog) {
         SteamGlass.styleDialog(this, dialog)
     }
@@ -2668,24 +2715,15 @@ class DiPlayActivity : ComponentActivity() {
     private fun column() = LinearLayout(this).apply { orientation = LinearLayout.VERTICAL; layoutParams = LinearLayout.LayoutParams(-1, -2) }
     private fun row() = LinearLayout(this).apply { orientation = LinearLayout.HORIZONTAL; layoutParams = LinearLayout.LayoutParams(-1, -2) }
     private fun label(value: String, size: Int, color: Int, bold: Boolean = false) = TextView(this).apply {
-        text = value
+        text = value; includeFontPadding = false
         if (usesSteamGlass()) textSize = size.toFloat() else ResponsiveUi.text(this, size.toFloat())
         setTextColor(color); gravity = Gravity.CENTER_VERTICAL
         typeface = if (bold) Typeface.create("sans-serif-medium", Typeface.NORMAL) else Typeface.create("sans-serif", Typeface.NORMAL)
         setLineSpacing(dp(3).toFloat(), 1f)
     }
     private fun button(title: String, primary: Boolean, click: () -> Unit) = Button(this).apply {
-        text = title; isAllCaps = false
-        if (usesSteamGlass()) textSize = 16f else ResponsiveUi.text(this, 18f)
-        setTextColor(if (primary && !usesSteamGlass()) BG else TEXT)
-        typeface = Typeface.create("sans-serif-medium", Typeface.NORMAL)
-        background = if (usesSteamGlass()) SteamGlass.action(this@DiPlayActivity, selected = primary)
-            else android.graphics.drawable.RippleDrawable(ColorStateList.valueOf(0x336F9FD9), rounded(if (primary) ACCENT else SURFACE, if (primary) ACCENT else BORDER), null)
-        minHeight = dp(56); stateListAnimator = null
-        if (usesSteamGlass()) {
-            setPadding(dp(16), dp(8), dp(16), dp(8)); minimumWidth = 0
-            setTextColor(ColorStateList(arrayOf(intArrayOf(-android.R.attr.state_enabled), intArrayOf()), intArrayOf(0xFF7F91AA.toInt(), TEXT)))
-        } else setPadding(dp(16), 0, dp(16), 0)
+        text = title
+        SteamGlass.styleAction(this, primary)
         setOnClickListener { click() }
     }
     private fun rounded(color: Int, stroke: Int) = GradientDrawable().apply { setColor(color); cornerRadius = dp(20).toFloat(); setStroke(dp(1), stroke) }
@@ -2768,12 +2806,12 @@ class DiPlayActivity : ComponentActivity() {
         private const val BYD_VEHICLE_TAG = "DiPlay-BYD13"
         private const val VEHICLE_VALIDATION_RETRY_MILLIS = 500L
         private const val ADB_KEY_SAVE_WAIT_MILLIS = 500L
-        private val BG = Color.rgb(12, 17, 27)
+        private val BG = SteamGlass.background
         private val SURFACE = Color.rgb(21, 30, 44)
         private val BORDER = Color.rgb(42, 56, 75)
-        private val ACCENT = Color.rgb(166, 200, 255)
-        private val TEXT = Color.rgb(241, 245, 252)
-        private val MUTED = Color.rgb(168, 182, 202)
-        private val WARNING = Color.rgb(255, 196, 128)
+        private val ACCENT = SteamGlass.accent
+        private val TEXT = SteamGlass.text
+        private val MUTED = SteamGlass.muted
+        private val WARNING = SteamGlass.warning
     }
 }

@@ -37,7 +37,7 @@ class SteamReceiverLayoutTest {
     private fun screenshot(view: View, name: String) {
         val bitmap = Bitmap.createBitmap(view.width, view.height, Bitmap.Config.ARGB_8888)
         view.draw(Canvas(bitmap))
-        val output = File("../validation/ui-0.2.30/$name.png")
+        val output = File("../validation/ui-0.2.33/$name.png")
         requireNotNull(output.parentFile).mkdirs()
         output.outputStream().use { assertTrue(bitmap.compress(Bitmap.CompressFormat.PNG, 100, it)) }
         bitmap.recycle()
@@ -45,7 +45,7 @@ class SteamReceiverLayoutTest {
     private fun page(name: String, block: (DiPlayActivity, View) -> Unit) {
         val app = RuntimeEnvironment.getApplication()
         // The library test manifest has no application version; use the release fixture for previews.
-        shadowOf(app.packageManager).installPackage(app.packageManager.getPackageInfo(app.packageName, 0).apply { versionName = "0.2.30" })
+        shadowOf(app.packageManager).installPackage(app.packageManager.getPackageInfo(app.packageName, 0).apply { versionName = "0.2.33" })
         val intent = Intent(app, DiPlayActivity::class.java).putExtra("page", name)
         val controller = Robolectric.buildActivity(DiPlayActivity::class.java, intent).setup()
         try {
@@ -136,7 +136,49 @@ class SteamReceiverLayoutTest {
 
     @Test fun allSettingsAndChildPagesUseTheSameGlassFamily() {
         page("settings") { _, root -> screenshot(root, "settings-wide") }
+        page("settings") { activity, root ->
+            navigateSteamSettings(activity, SteamSettingsSection.AUDIO)
+            measure(root, 1280, 720)
+            screenshot(root, "audio-wide")
+            navigateSteamSettings(activity, SteamSettingsSection.VOICE)
+            measure(root, 1280, 720)
+            screenshot(root, "voice-wide")
+        }
         page("features") { _, root -> screenshot(root, "extensions-wide") }
         page("about") { _, root -> screenshot(root, "about-wide") }
+    }
+
+    @Test @Config(qualifiers = "zh-rCN-w393dp-h852dp-mdpi")
+    fun narrowSettingsKeepEveryCategoryReachable() = page("settings") { activity, root ->
+        navigateSteamSettings(activity, SteamSettingsSection.VOICE)
+        measure(root, 393, 852)
+        assertTrue(root.findViewWithTag<View>("steam_settings_voice").isSelected)
+        assertTrue(views(root).filterIsInstance<TextView>().any { it.text.toString() == activity.getString(R.string.wheel_siri_key) })
+        screenshot(root, "settings-narrow")
+    }
+
+    @Test fun wideConnectionPageShowsTheMainActionBesideTheSetup() = page("connection") { _, root ->
+        val connect = root.findViewWithTag<View>("steam_setup_connect")
+        val location = IntArray(2)
+        connect.getLocationOnScreen(location)
+        assertTrue(location[0] > root.width / 2)
+        assertTrue(location[1] + connect.height <= root.height)
+        screenshot(root, "connection-setup-wide")
+    }
+
+    @Test @Config(qualifiers = "zh-rCN-w1280dp-h720dp-mdpi")
+    fun largeSystemFontsUseOneDetailColumnAndKeepTextUnclipped() {
+        org.robolectric.RuntimeEnvironment.setFontScale(1.5f)
+        page("settings") { activity, root ->
+            assertNull(root.findViewWithTag<View>("steam_settings_columns"))
+            navigateSteamSettings(activity, SteamSettingsSection.VOICE)
+            measure(root, 1280, 720)
+            assertNull(root.findViewWithTag<View>("steam_settings_columns"))
+            for (label in views(root).filterIsInstance<TextView>().filter { it.visibility == View.VISIBLE }) {
+                assertTrue(label.text.toString(), label.width > label.paddingLeft + label.paddingRight)
+                assertTrue(label.text.toString(), label.layout == null || label.layout.height <= label.height - label.paddingTop - label.paddingBottom)
+            }
+            screenshot(root, "settings-large-text")
+        }
     }
 }
