@@ -24,15 +24,9 @@ import org.robolectric.annotation.LooperMode
 import org.robolectric.util.ReflectionHelpers
 
 @RunWith(RobolectricTestRunner::class)
-@Config(sdk = [28, 33], qualifiers = "en", manifest = Config.NONE, shadows = [DefaultConnectionModeTest.ApEnabled::class])
+@Config(sdk = [28, 33], qualifiers = "en", manifest = Config.NONE)
 @LooperMode(LooperMode.Mode.PAUSED)
 class DefaultConnectionModeTest {
-    @org.robolectric.annotation.Implements(android.net.wifi.WifiManager::class)
-    class ApEnabled : org.robolectric.shadows.ShadowWifiManager() {
-        @org.robolectric.annotation.Implementation fun getWifiApState(): Int = 13
-        @org.robolectric.annotation.Implementation fun isWifiApEnabled(): Boolean = true
-    }
-
     private val app get() = RuntimeEnvironment.getApplication()
 
     @Before fun clearPreferences() {
@@ -48,10 +42,7 @@ class DefaultConnectionModeTest {
     @Test fun initialLaunchUsesTheFixedDefaultInsteadOfTheLastManualTransport() {
         DiPlayPreferences.saveAutoConnect(app, true)
         DiPlayPreferences.savePhone(app, "00:11:22:33:44:55", "Test iPhone")
-        // Manual AP is supported on Android 9 too; Wi-Fi P2P is Android 10+.
-        AirPlayPersistence.saveWirelessHotspotMode(app, WirelessHotspotMode.MANUAL)
-        AirPlayPersistence.saveManualHotspotSsid(app, "Test Car AP")
-        AirPlayPersistence.saveManualHotspotPassphrase(app, "test-password")
+        AirPlayPersistence.saveWirelessHotspotMode(app, WirelessHotspotMode.WIFI_P2P)
         app.getSharedPreferences("diplay", 0).edit().putBoolean("notification_asked", true).commit()
         for (mode in listOf(DefaultConnectionMode.USB, DefaultConnectionMode.WIRELESS)) {
             val expectedWireless = mode == DefaultConnectionMode.WIRELESS
@@ -63,7 +54,7 @@ class DefaultConnectionModeTest {
             ReflectionHelpers.setField(activity, "setupError", null)
             controller.start().resume()
             shadowOf(Looper.getMainLooper()).idle()
-            assertEquals("mode=$mode page=${ReflectionHelpers.getField<String>(activity, "page")} setup=${ReflectionHelpers.getField<String?>(activity, "setupError")} pending=${ReflectionHelpers.getField<Boolean>(activity, "pendingCarHotspotSetup")} auto=${DiPlayPreferences.autoConnect(app)} phone=${DiPlayPreferences.phoneAddress(app) != null} session=${CarPlayBackgroundSession.hasSession()}", expectedWireless, AirPlayPersistence.loadWirelessEnabled(app))
+            assertEquals(expectedWireless, AirPlayPersistence.loadWirelessEnabled(app))
             assertEquals(CarPlayHostActivity::class.java.name,
                 shadowOf(activity).nextStartedActivity?.component?.className)
             assertEquals(mode, DiPlayPreferences.defaultConnectionMode(app))
@@ -120,14 +111,13 @@ class DefaultConnectionModeTest {
     @Test fun settingsSavePersistsChoiceAndCancelKeepsSavedDefault() {
         val activity = Robolectric.buildActivity(DiPlayActivity::class.java).get()
         activity.setTheme(android.R.style.Theme_Material_NoActionBar)
-        ReflectionHelpers.setField(activity, "settingsSection", SteamSettingsSection.CONNECTION)
         val controls = LinearLayout(activity)
-        DiPlayActivity::class.java.getDeclaredMethod("settings", LinearLayout::class.java)
+        DiPlayActivity::class.java.getDeclaredMethod("connectionSettings", LinearLayout::class.java)
             .apply { isAccessible = true }.invoke(activity, controls)
         fun descendants(view: View): List<View> = listOf(view) +
             if (view is ViewGroup) (0 until view.childCount).flatMap { descendants(view.getChildAt(it)) } else emptyList()
         val button = descendants(controls).filterIsInstance<Button>().single {
-            it.text.toString().startsWith(activity.getString(R.string.default_connection_mode))
+            it.text.toString().startsWith(activity.getString(R.string.default_connection_mode) + " · ")
         }
         button.performClick()
         var dialog = ShadowAlertDialog.getLatestAlertDialog()

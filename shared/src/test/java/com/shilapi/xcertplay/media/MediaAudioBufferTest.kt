@@ -23,7 +23,7 @@ class MediaAudioBufferTest {
     }
 
     @Test
-    fun `calls and assistant keep the low-latency buffer`() {
+    fun `calls and prompts keep the low-latency buffer`() {
         val plan = MediaAudioBuffer.plan(false, 16_000, 1, minBufferBytes = 1_280, mediaMillis = 1000)
         assertEquals(4 * 1024, plan.startBytes)
         assertEquals(16 * 1024, plan.trackBufferBytes)
@@ -33,16 +33,42 @@ class MediaAudioBufferTest {
     }
 
     @Test
-    fun `unknown delay falls back to the default`() {
-        assertEquals(MediaAudioBuffer.DEFAULT_MILLIS, MediaAudioBuffer.sanitize(250))
-        assertEquals(19_200, MediaAudioBuffer.plan(true, 48_000, 2, 7_680, mediaMillis = 42).startBytes)
+    fun `wired presets step by 50 ms up to 200 ms, then by 100 ms up to 1000 ms`() {
+        assertEquals(listOf(50, 100, 150, 200, 300, 400, 500, 600, 700, 800, 900, 1000), MediaAudioBuffer.wiredPresets)
+        assertEquals(MediaAudioBuffer.DEFAULT_MILLIS, MediaAudioBuffer.wiredPresets[4])
+        assertEquals(MediaAudioBuffer.MOST_STABLE_MILLIS, MediaAudioBuffer.wiredPresets.last())
     }
 
     @Test
-    fun `100ms profile retains bounded underrun headroom`() {
-        val plan = MediaAudioBuffer.plan(true, 48_000, 2, 7_680, mediaMillis = 100)
-        assertEquals(19_200, plan.startBytes)
-        assertEquals(30_720, plan.trackBufferBytes)
+    fun `wireless keeps the classic presets`() {
+        assertEquals(listOf(300, 500, 1000), MediaAudioBuffer.wirelessPresets)
+        assertEquals(MediaAudioBuffer.DEFAULT_MILLIS, MediaAudioBuffer.sanitizeWireless(50))
+        assertEquals(MediaAudioBuffer.DEFAULT_MILLIS, MediaAudioBuffer.sanitizeWireless(400))
+        assertEquals(50, MediaAudioBuffer.sanitizeWired(50))
+    }
+
+    @Test
+    fun `delays saved by earlier versions stay selected`() {
+        for (millis in listOf(300, 500, 1000)) {
+            assertEquals(millis, MediaAudioBuffer.sanitize(millis))
+            assertEquals(millis, MediaAudioBuffer.sanitizeWireless(millis))
+            assertEquals(millis, MediaAudioBuffer.sanitizeWired(millis))
+        }
+    }
+
+    @Test
+    fun `shortest music buffer still keeps the low-latency floor and headroom`() {
+        val plan = MediaAudioBuffer.plan(true, 48_000, 2, minBufferBytes = 7_680, mediaMillis = 50)
+        assertEquals(9_600, plan.startBytes)
+        assertEquals(48_000, plan.trackBufferBytes)
+        // A device minimum above the preset wins over it.
+        assertEquals(15_360, MediaAudioBuffer.plan(true, 48_000, 2, minBufferBytes = 15_360, mediaMillis = 50).startBytes)
+    }
+
+    @Test
+    fun `unknown delay falls back to the default`() {
+        assertEquals(MediaAudioBuffer.DEFAULT_MILLIS, MediaAudioBuffer.sanitize(250))
+        assertEquals(57_600, MediaAudioBuffer.plan(true, 48_000, 2, 7_680, mediaMillis = 42).startBytes)
     }
 
     @Test
@@ -50,29 +76,5 @@ class MediaAudioBufferTest {
         assertEquals(98_000, MediaAudioBuffer.startBytesFor(192_000, 100_000, 2_048 - 48))
         assertEquals(57_600, MediaAudioBuffer.startBytesFor(57_600, 134_400, 2_048))
         assertEquals(57_600, MediaAudioBuffer.startBytesFor(57_600, 0, 2_048))
-    }
-
-    @Test
-    fun `navigation retains its original low latency buffer`() {
-        val navigation = MediaAudioBuffer.plan(false, 48_000, 1, 7_688, 100)
-        assertEquals(7_688, navigation.startBytes) // about 80ms of mono PCM
-        assertEquals(30_752, navigation.trackBufferBytes)
-        val call = MediaAudioBuffer.plan(false, 48_000, 1, 7_688, 1000)
-        assertEquals(7_688, call.startBytes)
-        assertEquals(30_752, call.trackBufferBytes)
-    }
-
-    @Test
-    fun `default music keeps 100ms and does not enlarge the original OEM buffer`() {
-        val plan = MediaAudioBuffer.plan(true, 48_000, 2, 15_376, MediaAudioBuffer.DEFAULT_MILLIS)
-        assertEquals(19_200, plan.startBytes)
-        assertEquals(61_504, plan.trackBufferBytes)
-        assertEquals(listOf(100, 300, 500, 1000), MediaAudioBuffer.presets)
-        assertEquals(100, MediaAudioBuffer.sanitize(100)) // preserve explicit user selection
-    }
-
-    @Test
-    fun `tiny vendor track cannot require more bytes than its capacity before play`() {
-        assertEquals(1_024, MediaAudioBuffer.startBytesFor(96_000, 1_024, 2_048))
     }
 }

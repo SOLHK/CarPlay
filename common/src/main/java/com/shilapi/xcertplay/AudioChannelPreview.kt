@@ -23,7 +23,6 @@ internal class AudioChannelPreview(private val onUnavailable: (Int) -> Unit) : C
     private val activeTrack = AtomicReference<AudioTrack?>()
     private var pending: Future<*>? = null
     @Volatile private var closed = false
-    private val previewPcm by lazy { tone() }
 
     fun play(channel: Int, navigation: Boolean) {
         if (closed) return
@@ -35,8 +34,7 @@ internal class AudioChannelPreview(private val onUnavailable: (Int) -> Unit) : C
             var track: AudioTrack? = null
             try {
                 if (closed || generation.get() != request) return@submit
-                val pcm = previewPcm
-                if (closed || generation.get() != request) return@submit
+                val pcm = tone()
                 val minimum = AudioTrack.getMinBufferSize(
                     SAMPLE_RATE, AudioFormat.CHANNEL_OUT_MONO, AudioFormat.ENCODING_PCM_16BIT,
                 )
@@ -95,24 +93,16 @@ internal class AudioChannelPreview(private val onUnavailable: (Int) -> Unit) : C
                 }
             } finally {
                 activeTrack.compareAndSet(track, null)
-                track?.let { runCatching { it.stop() }; runCatching { it.release() } }
+                track?.let { runCatching { it.stop() }; it.release() }
             }
         }
     }
 
-    /** Stop the current tone while allowing the same dialog to preview again after resume. */
-    fun stop() {
+    override fun close() {
+        closed = true
         generation.incrementAndGet()
         pending?.cancel(true)
-        pending = null
         activeTrack.get()?.let { runCatching { it.stop() } }
-        mainHandler.removeCallbacksAndMessages(null)
-    }
-
-    override fun close() {
-        if (closed) return
-        closed = true
-        stop()
         worker.shutdownNow()
     }
 

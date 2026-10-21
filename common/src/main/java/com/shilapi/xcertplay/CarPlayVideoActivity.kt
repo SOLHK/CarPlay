@@ -41,6 +41,7 @@ import com.shilapi.xcertplay.airplay.VideoInCar
 import com.shilapi.xcertplay.host.R
 import java.util.Locale
 import androidx.media3.ui.R as Media3R
+import kotlin.math.roundToInt
 
 /**
  * The car's own player for iOS 27 video in car (see [CarPlayVideo]). Full screen over CarPlay, which
@@ -127,20 +128,22 @@ class CarPlayVideoActivity : Activity() {
     private fun controlBar(): View {
         val back = TextView(this).apply {
             text = "‹  " + getString(R.string.video_back_to_carplay)
-            SteamGlass.styleAction(this)
+            setTextColor(Color.WHITE)
+            setTextSize(TypedValue.COMPLEX_UNIT_SP, 20f)
             gravity = Gravity.CENTER
             minHeight = dp(64)
             minWidth = dp(64)
             setPadding(dp(24), 0, dp(24), 0)
+            background = GradientDrawable().apply { cornerRadius = dp(32).toFloat(); setColor(0xB3000000.toInt()) }
             setOnClickListener { finish() }
         }
         fun round(icon: Int, label: String, onClick: () -> Unit) = ImageView(this).apply {
             setImageResource(icon)
-            setColorFilter(SteamGlass.text)
+            setColorFilter(Color.WHITE)
             contentDescription = label
             scaleType = ImageView.ScaleType.FIT_CENTER
             setPadding(dp(18), dp(18), dp(18), dp(18))
-            background = SteamGlass.action(this@CarPlayVideoActivity, radius = 24)
+            background = GradientDrawable().apply { shape = GradientDrawable.OVAL; setColor(0x80000000.toInt()) }
             setOnClickListener { onClick(); showControls() }
         }
         playPause = round(Media3R.drawable.exo_icon_play, "") { CarPlayVideo.setPlaying(!CarPlayVideo.playing) }
@@ -149,20 +152,20 @@ class CarPlayVideoActivity : Activity() {
             gravity = Gravity.CENTER
             addView(round(Media3R.drawable.exo_icon_rewind, getString(Media3R.string.exo_controls_rewind_description)) { skip(-CarPlayVideo.SKIP_MILLIS) },
                 LinearLayout.LayoutParams(dp(80), dp(80)))
-            addView(playPause, LinearLayout.LayoutParams(dp(88), dp(88)).apply { marginStart = dp(24); marginEnd = dp(24) })
+            addView(playPause, LinearLayout.LayoutParams(dp(96), dp(96)).apply { marginStart = dp(48); marginEnd = dp(48) })
             addView(round(Media3R.drawable.exo_icon_fastforward, getString(Media3R.string.exo_controls_fastforward_description)) { skip(CarPlayVideo.SKIP_MILLIS) },
                 LinearLayout.LayoutParams(dp(80), dp(80)))
         }
         fun timeText() = TextView(this).apply {
-            setTextColor(SteamGlass.text)
+            setTextColor(Color.WHITE)
             setTextSize(TypedValue.COMPLEX_UNIT_SP, 18f)
             fontFeatureSettings = "tnum"
         }
         position = timeText()
         length = timeText()
         timeBar = SeekBar(this).apply {
-            progressTintList = ColorStateList.valueOf(SteamGlass.accent)
-            thumbTintList = ColorStateList.valueOf(SteamGlass.accent)
+            progressTintList = ColorStateList.valueOf(Color.WHITE)
+            thumbTintList = ColorStateList.valueOf(Color.WHITE)
             secondaryProgressTintList = ColorStateList.valueOf(0x80FFFFFF.toInt())
             progressBackgroundTintList = ColorStateList.valueOf(0x4DFFFFFF)
             minimumHeight = dp(48)
@@ -339,7 +342,7 @@ class CarPlayVideoActivity : Activity() {
         super.onDestroy()
     }
 
-    private fun dp(value: Int) = (value * resources.displayMetrics.density).toInt()
+    private fun dp(value: Int) = (value * resources.displayMetrics.density).roundToInt()
 
     private companion object {
         const val TAG = "DiPlay-Video"

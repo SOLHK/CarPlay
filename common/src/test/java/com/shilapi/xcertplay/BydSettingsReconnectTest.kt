@@ -41,7 +41,6 @@ class BydSettingsReconnectTest {
         activity = Robolectric.buildActivity(DiPlayActivity::class.java).get()
         activity.setTheme(android.R.style.Theme_Material_NoActionBar)
         ReflectionHelpers.setField(activity, "page", "settings")
-        ReflectionHelpers.setField(activity, "settingsSection", SteamSettingsSection.LOCATION)
         ReflectionHelpers.setField(activity, "bydVehicleAdvancedExpanded", true)
         AirPlayPersistence.saveWirelessEnabled(activity, false)
         AirPlayPersistence.saveWirelessHotspotMode(activity, WirelessHotspotMode.MANUAL)

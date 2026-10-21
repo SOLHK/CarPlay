@@ -39,7 +39,7 @@ class WifiDirectChannelSettingsTest {
     @Test fun defaultIsAutoAndCancelDoesNotSavePreviewedChannel() {
         assertEquals(WifiP2pChannels.AUTO, AirPlayPersistence.loadWifiP2pPreferredChannel(activity))
         val control = channelControl(controls())!!
-        assertTrue(control.text.toString().endsWith(activity.getString(R.string.auto)))
+        assertTrue(control.text.toString().endsWith("Auto"))
         control.performClick()
         val dialog = ShadowAlertDialog.getLatestAlertDialog()
         assertEquals(0, dialog.listView.checkedItemPosition)
@@ -47,7 +47,7 @@ class WifiDirectChannelSettingsTest {
         dialog.getButton(AlertDialog.BUTTON_NEGATIVE).performClick()
         shadowOf(Looper.getMainLooper()).idle()
         assertEquals(WifiP2pChannels.AUTO, AirPlayPersistence.loadWifiP2pPreferredChannel(activity))
-        assertTrue(control.text.toString().endsWith(activity.getString(R.string.auto)))
+        assertTrue(control.text.toString().endsWith("Auto"))
     }
 
     @Test fun savedChannelSurvivesModeChangesAndCanBeResetToAuto() {
@@ -72,6 +72,19 @@ class WifiDirectChannelSettingsTest {
         assertEquals(WifiP2pChannels.AUTO, AirPlayPersistence.loadWifiP2pPreferredChannel(activity))
     }
 
+    @Test fun autoBandChoicesAreListedAfterAutoAndPersist() {
+        val control = channelControl(controls())!!
+        control.performClick()
+        val dialog = ShadowAlertDialog.getLatestAlertDialog()
+        assertEquals("Auto · 5 GHz", dialog.listView.adapter.getItem(1).toString())
+        assertEquals("Auto · 2.4 GHz", dialog.listView.adapter.getItem(2).toString())
+        select(dialog, WifiP2pChannels.AUTO_5_GHZ)
+        dialog.getButton(AlertDialog.BUTTON_POSITIVE).performClick()
+        shadowOf(Looper.getMainLooper()).idle()
+        assertEquals(WifiP2pChannels.AUTO_5_GHZ, AirPlayPersistence.loadWifiP2pPreferredChannel(activity))
+        assertTrue(control.text.toString().endsWith("Auto · 5 GHz"))
+    }
+
     @Test fun invalidOrCorruptSavedChannelsUseAuto() {
         for (channel in listOf(-1, 12, 14, 52, 100, 196)) {
             prefs.edit().putInt("wifi_p2p_preferred_channel", channel).commit()
@@ -91,7 +104,32 @@ class WifiDirectChannelSettingsTest {
         assertEquals(149, config.wifiP2pPreferredChannel)
     }
 
-    private val choices get() = listOf(WifiP2pChannels.AUTO) + WifiP2pChannels.channels
+    @Test fun theScanPauseSwitchIsOnByDefaultAndCanBeTurnedOff() {
+        // #755: the pause also stops the car joining the phone's hotspot by itself, so drivers can turn it off.
+        assertTrue(AirPlayPersistence.loadWifiDirectScanPause(activity))
+        val title = activity.getString(R.string.settings_wifi_direct_scan_pause)
+        val switch = findSwitch(controls(), title)!!
+        assertTrue(switch.isChecked)
+        switch.performClick()
+        shadowOf(Looper.getMainLooper()).idle()
+        assertFalse(AirPlayPersistence.loadWifiDirectScanPause(activity))
+        assertFalse(prefs.getBoolean(AirPlayPersistence.KEY_WIFI_DIRECT_SCAN_PAUSE, true))
+    }
+
+    @Test fun theScanPauseSwitchIsOnlyForWifiDirect() {
+        AirPlayPersistence.saveWirelessHotspotMode(activity, WirelessHotspotMode.MANUAL)
+        assertNull(findSwitch(controls(), activity.getString(R.string.settings_wifi_direct_scan_pause)))
+    }
+
+    private fun findSwitch(view: View, title: String): android.widget.Switch? {
+        if (view is android.widget.Switch && view.contentDescription == title) return view
+        if (view is ViewGroup) for (index in 0 until view.childCount) {
+            findSwitch(view.getChildAt(index), title)?.let { return it }
+        }
+        return null
+    }
+
+    private val choices get() = listOf(WifiP2pChannels.AUTO) + WifiP2pChannels.bandChoices + WifiP2pChannels.channels
 
     private fun select(dialog: AlertDialog, channel: Int) {
         val index = choices.indexOf(channel)

@@ -1,17 +1,23 @@
 package com.shilapi.xcertplay
 
 import android.graphics.Matrix
+import android.os.Handler
 import android.os.Looper
 import android.view.MotionEvent
 import android.view.Surface
 import android.view.TextureView
 import android.view.View
+import android.view.ViewGroup
+import android.widget.Switch
 import com.shilapi.xcertplay.airplay.*
+import com.shilapi.xcertplay.host.R
 import com.shilapi.xcertplay.media.AndroidMediaSink
+import com.shilapi.xcertplay.media.CarPlayNowPlaying
 import com.shilapi.xcertplay.media.CarPlayVideoLayout
 import com.shilapi.xcertplay.orchestration.CarPlayController
 import com.shilapi.xcertplay.orchestration.CarPlayRuntimeConfig
 import com.shilapi.xcertplay.orchestration.MfiTarget
+import com.shilapi.xcertplay.orchestration.WirelessHotspotMode
 import com.shilapi.xcertplay.transport.Iap2IdentificationConfig
 import java.time.Duration
 import java.util.concurrent.ExecutorService
@@ -41,8 +47,14 @@ class CarPlayHostDisplaySizeTest {
 
     @Before fun setUp() {
         activity = Robolectric.buildActivity(CarPlayHostActivity::class.java).get()
+        AirPlayPersistence.saveAdaptPipResolution(activity, false)
+        AirPlayPersistence.saveHarmanFullscreen(activity, false)
+        // Source-only tests have no provisioned local authentication identity.
+        AirPlayPersistence.saveMfiTarget(activity, MfiTarget.USB_CH341)
         // Exercise host startup without launching vendor-service workers or real transports.
-        controllerConstruction = mockConstruction(CarPlayController::class.java)
+        controllerConstruction = mockConstruction(CarPlayController::class.java) { controller, _ ->
+            org.mockito.Mockito.`when`(controller.nowPlayingSnapshot()).thenReturn(CarPlayNowPlaying())
+        }
         (getField("teardownExecutor") as ExecutorService).shutdownNow()
         setField("teardownExecutor", PausedExecutorService())
         CarPlayBackgroundSession::class.java.getDeclaredField("owner").apply { isAccessible = true }
@@ -52,6 +64,9 @@ class CarPlayHostDisplaySizeTest {
 
     @After fun tearDown() {
         (getField("shuttingDown") as AtomicBoolean).set(true)
+        (getField("mainHandler") as Handler).removeCallbacksAndMessages(null)
+        AirPlayPersistence.overlaySettingsListener = null
+        com.shilapi.xcertplay.hud.BydNavigationOutputs.setTurnOverlayListener(null)
         (getField("controller") as? CarPlayController)?.let {
             CarPlayMediaKeys.detach(it)
             it.close()
@@ -82,6 +97,42 @@ class CarPlayHostDisplaySizeTest {
         assertEquals(0, getField("restartGeneration"))
         assertEquals(1, keepLogs())
     }
+
+    @Test fun aNarrowWindowWithAdaptPipResolutionTriggersReconnect() {
+        AirPlayPersistence.saveAdaptPipResolution(activity, true)
+        val display = startSession()
+        applySize(700, 990)
+        assertEquals(1, getField("restartGeneration"))
+        assertNull(getField("sessionDisplay"))
+    }
+
+    @Test fun resumingASquareCanvasInTheSameWindowDoesNotReconnect() {
+        AirPlayPersistence.saveAdaptPipResolution(activity, true)
+        val display = startSession(windowHeight = 1080, canvasHeight = 1920)
+        val video = object : TextureView(activity) {
+            override fun post(action: Runnable): Boolean = Handler(Looper.getMainLooper()).post(action)
+        }.apply { layout(0, 0, 1920, 1080) }
+        setField("videoView", video)
+
+        invoke("onResume")
+        shadowOf(Looper.getMainLooper()).idleFor(Duration.ofMillis(600))
+
+        assertSame(display, getField("sessionDisplay"))
+        assertEquals(size(1920, 1080), getField("activeDisplaySize"))
+        assertEquals(0, getField("restartGeneration"))
+        assertNull(getField("pendingDisplaySize"))
+    }
+
+    @Test fun aRealPipAspectChangeStillReconnectsWithASquareCanvas() {
+        AirPlayPersistence.saveAdaptPipResolution(activity, true)
+        startSession(windowHeight = 1080, canvasHeight = 1920)
+
+        applySize(700, 1080)
+
+        assertEquals(1, getField("restartGeneration"))
+        assertNull(getField("sessionDisplay"))
+    }
+
 
     @Test fun connectingInANarrowWindowRebuildsWhenTheCameraCloses() {
         startSession(windowWidth = 700)
@@ -134,6 +185,178 @@ class CarPlayHostDisplaySizeTest {
         setField("hideTopBar", false)
         applySize(1920, 942)
         assertEquals(1, getField("restartGeneration"))
+    }
+
+    @Test fun resumingReadsSavedBarsAndRebuildsEvenWhenTheWindowSizeIsUnchanged() {
+        startSession()
+        // 测试窗口未挂载，使用主线程队列执行布局后的刷新。
+        val video = object : TextureView(activity) {
+            override fun post(action: Runnable): Boolean = Handler(Looper.getMainLooper()).post(action)
+        }.apply { layout(0, 0, 1920, 990) }
+        setField("videoView", video)
+        AirPlayPersistence.saveHideTopBar(activity, true)
+        AirPlayPersistence.saveHideBottomBar(activity, false)
+
+        invoke("onResume")
+        shadowOf(Looper.getMainLooper()).idleFor(Duration.ofMillis(600))
+
+        assertEquals(true, getField("hideTopBar"))
+        assertEquals(false, getField("hideBottomBar"))
+        assertWindowBars(true, false)
+        assertEquals(1, getField("restartGeneration"))
+        assertTrue(getField("handshakeResetInProgress") as Boolean)
+    }
+
+    @Test fun resumingWithUnchangedBarsKeepsTheSession() {
+        val display = startSession()
+
+        invoke("onResume")
+        shadowOf(Looper.getMainLooper()).idleFor(Duration.ofMillis(600))
+
+        assertSame(display, getField("sessionDisplay"))
+        assertEquals(0, getField("restartGeneration"))
+    }
+
+    @Test fun resumingWhileEditingDoesNotOverwriteTheBarPreview() {
+        startSession()
+        setField("menuOpen", true)
+        setField("hideTopBar", false)
+        setField("hideBottomBar", true)
+
+        invoke("onResume")
+
+        assertEquals(false, getField("hideTopBar"))
+        assertEquals(true, getField("hideBottomBar"))
+        assertWindowBars(false, true)
+        assertTrue(AirPlayPersistence.loadHideTopBar(activity))
+        assertEquals(0, getField("restartGeneration"))
+    }
+
+    @Test fun fullscreenApplicationSupportsAllFourBarCombinations() {
+        for (hideTop in listOf(false, true)) {
+            for (hideBottom in listOf(false, true)) {
+                setField("harmanFullscreenEnabled", false)
+                setField("hideTopBar", hideTop)
+                setField("hideBottomBar", hideBottom)
+
+                invoke("applyFullscreenMode")
+
+                assertWindowBars(hideTop, hideBottom)
+            }
+        }
+    }
+
+    @Test fun optionalTemporaryBarsRevealAndRestoreAfterFiveSecondsWithoutRenegotiatingCarPlay() {
+        val display = startSession()
+        setField("temporarySystemBarsEnabled", true)
+        setField("gestureFingerCount", 3)
+        setField("hideTopBar", true)
+        setField("hideBottomBar", true)
+        invoke("applyFullscreenMode")
+        assertWindowBars(true, true)
+
+        assertEquals(true, invoke("showTemporarySystemBars"))
+        assertWindowBars(false, false)
+        assertEquals(display, getField("sessionDisplay"))
+        assertEquals(0, getField("restartGeneration"))
+        // Transient visibility must not change the persistent CarPlay fullscreen selection.
+        assertTrue(getField("hideTopBar") as Boolean)
+        assertTrue(getField("hideBottomBar") as Boolean)
+        assertTrue(AirPlayPersistence.loadHideTopBar(activity))
+        assertTrue(AirPlayPersistence.loadHideBottomBar(activity))
+
+        shadowOf(Looper.getMainLooper()).idleFor(Duration.ofMillis(4_999))
+        assertWindowBars(false, false)
+        shadowOf(Looper.getMainLooper()).idleFor(Duration.ofMillis(1))
+        assertWindowBars(true, true)
+        assertEquals(false, getField("temporarySystemBarsVisible"))
+        assertEquals(display, getField("sessionDisplay"))
+    }
+
+    @Test fun revealingAgainExtendsTheExpiryAndBackgroundCancelsIt() {
+        setField("temporarySystemBarsEnabled", true)
+        invoke("applyFullscreenMode")
+        assertEquals(true, invoke("showTemporarySystemBars"))
+        shadowOf(Looper.getMainLooper()).idleFor(Duration.ofSeconds(3))
+        assertEquals(true, invoke("showTemporarySystemBars"))
+        shadowOf(Looper.getMainLooper()).idleFor(Duration.ofSeconds(3))
+        assertWindowBars(false, false)
+        invoke("onPause")
+        assertWindowBars(true, true)
+        shadowOf(Looper.getMainLooper()).idleFor(Duration.ofSeconds(5))
+        assertWindowBars(true, true)
+    }
+
+    @Test fun temporarySystemBarsRequireOptInHiddenBarsAndCompatibleMode() {
+        assertEquals(false, invoke("showTemporarySystemBars"))
+        setField("temporarySystemBarsEnabled", true)
+        setField("hideTopBar", false)
+        setField("hideBottomBar", false)
+        assertEquals(false, invoke("showTemporarySystemBars"))
+        setField("hideTopBar", true)
+        setField("harmanFullscreenEnabled", true)
+        assertEquals(false, invoke("showTemporarySystemBars"))
+        setField("harmanFullscreenEnabled", false)
+        setField("gestureFingerCount", 0)
+        assertEquals(false, invoke("showTemporarySystemBars"))
+    }
+
+    @Suppress("DEPRECATION")
+    @Test fun harmanFullscreenUsesTheVerifiedLegacyFlags() {
+        setField("harmanFullscreenEnabled", true)
+        setField("hideTopBar", false)
+        setField("hideBottomBar", false)
+
+        invoke("applyFullscreenMode")
+
+        assertEquals(0x080e, activity.window.decorView.systemUiVisibility)
+    }
+
+    @Suppress("DEPRECATION")
+    @Test fun disablingHarmanFullscreenRestoresStandardBars() {
+        setField("harmanFullscreenEnabled", true)
+        invoke("applyFullscreenMode")
+        setField("harmanFullscreenEnabled", false)
+        setField("hideTopBar", false)
+        setField("hideBottomBar", false)
+
+        invoke("applyFullscreenMode")
+
+        assertEquals(0, activity.window.decorView.systemUiVisibility and HarmanFullscreenCompat.OEM_FULLSCREEN_BIT)
+        assertWindowBars(false, false)
+    }
+
+    @Test fun menuBarChangesPreviewWithoutSavingAndCancelRestoresTheSavedValues() {
+        invoke("loadPersistedSettings")
+        setField("settingsBaseline", invoke("captureSettingsBaseline"))
+        setField("menuOpen", true)
+        val controls = invoke("buildFullscreenSection") as ViewGroup
+
+        menuBarSwitch(controls, R.string.hide_the_navigation_bar).performClick()
+
+        assertEquals(false, getField("hideBottomBar"))
+        assertWindowBars(true, false)
+        assertTrue(AirPlayPersistence.loadHideBottomBar(activity))
+
+        invoke("cancelSettingsEdits")
+
+        assertEquals(true, getField("hideBottomBar"))
+        assertWindowBars(true, true)
+        assertTrue(AirPlayPersistence.loadHideBottomBar(activity))
+    }
+
+    @Test fun savingMenuBarsPreservesAnIndependentCombination() {
+        AirPlayPersistence.saveWirelessHotspotMode(activity, WirelessHotspotMode.WIFI_P2P)
+        invoke("loadPersistedSettings")
+        setField("menuOpen", true)
+        val controls = invoke("buildFullscreenSection") as ViewGroup
+        menuBarSwitch(controls, R.string.hide_the_status_bar).performClick()
+
+        invoke("saveSettingsAndReconnect")
+
+        assertFalse(AirPlayPersistence.loadHideTopBar(activity))
+        assertTrue(AirPlayPersistence.loadHideBottomBar(activity))
+        assertEquals(false, getField("menuOpen"))
     }
 
     @Test fun quickOpenAndCloseCancelsThePendingShrink() {
@@ -303,6 +526,26 @@ class CarPlayHostDisplaySizeTest {
         }
     }
 
+    @Test fun adoptingBackgroundClusterRestoresNativeAdbFlagButRejectsTheVirtualFallback() {
+        AirPlayPersistence.saveAdbClusterEnabled(activity, true)
+        val sink = AndroidMediaSink()
+        val display = CarPlaySessionDisplay(1920, 990, Surface.ROTATION_0, true, true, 1920, 990)
+        try {
+            for ((clusterSize, native) in listOf((1920 to 720) to true, (1280 to 720) to false, null to false)) {
+                val controller = org.mockito.Mockito.mock(CarPlayController::class.java)
+                org.mockito.Mockito.`when`(controller.nowPlayingSnapshot()).thenReturn(CarPlayNowPlaying())
+                org.mockito.Mockito.`when`(controller.configuredClusterSize()).thenReturn(clusterSize)
+                CarPlayBackgroundSession.store(controller, sink, 1920, 990, Any(), display) {}
+                assertEquals(true, invoke("adoptBackgroundSession"))
+                assertEquals("Adopted $clusterSize must keep the native/virtual distinction", native,
+                    getField("adbClusterConfigured"))
+            }
+        } finally {
+            AirPlayPersistence.saveAdbClusterEnabled(activity, false)
+            sink.close()
+        }
+    }
+
     private fun startSession(
         rotation: Int = Surface.ROTATION_0,
         windowWidth: Int = 1920,
@@ -366,6 +609,20 @@ class CarPlayHostDisplaySizeTest {
 
     private fun getField(name: String): Any? = activity.javaClass.getDeclaredField(name)
         .apply { isAccessible = true }.get(activity)
+
+    private fun invoke(name: String): Any? = activity.javaClass.getDeclaredMethod(name)
+        .apply { isAccessible = true }.invoke(activity)
+
+    @Suppress("DEPRECATION")
+    private fun assertWindowBars(hideTop: Boolean, hideBottom: Boolean) {
+        assertEquals(hideTop, activity.window.decorView.systemUiVisibility and View.SYSTEM_UI_FLAG_FULLSCREEN != 0)
+        assertEquals(hideBottom, activity.window.decorView.systemUiVisibility and View.SYSTEM_UI_FLAG_HIDE_NAVIGATION != 0)
+    }
+
+    private fun menuBarSwitch(controls: ViewGroup, label: Int): Switch = (0 until controls.childCount)
+        .mapNotNull { controls.getChildAt(it) as? ViewGroup }
+        .flatMap { row -> (0 until row.childCount).map { row.getChildAt(it) } }
+        .filterIsInstance<Switch>().single { it.contentDescription == activity.getString(label) }
 
     private fun setField(name: String, value: Any?) {
         activity.javaClass.getDeclaredField(name).apply { isAccessible = true }.set(activity, value)
