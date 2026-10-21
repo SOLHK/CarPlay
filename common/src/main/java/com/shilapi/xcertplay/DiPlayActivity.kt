@@ -1084,7 +1084,7 @@ class DiPlayActivity : ComponentActivity(), AppAppearanceOwner {
     private fun music(content: LinearLayout) {
         val wide = resources.configuration.screenWidthDp >= 760 && resources.configuration.fontScale <= 1.3f
         content.addView(label(getString(R.string.music_now_playing), if (wide) 34 else 28, TEXT, true))
-        content.addView(space(20))
+        content.addView(space(SETTINGS_BLOCK_GAP_DP))
         val panel = card().apply {
             orientation = if (wide) LinearLayout.HORIZONTAL else LinearLayout.VERTICAL
             gravity = Gravity.CENTER_VERTICAL
@@ -1128,7 +1128,7 @@ class DiPlayActivity : ComponentActivity(), AppAppearanceOwner {
                 if (control !== previous) marginStart = dp(12)
             })
         }
-        details.addView(controls, LinearLayout.LayoutParams(-1, -2).apply { topMargin = dp(20) })
+        details.addView(controls, LinearLayout.LayoutParams(-1, -2).apply { topMargin = dp(SETTINGS_BLOCK_GAP_DP) })
         panel.addView(details, LinearLayout.LayoutParams(if (wide) 0 else -1, -2, if (wide) 1f else 0f))
         content.addView(panel)
         musicViews = MusicViews(artwork, title, artist, album, source, progress, previous, playPause, next)
