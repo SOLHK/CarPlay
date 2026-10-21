@@ -7,7 +7,8 @@ The app is **not made, certified, or endorsed by Apple**. Its dashboard-and-rout
 ## Current development status
 
 - Visible app name: CarPlay. Android application ID: `com.solhk.carplay`; debug builds use `com.solhk.carplay.hudtest`. Installing this package does not update an existing DiPlay or earlier SOLHK test app, and saved settings do not migrate automatically.
-- Receiver light and dark palettes use shared tokens. Existing connection, settings, media, Siri, vehicle, and diagnostics code is inherited from upstream and must still pass this branch's CI and device checks.
+- Receiver home, settings, and music pages use shared light and dark tokens. The music page reads the active iPhone session's metadata and sends media commands through the existing controller; without a session, it shows no invented track and disables playback controls.
+- [Android CI at `40d14f5e`](https://github.com/SOLHK/CarPlay/actions/runs/39570837683) passed unit tests, Lint, and source-only Debug APK builds. This does not establish head-unit or iPhone compatibility.
 - The source-only debug build omits accessory authentication material. It can be installed to inspect the UI but is **not** a standalone iPhone connection package.
 - iPhone 17 Pro Max, iOS 27.2 RC, USB-C, and on-car operation have not yet been tested on this branch. See [device acceptance](docs/IPHONE_17_IOS_27_2_RC.md).
 

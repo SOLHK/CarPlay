@@ -5,7 +5,8 @@ SOLHK 正在开发的独立 Android 车机 CarPlay 接收端。本次源码从 [
 本应用及原创图标**并非 Apple 官方产品，也未经 Apple 认证**。投射的 CarPlay 画面由 iPhone 绘制，Android 端改动只影响接收端自己的页面。
 
 - 应用显示名称：CarPlay；正式包名 `com.solhk.carplay`，Debug 包名 `com.solhk.carplay.hudtest`。它不会覆盖旧版 DiPlay 或 SOLHK 测试包，已有设置不会自动迁移。
-- 深浅色界面使用统一颜色 Token。连接、音视频、Siri、车辆功能及诊断路径仍需本分支 CI 和真机验收。
+- 接收端主页、设置页和音乐页使用统一深浅色 Token。音乐页读取当前 iPhone 会话的真实媒体信息，并通过原有控制器发送播放指令；断开连接时不伪造曲目，播放按钮不可操作。
+- [`40d14f5e` 的 Android CI](https://github.com/SOLHK/CarPlay/actions/runs/39570837683) 已通过单元测试、Lint 与源码版 Debug APK 构建；这不代表车机或 iPhone 兼容性已经通过。
 - 普通 Debug APK 不包含配件认证材料，可安装查看界面，但不能独立完成 iPhone 连接。
 - 本分支尚未对 iPhone 17 Pro Max、iOS 27.2 RC、USB-C 或车机完成真机测试。见[真机验收记录](docs/IPHONE_17_IOS_27_2_RC.md)。
 

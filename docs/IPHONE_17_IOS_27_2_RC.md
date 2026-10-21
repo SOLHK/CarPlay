@@ -9,7 +9,7 @@ This branch has **no physical iPhone 17 Pro Max or iOS 27.2 RC result**. A succe
 | USB enumeration and permission | `IphoneUsbHost` discovers Apple USB vendor ID `0x05ac`, requests Android USB Host permission, and handles re-enumeration. `CarPlayController` chooses the wired path. | Code path present; device behavior **NOT TESTED**. It does not select by phone model name. |
 | Wired session | `IphoneUsbHost` selects the CarPlay configuration and opens iAP2 after permission and re-enumeration. | Code path present; USB-C and this iPhone **NOT TESTED**. |
 | Wireless session | `CarPlayController` uses the existing Bluetooth/Wi-Fi transport and reports startup errors. | Code path present; this iPhone and head unit **NOT TESTED**. |
-| Audio and video | `CarPlayMediaKeys`, `ScreenStream`, and the existing Android media sinks implement metadata, audio and projection display. | Automated checks still required; live sound and picture **NOT TESTED**. |
+| Audio and video | `CarPlayMediaKeys`, `ScreenStream`, and the existing Android media sinks implement metadata, audio and projection display. The receiver music page reads the current iPhone metadata and sends commands through the session controller. | Automated CI passed at `40d14f5e`; live sound and picture **NOT TESTED**. |
 | Siri, calls, wheel keys | Existing microphone, call and wheel-key paths remain from DiPlay. | Vehicle-specific behavior **NOT TESTED**. |
 
 No iOS 27.2 RC version branch or guessed USB product ID was added. If the phone fails, use a redacted diagnostic report to identify the first failing layer before changing transport code. The ordinary source-only Debug APK omits accessory authentication assets and cannot establish a standalone session.
@@ -28,8 +28,9 @@ No iOS 27.2 RC version branch or guessed USB product ID was added. If the phone 
 | Evidence | Status |
 | --- | --- |
 | Source path inspected | PASS |
-| This branch's Android CI build/tests | Pending |
-| Android emulator UI/screenshots | NOT TESTED |
+| [Android CI at `40d14f5e`](https://github.com/SOLHK/CarPlay/actions/runs/39570837683): 3,101 unit tests, Lint, Debug APK builds | PASS |
+| Robolectric receiver UI screenshots: home, settings, music, light/dark and compact landscape | PASS; screenshot pixels reviewed |
+| Android emulator or head-unit UI interaction | NOT TESTED |
 | Android head unit and USB Host | NOT TESTED |
 | iPhone 17 Pro Max + iOS 27.2 RC wired USB-C | NOT TESTED |
 | iPhone 17 Pro Max + iOS 27.2 RC wireless | NOT TESTED |
