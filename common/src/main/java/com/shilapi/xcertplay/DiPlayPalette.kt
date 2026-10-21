@@ -50,7 +50,7 @@ internal data class DiPlayPalette(
             trackOff = Color.rgb(58, 58, 60),
             warning = Color.rgb(255, 184, 107),
             success = Color.rgb(127, 205, 154),
-            danger = Color.rgb(190, 45, 45),
+            danger = Color.rgb(200, 55, 55),
             ripple = 0x330A84FF,
             focusRing = Color.rgb(10, 132, 255),
             systemBar = Color.BLACK,
@@ -62,7 +62,7 @@ internal data class DiPlayPalette(
             overlayOnAccent = Color.BLACK,
             overlayAccentTrack = Color.rgb(10, 132, 255),
             overlayTrackOff = Color.rgb(58, 58, 60),
-            overlayDanger = Color.rgb(190, 45, 45),
+            overlayDanger = Color.rgb(200, 55, 55),
         )
 
         val LIGHT = DiPlayPalette(

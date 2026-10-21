@@ -28,7 +28,7 @@ class DiPlayPaletteTest {
         assertEquals(Color.rgb(10, 132, 255), palette.accent)
         assertEquals(Color.rgb(255, 184, 107), palette.warning)
         assertEquals(Color.rgb(127, 205, 154), palette.success)
-        assertEquals(Color.rgb(190, 45, 45), palette.danger)
+        assertEquals(Color.rgb(200, 55, 55), palette.danger)
         assertEquals(0x330A84FF, palette.ripple)
         assertFalse(palette.systemBarIconsAreDark)
     }
