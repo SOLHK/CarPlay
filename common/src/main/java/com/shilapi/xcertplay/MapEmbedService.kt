@@ -164,6 +164,9 @@ class MapEmbedService : Service() {
                 }
             }
         }
+        private val aspectListener: () -> Unit = {
+            if (!released) cropToFill(video, video.width, video.height)
+        }
         private val streamListener: (Boolean) -> Unit = { active ->
             waiting.visibility = if (active) TextView.GONE else TextView.VISIBLE
             send(client, MSG_STREAM_STATE, Bundle().apply { putBoolean(KEY_STREAM_ACTIVE, active) })
@@ -183,6 +186,7 @@ class MapEmbedService : Service() {
         init {
             waiting.visibility = if (MapMirrors.streamActive) TextView.GONE else TextView.VISIBLE
             MapMirrors.addStreamListener(streamListener)
+            MapMirrors.addAspectListener(aspectListener)
             host.setView(root, width.coerceAtLeast(1), height.coerceAtLeast(1))
         }
 
@@ -194,6 +198,7 @@ class MapEmbedService : Service() {
             if (released) return
             released = true
             MapMirrors.removeStreamListener(streamListener)
+            MapMirrors.removeAspectListener(aspectListener)
             MapMirrors.set(key, null)
             host.release()
         }
@@ -209,7 +214,7 @@ class MapEmbedService : Service() {
         private const val RELEASE_DELAY_MILLIS = 1_000L
 
         /** Bind to DiPlay's service with this action (the package differs between builds). */
-        const val ACTION = "com.shihab.diplay.steam.action.EMBED_MAP"
+        const val ACTION = "com.solhk.carplay.action.EMBED_MAP"
 
         // Launcher -> DiPlay. Every message needs replyTo.
         const val MSG_ATTACH = 1 // KEY_HOST_TOKEN, KEY_DISPLAY_ID, KEY_WIDTH, KEY_HEIGHT
@@ -233,11 +238,11 @@ class MapEmbedService : Service() {
         const val ERROR_UNSUPPORTED = "unsupported" // Android 10 or older
         const val ERROR_BAD_REQUEST = "bad_request"
 
-        /** Keeps the stream's 8:3 shape and fills the view, cutting the edges that do not fit. */
+        /** Keeps the stream's shape (8:3 or 16:9) and fills the view, cutting the edges that do not fit. */
         internal fun cropToFill(view: TextureView, width: Int, height: Int) {
             if (width <= 0 || height <= 0) return
             val viewAspect = width.toFloat() / height
-            val stream = MapMirrors.STREAM_ASPECT.toFloat()
+            val stream = MapMirrors.streamAspect.toFloat()
             val scaleX = if (viewAspect < stream) stream / viewAspect else 1f
             val scaleY = if (viewAspect > stream) viewAspect / stream else 1f
             view.setTransform(Matrix().apply { setScale(scaleX, scaleY, width / 2f, height / 2f) })

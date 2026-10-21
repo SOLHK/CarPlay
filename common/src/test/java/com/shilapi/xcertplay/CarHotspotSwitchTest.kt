@@ -248,7 +248,7 @@ class CarHotspotSwitchTest {
     }
 
     private fun prepareResume() {
-        for ((name, value) in mapOf("initialLaunch" to false, "page" to "features", "languagePreferenceAtCreate" to AppLocale.preference(activity))) {
+        for ((name, value) in mapOf("initialLaunch" to false, "page" to "settings")) {
             DiPlayActivity::class.java.getDeclaredField(name).apply { isAccessible = true }.set(activity, value)
         }
     }
@@ -288,11 +288,7 @@ class CarHotspotSwitchTest {
             it.contentDescription == activity.getString(R.string.open_after_the_car_starts)
         }?.let { return it }
         val bootControls = LinearLayout(activity)
-        // Startup controls belong to the connection category in this isolated settings fixture.
-        DiPlayActivity::class.java.getDeclaredField("settingsSection").apply {
-            isAccessible = true
-        }.set(activity, SteamSettingsSection.CONNECTION)
-        DiPlayActivity::class.java.getDeclaredMethod("settings", LinearLayout::class.java).apply {
+        DiPlayActivity::class.java.getDeclaredMethod("connectionSettings", LinearLayout::class.java).apply {
             isAccessible = true
         }.invoke(activity, bootControls)
         controls.addView(bootControls)

@@ -86,6 +86,17 @@ class BydVehicleDataSettingsTest {
         assertTrue(switches().any { it.contentDescription == activity.getString(R.string.video_while_parked) })
     }
 
+    @Test fun aTappedAdbCheckShowsItsResult() {
+        // #724: on a head unit without network ADB only the status line changed, so the button seemed dead.
+        openSettings()
+        texts().single { it.text == activity.getString(R.string.advanced_vehicle_data) }.performClick()
+        backend.checkResult = BydAdbAccess.Status(BydAdbAccess.State.ADB_OFF)
+        texts().single { it.text == activity.getString(R.string.check_adb_access) }.performClick()
+        backend.run("diplay-adb-state")
+        shadowOf(android.os.Looper.getMainLooper()).idle()
+        assertEquals(activity.getString(R.string.adb_off), org.robolectric.shadows.ShadowToast.getTextOfLatestToast())
+    }
+
     @Test fun successfulLiveProbeRevealsOnlySupportedSettings() {
         BydOutputSettings.setLegacyVehicleProbe(context, true)
         openSettings()
@@ -136,7 +147,7 @@ class BydVehicleDataSettingsTest {
         ReflectionHelpers.callInstanceMethod<Unit>(activity, "renderBydAdbControls",
             ReflectionHelpers.ClassParameter.from(LinearLayout::class.java, hotspot),
             ReflectionHelpers.ClassParameter.from(LocalAdb.Access::class.java, LocalAdb.Access.READY))
-        val page = ReflectionHelpers.getField<ScrollView>(activity, "rootScroll")
+        val page = descendants(activity.window.decorView).filterIsInstance<ScrollView>().first()
             .getChildAt(0) as LinearLayout
         page.addView(hotspot)
 
@@ -188,14 +199,16 @@ class BydVehicleDataSettingsTest {
         assertTrue(texts().any { it.text == activity.getString(R.string.probe_vehicle_data_again) })
     }
 
-    @Test fun clusterSongSwitchLivesInAdditionalFeaturesAndHasOneOwner() {
+    @Test fun clusterSongSwitchStaysInTheBydNavigationSectionOnly() {
         shadowOf(context.packageManager).installPackage(PackageInfo().apply { packageName = "com.byd.amapservice" })
         openSettings()
-        assertFalse(texts().any { it.text == activity.getString(R.string.byd_navigation) })
-        navigateSteamSettings(activity, SteamSettingsSection.MORE)
-        texts().single { it.text == activity.getString(R.string.steam_extensions) }.performClick()
+        openCategory(R.string.settings_navigation)
+
         assertTrue(texts().any { it.text == activity.getString(R.string.byd_navigation) })
         assertEquals(1, switches().count { it.contentDescription == activity.getString(R.string.cluster_song) })
+        openCategory(R.string.settings_advanced)
+        texts().single { it.text == activity.getString(R.string.advanced_vehicle_data) }.performClick()
+        assertEquals(0, switches().count { it.contentDescription == activity.getString(R.string.cluster_song) })
     }
 
     @Test fun withoutBydNavigationTheClusterSongSwitchIsUnderAdvancedVehicleData() {
@@ -682,7 +695,6 @@ class BydVehicleDataSettingsTest {
 
     @Test fun samePageRenderKeepsScrollAndPageChangeStartsAtTop() {
         openSettings()
-        texts().single { it.text == activity.getString(R.string.advanced_vehicle_data) }.performClick()
         val first = layoutRoot()
         first.scrollTo(0, 400)
         val savedY = first.scrollY
@@ -692,7 +704,7 @@ class BydVehicleDataSettingsTest {
         val second = layoutRoot()
         assertEquals(savedY, second.scrollY)
 
-        ReflectionHelpers.setField(activity, "page", "about")
+        ReflectionHelpers.setField(activity, "settingsCategory", SettingsCategory.ABOUT)
         ReflectionHelpers.callInstanceMethod<Unit>(activity, "render")
         val third = layoutRoot()
         assertEquals(0, third.scrollY)
@@ -700,7 +712,6 @@ class BydVehicleDataSettingsTest {
 
     @Test fun rendersBeforeTheNextLayoutKeepTheScroll() {
         openSettings()
-        texts().single { it.text == activity.getString(R.string.advanced_vehicle_data) }.performClick()
         val first = layoutRoot()
         first.scrollTo(0, 400)
         val savedY = first.scrollY
@@ -721,7 +732,17 @@ class BydVehicleDataSettingsTest {
             DiPlayActivity::class.java,
             Intent(context, DiPlayActivity::class.java).putExtra("page", "settings"),
         ).setup()
-        navigateSteamSettings(activity, SteamSettingsSection.LOCATION)
+        openCategory(R.string.settings_advanced)
+    }
+
+    private fun openCategory(title: Int) {
+        val description = activity.getString(R.string.settings_open_category, activity.getString(title))
+        var target = descendants(activity.window.decorView).firstOrNull { it.contentDescription == description }
+        if (target == null) {
+            activity.onBackPressedDispatcher.onBackPressed()
+            target = descendants(activity.window.decorView).first { it.contentDescription == description }
+        }
+        target.performClick()
     }
 
     private fun switches(): Sequence<Switch> = descendants(activity.window.decorView).filterIsInstance<Switch>()
@@ -752,7 +773,7 @@ class BydVehicleDataSettingsTest {
     }
 
     private fun modeChoice(): TextView = texts()
-        .single { it.text.toString().lineSequence().first() == activity.getString(R.string.vehicle_data_mode) }
+        .single { it.text.startsWith(activity.getString(R.string.vehicle_data_mode) + " · ") }
 
     /** As in LocationReportingSettingsTest: a connected host without transports; counts reconnects. */
     private fun connectCarPlay() {
@@ -780,7 +801,7 @@ class BydVehicleDataSettingsTest {
             View.MeasureSpec.makeMeasureSpec(600, View.MeasureSpec.EXACTLY),
         )
         decor.layout(0, 0, 1080, 600)
-        return ReflectionHelpers.getField(activity, "rootScroll")
+        return descendants(decor).filterIsInstance<ScrollView>().first()
     }
 
     private fun supportedCapabilities(

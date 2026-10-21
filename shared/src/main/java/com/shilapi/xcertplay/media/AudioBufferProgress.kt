@@ -15,9 +15,8 @@ internal class AudioBufferProgress(private val frameBytes: Int) {
         return (writtenBytes - playedFrames * frameBytes).coerceAtLeast(0)
     }
 
-    // Compressed packets cannot keep AudioTrack fed until decoded. A returning burst must
-    // not bypass prebuffering merely because it is already waiting in the input queue.
     fun shouldRebuffer(isMedia: Boolean, playing: Boolean, underrunSinceStart: Boolean,
-        rawHead: Int): Boolean =
-        isMedia && playing && underrunSinceStart && queuedBytes(rawHead) == 0L
+        compressedQueueEmpty: Boolean, rawHead: Int, floorBytes: Long): Boolean =
+        isMedia && playing && underrunSinceStart && compressedQueueEmpty &&
+            queuedBytes(rawHead) <= floorBytes
 }

@@ -1,12 +1,13 @@
 # CarPlay on your launcher's home screen
 
-DiPlay can put CarPlay information on a launcher's home screen in three ways:
+DiPlay can put CarPlay information on a launcher's home screen in four ways:
 
 | | What it shows | Works with | Needs |
 |---|---|---|---|
 | [Navigation widget](#1-navigation-widget) | Next turn arrow, distance, road, arrival, song | Any launcher that hosts standard Android widgets | Nothing extra |
 | [Map card](#2-map-card) | The live CarPlay map, as a card on the home screen | Any launcher, including BYD home and map home | Two permissions (see below) |
 | [Embedded map](#3-embedded-live-map-for-launcher-developers) | The live CarPlay map inside the launcher's own layout | Launchers that add support for it | Launcher code, Android 11+ |
+| [Home-screen bubble](#4-home-screen-bubble) | The DiPlay icon as a shortcut back to CarPlay | Any launcher, including ones that list only their own cards | Display over other apps |
 
 The live map is CarPlay's instrument-cluster map: the map the iPhone draws for the dashboard. The map card and the embedded map need **CarPlay map on instrument cluster** turned on in DiPlay. Without it, the iPhone does not send that map.
 
@@ -45,16 +46,16 @@ In DiPlay settings, under the dashboard map, turn on **Dashboard map on the cent
 - **Draw over other apps**: the settings screen offers it, or over ADB:
 
   ```bash
-  adb shell appops set com.shihab.diplay.steam SYSTEM_ALERT_WINDOW allow
+  adb shell appops set com.shihab.diplay SYSTEM_ALERT_WINDOW allow
   ```
 
 - **Usage Access**, so the card shows only on home screens. Without it, the card shows over every app:
 
   ```bash
-  adb shell appops set com.shihab.diplay.steam GET_USAGE_STATS allow
+  adb shell appops set com.shihab.diplay GET_USAGE_STATS allow
   ```
 
-(Test builds use the package `com.shihab.diplay.steam.hudtest`.)
+(Test builds use the package `com.shihab.diplay.hudtest`.)
 
 The card is a separate decoder for the same stream, so the dashboard keeps its map. While the card shows the map, "Dashboard map only in Small and Full navi" does not pause the stream. If a launcher embeds the map (section 3), the card stays hidden.
 
@@ -74,7 +75,7 @@ A complete working example is the sample app in [`samples/maphost`](../samples/m
 
 DiPlay exports a bound service. You talk to it with [`Messenger`](https://developer.android.com/reference/android/os/Messenger), so you need no AIDL or library. Every message you send must set `replyTo` to your own `Messenger`.
 
-Service action: `com.shihab.diplay.steam.action.EMBED_MAP`. The package differs between release and test builds, so find the service by its action.
+Service action: `com.shihab.diplay.action.EMBED_MAP`. The package differs between release and test builds, so find the service by its action.
 
 | Direction | `what` | Data (`Bundle`) | Meaning |
 |---|---|---|---|
@@ -96,7 +97,7 @@ The map is 8:3. If your view has another shape, DiPlay fills it and crops the ed
    ```xml
    <queries>
        <intent>
-           <action android:name="com.shihab.diplay.steam.action.EMBED_MAP" />
+           <action android:name="com.shihab.diplay.action.EMBED_MAP" />
        </intent>
    </queries>
    ```
@@ -104,7 +105,7 @@ The map is 8:3. If your view has another shape, DiPlay fills it and crops the ed
 2. Find and bind the service:
 
    ```kotlin
-   val intent = Intent("com.shihab.diplay.steam.action.EMBED_MAP")
+   val intent = Intent("com.shihab.diplay.action.EMBED_MAP")
    val info = packageManager.queryIntentServices(intent, 0).firstOrNull()?.serviceInfo
        ?: return // DiPlay is not installed
    intent.setClassName(info.packageName, info.name)
@@ -148,6 +149,32 @@ The map is 8:3. If your view has another shape, DiPlay fills it and crops the ed
 - If DiPlay restarts, your `ServiceConnection` is disconnected and reconnected; attach again then.
 - The protocol is new. Handle `ERROR` and a missing or older DiPlay gracefully.
 
+## 4. Home-screen bubble
+
+A shortcut the app draws itself over the launcher's home screen: tap it to come back to CarPlay,
+drag it anywhere. It is an overlay window, not a widget and not a launcher entry, so it also works
+on a head unit whose launcher lists only its own cards and would never show a normally installed app
+(#650).
+
+Turn it on under **Advanced → Home-screen bubble (experimental)** and allow **Display over other
+apps**. The settings card says whether that permission is granted, and it can be given over ADB:
+
+```bash
+adb shell appops set com.shihab.diplay SYSTEM_ALERT_WINDOW allow
+```
+
+Behaviour:
+
+- it draws the app's own icon, the same tile the launcher's app list shows;
+- its height defaults to 10% of the screen height and the width follows the icon; **Bubble size** in
+  the same card changes it (8 / 10 / 12 / 16%);
+- it hides as soon as any DiPlay screen is in front, so it never covers CarPlay or the settings, and
+  it comes back about half a second after you leave DiPlay;
+- a drag moves it and the place is remembered;
+- hold it to lock the place (a light sweeps across the icon while you hold) and hold it again to
+  unlock, so it cannot be moved by accident;
+- tapping it opens CarPlay when a session is up, and DiPlay's settings when it is not.
+
 ## DiPlay Home (sample launcher)
 
 [`samples/home`](../samples/home/src/main/java/com/diplay/home/HomeActivity.kt) is a small launcher built on the public APIs above. It shows:
@@ -188,3 +215,4 @@ It runs without system privileges. BYD's home stays installed, and the **BYD hom
 | Embedded map says `disabled` | Turn on "Share the live map with other launchers" in DiPlay. |
 | Embedded map stays on "waiting" | CarPlay is not connected, or "CarPlay map on instrument cluster" is off. |
 | Widget says "CarPlay is not connected" while CarPlay works | Open DiPlay once after installing it; the widget follows the running session. |
+| Bubble is missing | "Home-screen bubble" is on, "Draw over other apps" is allowed, and no DiPlay screen is in front. |

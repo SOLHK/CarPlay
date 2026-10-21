@@ -28,7 +28,6 @@ class LocationReportingSettingsTest {
     private val activity get() = requireNotNull(controller).get()
 
     @Before fun setUp() {
-        AirPlayPersistence.saveLocationReportingEnabled(context, false)
         shadowOf(context).denyPermissions(Manifest.permission.ACCESS_FINE_LOCATION, Manifest.permission.ACCESS_COARSE_LOCATION)
     }
 
@@ -37,13 +36,7 @@ class LocationReportingSettingsTest {
         controller?.pause()?.stop()?.destroy()
     }
 
-    @Test fun steamProfileRequestsLocationByDefaultWithoutGrantingPermission() {
-        context.getSharedPreferences("xcertplay_airplay", 0).edit().remove("location_reporting_enabled").commit()
-        assertTrue(AirPlayPersistence.loadLocationReportingEnabled(context))
-        assertEquals(PackageManager.PERMISSION_DENIED, context.checkSelfPermission(Manifest.permission.ACCESS_FINE_LOCATION))
-    }
-
-    @Test fun savedDisabledSettingRemainsDisabled() {
+    @Test fun currentSettingsExposeLocationSwitchWithDefaultOff() {
         openSettings()
 
         assertFalse(locationSwitch().isChecked)
@@ -122,7 +115,6 @@ class LocationReportingSettingsTest {
     private fun openSettings() {
         controller = Robolectric.buildActivity(DiPlayActivity::class.java,
             Intent(context, DiPlayActivity::class.java).putExtra("page", "settings")).setup()
-        navigateSteamSettings(activity, SteamSettingsSection.LOCATION)
     }
 
     private fun locationSwitch(): Switch = descendants(activity.window.decorView)

@@ -27,6 +27,7 @@ import kotlin.math.ceil
 import kotlin.math.floor
 import kotlin.math.max
 import kotlin.math.min
+import kotlin.math.roundToInt
 
 /** Loads one local image and writes a user-positioned 1:1 PNG into the AirPlay icon slot. */
 class ImageCropActivity : Activity() {
@@ -34,12 +35,18 @@ class ImageCropActivity : Activity() {
     private lateinit var cropView: SquareCropView
     private lateinit var statusView: TextView
 
+    private var interfaceOverride: android.content.res.Configuration? = null
+
     override fun attachBaseContext(newBase: Context) {
-        super.attachBaseContext(AppLocale.wrap(newBase))
+        val base = AppLocale.wrap(newBase)
+        super.attachBaseContext(base)
+        interfaceOverride = InterfaceSize.attach(this, base)
     }
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
+        AppLocale.enforce(this)
+        interfaceOverride?.let { InterfaceSize.enforce(resources, it) }
         val uri = intent.data
         if (uri == null) {
             finish()
@@ -48,8 +55,7 @@ class ImageCropActivity : Activity() {
 
         cropView = SquareCropView(this)
         statusView = TextView(this).apply {
-            setTextColor(SteamGlass.text)
-            background = SteamGlass.surface(this@ImageCropActivity, radius = 16)
+            setTextColor(Color.WHITE)
             textSize = 16f
             gravity = Gravity.CENTER
             setPadding(dp(12), dp(8), dp(12), dp(8))
@@ -63,7 +69,6 @@ class ImageCropActivity : Activity() {
         }
         controls.addView(
             Button(this).apply {
-                SteamGlass.styleAction(this)
                 text = getString(R.string.cancel)
                 isAllCaps = false
                 setOnClickListener {
@@ -75,7 +80,6 @@ class ImageCropActivity : Activity() {
         )
         controls.addView(
             Button(this).apply {
-                SteamGlass.styleAction(this, primary = true)
                 text = getString(R.string.save_1_1)
                 isAllCaps = false
                 setOnClickListener { saveCrop() }
@@ -86,7 +90,7 @@ class ImageCropActivity : Activity() {
         )
 
         val root = FrameLayout(this).apply {
-            background = SteamGlass.backdrop()
+            setBackgroundColor(Color.BLACK)
             addView(
                 cropView,
                 FrameLayout.LayoutParams(
@@ -186,7 +190,7 @@ class ImageCropActivity : Activity() {
         }
     }
 
-    private fun dp(value: Int): Int = (value * resources.displayMetrics.density).toInt()
+    private fun dp(value: Int): Int = (value * resources.displayMetrics.density).roundToInt()
 
     private class SquareCropView(context: android.content.Context) : View(context) {
         private val imagePaint = Paint(Paint.ANTI_ALIAS_FLAG or Paint.FILTER_BITMAP_FLAG)

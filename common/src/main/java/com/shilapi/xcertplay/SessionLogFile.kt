@@ -18,7 +18,6 @@ internal class SessionLogFile(val file: File) : Closeable {
     fun append(line: String) = synchronized(lock) {
         if (closed) return@synchronized
         val safe = DiagnosticRedactor.redact(line) ?: return@synchronized
-        HourDiagnosticLog.append(file.parentFile, safe)
         runCatching {
             if (file.length() > MAX_BYTES) {
                 rotate()

@@ -105,7 +105,7 @@ class DiagnosticRedactorTest {
                 }
             }
             val history = SessionLogFile.REPORT_NAMES.map { folder.resolve(it).readText() }
-            assertEquals(8, folder.listFiles()!!.count { it.name in SessionLogFile.REPORT_NAMES })
+            assertEquals(8, folder.listFiles()!!.size)
             assertTrue(history.first().contains("session=2"))
             assertTrue(history.last().contains("session=9"))
             assertTrue(history.any { it.contains("rejected code=0") })

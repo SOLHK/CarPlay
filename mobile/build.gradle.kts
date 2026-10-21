@@ -14,12 +14,11 @@ android {
     }
 
     defaultConfig {
-        applicationId = "com.shihab.diplay.steam"
-        minSdk = 28
+        applicationId = "com.solhk.carplay"
+        minSdk = 24
         targetSdk = 37
-        versionCode = 52
-        versionName = "0.2.33"
-        ndk { abiFilters += listOf("arm64-v8a", "armeabi-v7a", "x86_64") }
+        versionCode = 40
+        versionName = "0.2.21"
 
     }
 
@@ -41,7 +40,7 @@ android {
     buildTypes {
         debug {
             applicationIdSuffix = ".hudtest"
-            versionNameSuffix = "-ui-test"
+            versionNameSuffix = "-hud-test"
         }
         release {
             optimization {
