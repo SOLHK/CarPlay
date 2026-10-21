@@ -128,17 +128,28 @@ class SettingsBackupServer(
                 null
             } ?: break
             lastConnection = System.nanoTime()
+            // Register before dispatch so stop() can close a newly accepted socket even when
+            // its worker has not started. Otherwise the old port may remain occupied on reopen.
+            open.add(socket)
+            if (closed) {
+                open.remove(socket)
+                runCatching { socket.close() }
+                break
+            }
             try {
-                connections?.execute { handle(socket) } ?: socket.close()
+                connections?.execute { handle(socket) } ?: run {
+                    open.remove(socket)
+                    socket.close()
+                }
             } catch (_: RejectedExecutionException) {
                 // Every thread is busy: refuse this one, and the browser asks again.
+                open.remove(socket)
                 runCatching { socket.close() }
             }
         }
     }
 
     private fun handle(socket: Socket) {
-        open.add(socket)
         if (closed) runCatching { socket.close() }
         try {
             serve(socket)
