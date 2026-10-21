@@ -2703,6 +2703,9 @@ class DiPlayActivity : ComponentActivity(), AppAppearanceOwner {
                 if (!UpdateChecksums.matches(expected, release.apkName, actual)) {
                     throw IOException("Checksum mismatch for ${release.apkName}")
                 }
+                if (packageManager.getPackageArchiveInfo(apkFile.absolutePath, 0)?.packageName != packageName) {
+                    throw IOException("The downloaded APK targets a different application")
+                }
                 apkFile
             }.onFailure { directory.deleteRecursively() }
             val saved = outcome.getOrNull()?.let { UpdateApkExport.copy(applicationContext, it) }
@@ -2786,7 +2789,7 @@ class DiPlayActivity : ComponentActivity(), AppAppearanceOwner {
         }
     }
 
-    private fun userAgent() = "DiPlay/${version()}"
+    private fun userAgent() = "CarPlay/${version()}"
 
     // An opted-in connection prepares the hotspot in the controller instead of stopping at this reminder.
     private fun carHotspotOff(): Boolean =

@@ -49,7 +49,7 @@ class PhoneBluetoothReceiver : BroadcastReceiver() {
     }
 
     companion object {
-        const val EXTRA_AUTO_CONNECT = "com.shihab.diplay.AUTO_CONNECT_SELECTED_PHONE"
+        const val EXTRA_AUTO_CONNECT = "com.solhk.carplay.AUTO_CONNECT_SELECTED_PHONE"
     }
 }
 

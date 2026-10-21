@@ -1,16 +1,19 @@
-# Build DiPlay
+# Build CarPlay
 
-Use this procedure to build the DiPlay app for an Android head unit.
+Use this procedure to build the SOLHK CarPlay app for an Android head unit.
 Run the commands from the repository root, where `gradlew` and `settings.gradle.kts` are located.
+The new application ID is `com.solhk.carplay` (`com.solhk.carplay.hudtest` for Debug).
+It installs alongside DiPlay and earlier SOLHK packages; their saved settings and signatures do not migrate.
+References to DiPlay below describe the inherited upstream modules and historical behavior.
 
 ## Select the application
 
 This repository contains several Android applications.
-Select `mobile` to build the main DiPlay app.
+Select `mobile` to build the main CarPlay app.
 
 | Gradle module | Purpose | Debug APK |
 | --- | --- | --- |
-| `:mobile` | Main DiPlay app for Android head units | `mobile/build/outputs/apk/debug/mobile-debug.apk` |
+| `:mobile` | Main CarPlay app for Android head units | `mobile/build/outputs/apk/debug/mobile-debug.apk` |
 | `:maphost` | Sample application that displays a map from DiPlay | `samples/maphost/build/outputs/apk/debug/maphost-debug.apk` |
 | `:home` | Optional DiPlay Home launcher | `samples/home/build/outputs/apk/debug/home-debug.apk` |
 | `:automotive` | Separate Android Automotive application inherited from xcertplay | `automotive/build/outputs/apk/debug/automotive-debug.apk` |

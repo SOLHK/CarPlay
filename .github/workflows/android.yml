@@ -12,18 +12,27 @@ jobs:
     timeout-minutes: 30
     steps:
       - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
       - name: Reject credential files in public source
         run: python3 scripts/check_public_tree.py
       - uses: actions/setup-java@v4
         with:
           distribution: temurin
           java-version: '25'
-      - uses: android-actions/setup-android@v3
+      - uses: android-actions/setup-android@9fc6c4e9069bf8d3d10b2204b1fb8f6ef7065407 # v3
         with:
           packages: platform-tools platforms;android-37.0 build-tools;36.0.0 ndk;28.2.13676358
-      - uses: gradle/actions/setup-gradle@v4
+      - uses: gradle/actions/setup-gradle@ed408507eac070d1f99cc633dbcf757c94c7933a # v4
       - name: Unit tests, lint and source-only debug build
         run: ./gradlew :shared:testDebugUnitTest :common:testDebugUnitTest :home:testDebugUnitTest :mobile:lintDebug :home:lintDebug :maphost:lintDebug :mobile:assembleDebug :home:assembleDebug :maphost:assembleDebug --stacktrace
+      - name: Source-only debug APK
+        uses: actions/upload-artifact@v4
+        with:
+          name: CarPlay-source-only-debug
+          path: mobile/build/outputs/apk/debug/*.apk
+          if-no-files-found: error
+          retention-days: 7
       - name: Test reports
         if: always()
         uses: actions/upload-artifact@v4
@@ -32,6 +41,7 @@ jobs:
           path: |
             shared/build/reports/tests/
             common/build/reports/tests/
+            common/build/reports/carplay-ui/
             common/build/reports/album-artwork-ui/
             mobile/build/reports/lint-results-debug.html
             samples/home/build/reports/tests/
