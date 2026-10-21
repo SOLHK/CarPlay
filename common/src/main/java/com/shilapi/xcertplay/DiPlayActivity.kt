@@ -1082,11 +1082,13 @@ class DiPlayActivity : ComponentActivity(), AppAppearanceOwner {
 
     /** Receiver-owned controls use only metadata and media commands from the active iPhone session. */
     private fun music(content: LinearLayout) {
-        val wide = resources.configuration.screenWidthDp >= 760 && resources.configuration.fontScale <= 1.3f
-        content.addView(label(getString(R.string.music_now_playing), if (wide) 34 else 28, TEXT, true))
+        val largeLandscape = resources.configuration.screenWidthDp >= 760
+        val split = resources.configuration.screenWidthDp >= 560 &&
+            resources.configuration.screenHeightDp >= 340 && resources.configuration.fontScale <= 1.3f
+        content.addView(label(getString(R.string.music_now_playing), if (largeLandscape) 34 else 28, TEXT, true))
         content.addView(space(SETTINGS_BLOCK_GAP_DP))
         val panel = card().apply {
-            orientation = if (wide) LinearLayout.HORIZONTAL else LinearLayout.VERTICAL
+            orientation = if (split) LinearLayout.HORIZONTAL else LinearLayout.VERTICAL
             gravity = Gravity.CENTER_VERTICAL
         }
         val artwork = ImageView(this).apply {
@@ -1096,9 +1098,10 @@ class DiPlayActivity : ComponentActivity(), AppAppearanceOwner {
             contentDescription = getString(R.string.music_now_playing)
             setImageResource(R.drawable.ic_carplay_foreground)
         }
-        panel.addView(artwork, LinearLayout.LayoutParams(dp(if (wide) 240 else 180),
-            dp(if (wide) 240 else 180)).apply {
-            if (wide) marginEnd = dp(28) else { gravity = Gravity.CENTER_HORIZONTAL; bottomMargin = dp(22) }
+        val artworkSize = if (largeLandscape) 240 else if (split) 144 else 180
+        panel.addView(artwork, LinearLayout.LayoutParams(dp(artworkSize), dp(artworkSize)).apply {
+            if (split) marginEnd = dp(if (largeLandscape) 28 else 16)
+            else { gravity = Gravity.CENTER_HORIZONTAL; bottomMargin = dp(22) }
         })
         val details = column()
         val title = label(getString(R.string.music_no_track), 28, TEXT, true)
@@ -1129,7 +1132,7 @@ class DiPlayActivity : ComponentActivity(), AppAppearanceOwner {
             })
         }
         details.addView(controls, LinearLayout.LayoutParams(-1, -2).apply { topMargin = dp(SETTINGS_BLOCK_GAP_DP) })
-        panel.addView(details, LinearLayout.LayoutParams(if (wide) 0 else -1, -2, if (wide) 1f else 0f))
+        panel.addView(details, LinearLayout.LayoutParams(if (split) 0 else -1, -2, if (split) 1f else 0f))
         content.addView(panel)
         musicViews = MusicViews(artwork, title, artist, album, source, progress, previous, playPause, next)
         updateMusic(ClusterMusicState.snapshot())
