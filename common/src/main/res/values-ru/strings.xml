@@ -217,7 +217,7 @@
     <string name="hevc_software_decoder">Программный декодер HEVC</string>
     <string name="hide_bottom_bar">Скрыть нижнюю панель</string>
     <string name="hide_keyboard">Скрыть клавиатуру</string>
-    <string name="hide_the_car_s_system_bars_while_carplay_is_open">Скрывать выбранную системную панель в CarPlay и CarPlay.</string>
+    <string name="hide_the_car_s_system_bars_while_carplay_is_open">Скрывать выбранную системную панель в приложении и проекции CarPlay.</string>
     <string name="hide_the_navigation_bar">Скрыть панель навигации</string>
     <string name="hide_the_status_bar">Скрыть панель состояния</string>
     <string name="hide_top_bar">Скрыть верхнюю панель</string>
@@ -910,4 +910,8 @@
 
     <string name="settings_hotspot_interface">Интерфейс точки доступа (необязательно)</string>
     <string name="settings_hotspot_interface_description">Только для головных устройств, которые держат точку доступа на сетевом интерфейсе, не считающемся в Android точкой доступа Wi-Fi, например eth0.3 на некоторых устройствах Geely, Lynk &amp; Co и других Qualcomm. Оставьте пустым для автоматического поиска.</string>
+    <string name="music_open">Музыка</string>
+    <string name="music_now_playing">Сейчас играет</string>
+    <string name="music_no_track">iPhone не передал сведения о музыке</string>
+    <string name="music_controls_unavailable">Управление музыкой недоступно</string>
 </resources>

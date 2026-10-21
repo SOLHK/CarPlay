@@ -218,7 +218,7 @@
     <string name="hevc_software_decoder">HEVC 软件解码器</string>
     <string name="hide_bottom_bar">隐藏底部导航栏</string>
     <string name="hide_keyboard">隐藏键盘</string>
-    <string name="hide_the_car_s_system_bars_while_carplay_is_open">在 CarPlay 与 CarPlay 中隐藏对应的系统栏。</string>
+    <string name="hide_the_car_s_system_bars_while_carplay_is_open">在本应用与投射的 CarPlay 画面中隐藏对应的系统栏。</string>
     <string name="hide_the_navigation_bar">隐藏导航栏</string>
     <string name="hide_the_status_bar">隐藏状态栏</string>
     <string name="hide_top_bar">隐藏顶部状态栏</string>
@@ -970,4 +970,8 @@
 
     <string name="settings_hotspot_interface">热点网络接口（可选）</string>
     <string name="settings_hotspot_interface_description">仅用于把热点放在 Android 不认为是 Wi-Fi 热点的网络接口上的车机，例如部分吉利、领克及其它高通车机上的 eth0.3。留空则自动查找。</string>
+    <string name="music_open">音乐</string>
+    <string name="music_now_playing">正在播放</string>
+    <string name="music_no_track">iPhone 尚未提供音乐信息</string>
+    <string name="music_controls_unavailable">音乐控制暂不可用</string>
 </resources>

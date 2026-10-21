@@ -25,7 +25,7 @@
     <string name="settings_wheel_keys">أزرار عجلة القيادة</string>
     <string name="settings_experimental_display">الشاشة (تجريبي)</string>
     <string name="settings_diagnostics_summary">احفظ تقريرًا محليًا عند استكشاف مشكلة في الاتصال</string>
-    <string name="settings_full_screen_description">إخفاء شريطي الحالة والتنقل في CarPlay وCarPlay.</string>
+    <string name="settings_full_screen_description">إخفاء شريطي الحالة والتنقل في التطبيق وعرض CarPlay.</string>
     <string name="settings_vehicle_description">تختلف ميزات السيارة ولوحة العدادات حسب الطراز والبرنامج الثابت. راجعها في الإعدادات المتقدمة قبل تفعيل عناصر التحكم التجريبية.</string>
     <string name="settings_open_advanced">فتح الإعدادات المتقدمة</string>
     <string name="settings_reconnect_pending">تم الحفظ. تُطبَّق بعض التغييرات عند إعادة اتصال CarPlay.</string>

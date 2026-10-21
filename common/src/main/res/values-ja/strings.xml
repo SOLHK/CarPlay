@@ -222,7 +222,7 @@
     <string name="hevc_software_decoder">HEVCソフトウェアデコーダー</string>
     <string name="hide_bottom_bar">下部バーを非表示</string>
     <string name="hide_keyboard">キーボードを閉じる</string>
-    <string name="hide_the_car_s_system_bars_while_carplay_is_open">CarPlayとCarPlayで選択したシステムバーを非表示にします。</string>
+    <string name="hide_the_car_s_system_bars_while_carplay_is_open">アプリと投影中のCarPlayで選択したシステムバーを非表示にします。</string>
     <string name="hide_the_navigation_bar">ナビゲーションバーを非表示</string>
     <string name="hide_the_status_bar">ステータスバーを非表示</string>
     <string name="hide_top_bar">上部バーを非表示</string>
@@ -398,7 +398,7 @@
     <string name="settings_wheel_keys">ステアリングスイッチ</string>
     <string name="settings_experimental_display">画面表示（実験的機能）</string>
     <string name="settings_diagnostics_summary">接続の問題を調査するためのローカルレポートを保存</string>
-    <string name="settings_full_screen_description">CarPlayとCarPlayのステータスバーとナビゲーションバーを非表示にします。</string>
+    <string name="settings_full_screen_description">アプリと投影中のCarPlayのステータスバーとナビゲーションバーを非表示にします。</string>
     <string name="settings_vehicle_description">車両やメーターの機能は車種・ファームウェアによって異なります。実験的機能を有効にする前に詳細設定をご確認ください。</string>
     <string name="settings_open_advanced">詳細設定を開く</string>
     <string name="setup_needs_attention">設定を確認してください</string>
@@ -1012,4 +1012,8 @@
 
     <string name="settings_hotspot_interface">ホットスポットのインターフェース（任意）</string>
     <string name="settings_hotspot_interface_description">Android が Wi-Fi ホットスポットとして報告しないネットワークインターフェースでホットスポットを動かすヘッドユニット専用です。一部の Geely、Lynk &amp; Co、その他の Qualcomm ユニットでは eth0.3 です。空欄のままにすると自動で検出します。</string>
+    <string name="music_open">音楽</string>
+    <string name="music_now_playing">再生中</string>
+    <string name="music_no_track">iPhone から曲情報が届いていません</string>
+    <string name="music_controls_unavailable">音楽操作を利用できません</string>
 </resources>

@@ -217,7 +217,7 @@
     <string name="hevc_software_decoder">مفكّك HEVC البرمجي</string>
     <string name="hide_bottom_bar">إخفاء الشريط السفلي</string>
     <string name="hide_keyboard">إخفاء لوحة المفاتيح</string>
-    <string name="hide_the_car_s_system_bars_while_carplay_is_open">إخفاء شريط النظام المحدد في CarPlay وCarPlay.</string>
+    <string name="hide_the_car_s_system_bars_while_carplay_is_open">إخفاء شريط النظام المحدد في التطبيق وعرض CarPlay.</string>
     <string name="hide_the_navigation_bar">إخفاء شريط التنقل</string>
     <string name="hide_the_status_bar">إخفاء شريط الحالة</string>
     <string name="hide_top_bar">إخفاء الشريط العلوي</string>
@@ -959,4 +959,8 @@
 
     <string name="settings_hotspot_interface">واجهة نقطة الاتصال (اختياري)</string>
     <string name="settings_hotspot_interface_description">لوحدات الرأس التي تشغّل نقطة الاتصال على واجهة شبكة لا يبلّغ عنها أندرويد كنقطة اتصال Wi-Fi، مثل eth0.3 في بعض وحدات Geely وLynk &amp; Co وغيرها من وحدات Qualcomm. اتركه فارغاً للعثور عليها تلقائياً.</string>
+    <string name="music_open">الموسيقى</string>
+    <string name="music_now_playing">قيد التشغيل</string>
+    <string name="music_no_track">لم يرسل iPhone معلومات الموسيقى</string>
+    <string name="music_controls_unavailable">عناصر التحكم بالموسيقى غير متاحة</string>
 </resources>

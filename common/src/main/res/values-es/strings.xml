@@ -217,7 +217,7 @@
     <string name="hevc_software_decoder">Decodificador por software HEVC</string>
     <string name="hide_bottom_bar">Ocultar barra inferior</string>
     <string name="hide_keyboard">Ocultar teclado</string>
-    <string name="hide_the_car_s_system_bars_while_carplay_is_open">Oculta la barra del sistema correspondiente en CarPlay y CarPlay.</string>
+    <string name="hide_the_car_s_system_bars_while_carplay_is_open">Oculta la barra del sistema correspondiente en la app y la proyección CarPlay.</string>
     <string name="hide_the_navigation_bar">Ocultar barra de navegación</string>
     <string name="hide_the_status_bar">Ocultar barra de estado</string>
     <string name="hide_top_bar">Ocultar barra superior</string>
@@ -910,4 +910,8 @@
 
     <string name="settings_hotspot_interface">Interfaz del punto de acceso (opcional)</string>
     <string name="settings_hotspot_interface_description">Solo para unidades que ejecutan su punto de acceso en una interfaz de red que Android no informa como punto de acceso Wi-Fi, por ejemplo eth0.3 en algunas unidades Geely, Lynk &amp; Co y otros Qualcomm. Déjalo vacío para encontrarla automáticamente.</string>
+    <string name="music_open">Música</string>
+    <string name="music_now_playing">En reproducción</string>
+    <string name="music_no_track">El iPhone no ha enviado información de música</string>
+    <string name="music_controls_unavailable">Los controles de música no están disponibles</string>
 </resources>

@@ -224,7 +224,7 @@
     <string name="hevc_software_decoder">HEVC software decoder</string>
     <string name="hide_bottom_bar">Hide bottom bar</string>
     <string name="hide_keyboard">Hide keyboard</string>
-    <string name="hide_the_car_s_system_bars_while_carplay_is_open">Hide the selected system bar in CarPlay and CarPlay.</string>
+    <string name="hide_the_car_s_system_bars_while_carplay_is_open">Hide the selected system bar in the receiver and projected CarPlay.</string>
     <string name="hide_the_navigation_bar">Hide the navigation bar</string>
     <string name="hide_the_status_bar">Hide the status bar</string>
     <string name="hide_top_bar">Hide top bar</string>
@@ -400,7 +400,7 @@
     <string name="settings_wheel_keys">Wheel keys</string>
     <string name="settings_experimental_display">Display (experimental)</string>
     <string name="settings_diagnostics_summary">Save a local report when troubleshooting a connection</string>
-    <string name="settings_full_screen_description">Hide the status and navigation bars in CarPlay and CarPlay.</string>
+    <string name="settings_full_screen_description">Hide the status and navigation bars in the receiver and projected CarPlay.</string>
     <string name="settings_vehicle_description">Vehicle and dashboard features vary by model and firmware. Review them in Advanced settings before enabling experimental controls.</string>
     <string name="settings_open_advanced">Open Advanced settings</string>
     <string name="setup_needs_attention">Setup needs attention</string>
@@ -1013,4 +1013,8 @@
 
     <string name="settings_hotspot_interface">Hotspot interface (optional)</string>
     <string name="settings_hotspot_interface_description">Only for head units that run their hotspot on a network interface Android does not report as a Wi-Fi hotspot, for example eth0.3 on some Geely, Lynk &amp; Co and other Qualcomm units. Leave empty to find it automatically.</string>
+    <string name="music_open">Music</string>
+    <string name="music_now_playing">Now Playing</string>
+    <string name="music_no_track">No music information from iPhone</string>
+    <string name="music_controls_unavailable">Music controls are unavailable</string>
 </resources>

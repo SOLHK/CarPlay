@@ -16,6 +16,7 @@ import android.content.pm.PackageManager
 import android.content.res.ColorStateList
 import android.content.res.Configuration
 import android.graphics.BitmapFactory
+import android.graphics.Bitmap
 import android.graphics.Color
 import android.graphics.Typeface
 import android.graphics.drawable.ColorDrawable
@@ -196,6 +197,9 @@ class DiPlayActivity : ComponentActivity(), AppAppearanceOwner {
     private var homeConnectionHint: TextView? = null
     private var connectButton: Button? = null
     private var disconnectButton: Button? = null
+    private var musicShortcut: Button? = null
+    private var musicViews: MusicViews? = null
+    private var musicObserverRemoval: (() -> Unit)? = null
     private var lastRunning: Boolean? = null
     private var pendingWireless = false
     private var bluetoothSettingsVisited = false
@@ -496,6 +500,8 @@ class DiPlayActivity : ComponentActivity(), AppAppearanceOwner {
 
     override fun onStart() {
         super.onStart()
+        musicObserverRemoval?.invoke()
+        musicObserverRemoval = ClusterMusicState.observe { updateMusic(it) }
         // Results from the image picker and crop screens arrive before onResume.
         enforceInterfaceSize()
         CenterMapOverlay.onDiPlayScreenShown()
@@ -504,6 +510,8 @@ class DiPlayActivity : ComponentActivity(), AppAppearanceOwner {
     }
 
     override fun onStop() {
+        musicObserverRemoval?.invoke()
+        musicObserverRemoval = null
         cancelUsbPermissionSetup()
         clusterSafeAreaDialog?.dismiss()
         startupHotspotCancelled = true
@@ -676,7 +684,8 @@ class DiPlayActivity : ComponentActivity(), AppAppearanceOwner {
             (settingsSearchExpanded && settingsSearchBox?.hasFocus() == true)
         settingsSearchBox = null
         if (page != "settings") clearSettingsSearchState()
-        status = null; connectButton = null; disconnectButton = null; lastRunning = null; carButtonCard = null
+        status = null; connectButton = null; disconnectButton = null; musicShortcut = null
+        musicViews = null; lastRunning = null; carButtonCard = null
         reconnectBar = null
         readinessCard = null
         exportButton = null
@@ -713,6 +722,7 @@ class DiPlayActivity : ComponentActivity(), AppAppearanceOwner {
                 "setup" -> setupGuide(content)
                 "settings" -> settingsCategoryContent(content)
                 "backup" -> backup(content)
+                "music" -> music(content)
                 else -> home(content)
             }
             scroll
@@ -985,6 +995,10 @@ class DiPlayActivity : ComponentActivity(), AppAppearanceOwner {
         right.addView(homeButton(getString(R.string.connect_with_usb), false) { connect(false) }, matchButton(height = if (compact) 54 else 68))
         if (!compact) right.addView(label(getString(R.string.plug_your_iphone_into_a_usb_data_port_allow_carplay_when_y), 14, MUTED).apply { gravity = Gravity.CENTER; setPadding(dp(8), dp(10), dp(8), dp(24)) })
         else right.addView(space(16))
+        musicShortcut = homeButton(getString(R.string.music_open), false) { page = "music"; render() }.apply {
+            visibility = View.GONE
+        }
+        right.addView(musicShortcut, matchButton(height = if (compact) 54 else 68))
         right.addView(homeButton(getString(R.string.settings), false) { page = "settings"; render() }, matchButton(height = if (compact) 54 else 68))
         if (!compact) right.addView(label(getString(R.string.make_diplay_feel_right_for_your_car), 14, MUTED).apply { gravity = Gravity.CENTER; setPadding(0, dp(10), 0, dp(24)) })
         else right.addView(space(12))
@@ -1051,6 +1065,112 @@ class DiPlayActivity : ComponentActivity(), AppAppearanceOwner {
         }
         setupError?.let { body.addView(label(it, 16, WARNING).apply { setPadding(0, dp(16), 0, 0) }) }
         content.addView(body)
+    }
+
+    private data class MusicViews(
+        val artwork: ImageView,
+        val title: TextView,
+        val artist: TextView,
+        val album: TextView,
+        val source: TextView,
+        val progress: ProgressBar,
+        val previous: Button,
+        val playPause: Button,
+        val next: Button,
+        var displayedArtwork: Bitmap? = null,
+    )
+
+    /** Receiver-owned controls use only metadata and media commands from the active iPhone session. */
+    private fun music(content: LinearLayout) {
+        val wide = resources.configuration.screenWidthDp >= 760 && resources.configuration.fontScale <= 1.3f
+        content.addView(label(getString(R.string.music_now_playing), if (wide) 34 else 28, TEXT, true))
+        content.addView(space(20))
+        val panel = card().apply {
+            orientation = if (wide) LinearLayout.HORIZONTAL else LinearLayout.VERTICAL
+            gravity = Gravity.CENTER_VERTICAL
+        }
+        val artwork = ImageView(this).apply {
+            scaleType = ImageView.ScaleType.CENTER_CROP
+            background = rounded(BUTTON, BORDER)
+            clipToOutline = true
+            contentDescription = getString(R.string.music_now_playing)
+            setImageResource(R.drawable.ic_carplay_foreground)
+        }
+        panel.addView(artwork, LinearLayout.LayoutParams(dp(if (wide) 240 else 180),
+            dp(if (wide) 240 else 180)).apply {
+            if (wide) marginEnd = dp(28) else { gravity = Gravity.CENTER_HORIZONTAL; bottomMargin = dp(22) }
+        })
+        val details = column()
+        val title = label(getString(R.string.music_no_track), 28, TEXT, true)
+        val artist = label("", 18, MUTED)
+        val album = label("", 15, MUTED)
+        val source = label("", 14, ACCENT)
+        details.addView(title)
+        details.addView(artist, LinearLayout.LayoutParams(-1, -2).apply { topMargin = dp(8) })
+        details.addView(album, LinearLayout.LayoutParams(-1, -2).apply { topMargin = dp(4) })
+        details.addView(source, LinearLayout.LayoutParams(-1, -2).apply { topMargin = dp(8) })
+        val progress = ProgressBar(this, null, android.R.attr.progressBarStyleHorizontal).apply {
+            max = 1000
+            progressTintList = ColorStateList.valueOf(ACCENT)
+            progressBackgroundTintList = ColorStateList.valueOf(BORDER)
+        }
+        details.addView(progress, LinearLayout.LayoutParams(-1, dp(8)).apply { topMargin = dp(26) })
+        val controls = row().apply { gravity = Gravity.CENTER_VERTICAL }
+        val previous = button("‹‹", false) { sendMusicButton(com.shilapi.xcertplay.airplay.CarPlayMediaButton.PREVIOUS) }.apply {
+            contentDescription = getString(R.string.wheel_key_role_previous)
+        }
+        val playPause = button("▶", true) { sendMusicButton(com.shilapi.xcertplay.airplay.CarPlayMediaButton.PLAY_PAUSE) }
+        val next = button("››", false) { sendMusicButton(com.shilapi.xcertplay.airplay.CarPlayMediaButton.NEXT) }.apply {
+            contentDescription = getString(R.string.wheel_key_role_next)
+        }
+        for (control in listOf(previous, playPause, next)) {
+            controls.addView(control, LinearLayout.LayoutParams(0, dp(60), 1f).apply {
+                if (control !== previous) marginStart = dp(12)
+            })
+        }
+        details.addView(controls, LinearLayout.LayoutParams(-1, -2).apply { topMargin = dp(20) })
+        panel.addView(details, LinearLayout.LayoutParams(if (wide) 0 else -1, -2, if (wide) 1f else 0f))
+        content.addView(panel)
+        musicViews = MusicViews(artwork, title, artist, album, source, progress, previous, playPause, next)
+        updateMusic(ClusterMusicState.snapshot())
+    }
+
+    private fun sendMusicButton(index: Int) {
+        val sent = CarPlayBackgroundSession.snapshot()?.controller?.takeIf { CarPlayBackgroundSession.active }
+            ?.sendMediaButton(index) == true
+        if (!sent) toast(getString(R.string.music_controls_unavailable))
+    }
+
+    private fun updateMusic(snapshot: ClusterMusicState.Snapshot) {
+        val views = musicViews ?: return
+        val active = CarPlayBackgroundSession.active
+        val info = snapshot.info
+        val title = info.title?.takeIf { active && it.isNotBlank() } ?: getString(R.string.music_no_track)
+        if (views.title.text.toString() != title) views.title.text = title
+        fun setOptional(view: TextView, value: String?) {
+            val text = value?.takeIf { active && it.isNotBlank() }.orEmpty()
+            if (view.text.toString() != text) view.text = text
+            view.visibility = if (text.isEmpty()) View.GONE else View.VISIBLE
+        }
+        setOptional(views.artist, info.artist)
+        setOptional(views.album, info.album)
+        setOptional(views.source, info.sourceApp)
+        val artwork = snapshot.artwork.takeIf { active }
+        if (views.displayedArtwork !== artwork) {
+            views.displayedArtwork = artwork
+            if (artwork != null) views.artwork.setImageBitmap(artwork)
+            else views.artwork.setImageResource(R.drawable.ic_carplay_foreground)
+        }
+        val duration = info.durationMillis?.takeIf { active && it > 0L }
+        views.progress.visibility = if (duration == null) View.GONE else View.VISIBLE
+        if (duration != null) views.progress.progress = ((info.elapsedMillis ?: 0L) * 1000L / duration)
+            .coerceIn(0L, 1000L).toInt()
+        val playSymbol = if (info.playing && active) "Ⅱ" else "▶"
+        if (views.playPause.text.toString() != playSymbol) views.playPause.text = playSymbol
+        views.playPause.contentDescription = getString(if (info.playing && active) R.string.video_pause else R.string.video_play)
+        views.previous.isEnabled = active
+        views.playPause.isEnabled = active
+        views.next.isEnabled = active
     }
 
     // Only the category scrolls, so the rail keeps showing where the driver is.
@@ -5723,6 +5843,8 @@ class DiPlayActivity : ComponentActivity(), AppAppearanceOwner {
 
     private fun refreshStatus() {
         val running = CarPlayBackgroundSession.hasSession()
+        musicShortcut?.visibility = if (CarPlayBackgroundSession.active) View.VISIBLE else View.GONE
+        musicViews?.let { updateMusic(ClusterMusicState.snapshot()) }
         // A USB session shares this card's status and Disconnect, but not its wireless title or Wi-Fi hint (#742).
         val wired = HomeCardTransport.wired(running, AirPlayPersistence.loadWirelessEnabled(this))
         homeCardTitle?.text = getString(if (wired) R.string.home_usb_carplay else R.string.wireless_carplay)

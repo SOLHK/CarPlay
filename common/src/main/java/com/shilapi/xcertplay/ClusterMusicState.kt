@@ -14,6 +14,11 @@ internal object ClusterMusicState {
     private val listeners = mutableSetOf<(Snapshot) -> Unit>()
     private var state = Snapshot()
 
+    fun snapshot(): Snapshot {
+        check(Looper.myLooper() == Looper.getMainLooper())
+        return state
+    }
+
     fun publish(info: CarPlayNowPlaying, artwork: Bitmap?) {
         main.post {
             val changed = trackChanged(state.info, info)
