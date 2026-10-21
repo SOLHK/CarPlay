@@ -294,8 +294,9 @@ class SettingsBackupServerTest {
         val typed = typedServer().apply { typedPort = wanted }
         try {
             assertEquals(wanted, typed.start()!!.port)
-            Socket("127.0.0.1", wanted).close()
-            typed.stop()
+            // Stop while the peer has connected but has not sent a request. Its worker may
+            // still be starting; the old listener must release the typed address anyway.
+            Socket("127.0.0.1", wanted).use { typed.stop() }
             assertEquals(wanted, typed.start()!!.port)
         } finally {
             typed.stop()
