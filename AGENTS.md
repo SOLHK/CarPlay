@@ -2,6 +2,11 @@
 
 Instructions for coding agents that work on DiPlay.
 
+Before Android, UI, testing, or refactoring work, inspect the installed Codex Skills in the
+current environment and apply any relevant `SKILL.md`. Continue with the checks below when
+no matching skill is installed. Preserve connection identifiers and preference keys while
+changing the receiver's visible CarPlay branding.
+
 ## Checks
 
 Run the CI command from `.github/workflows/android.yml` before you report a change as done:
