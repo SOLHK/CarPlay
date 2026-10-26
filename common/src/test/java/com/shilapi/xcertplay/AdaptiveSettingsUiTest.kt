@@ -48,6 +48,7 @@ import org.robolectric.RobolectricTestRunner
 import org.robolectric.RuntimeEnvironment
 import org.robolectric.Shadows.shadowOf
 import org.robolectric.annotation.Config
+import org.robolectric.annotation.GraphicsMode
 import org.robolectric.annotation.Implementation
 import org.robolectric.annotation.Implements
 import org.robolectric.shadows.ShadowAlertDialog
@@ -821,12 +822,15 @@ class AdaptiveSettingsUiTest {
     }
 
     @Test @Config(sdk = [29], qualifiers = "ja-w320dp-h600dp")
+    @GraphicsMode(GraphicsMode.Mode.NATIVE)
     fun navigationSliderScreenshotCompactJapaneseLargeFont() = captureNavigationSlider("compact-ja", 1.3f)
 
     @Test @Config(sdk = [29], qualifiers = "en-w1000dp-h700dp")
+    @GraphicsMode(GraphicsMode.Mode.NATIVE)
     fun navigationSliderScreenshotExpandedLargeFont() = captureNavigationSlider("expanded-en", 1.3f)
 
     @Test @Config(sdk = [29], qualifiers = "ar-ldrtl-w320dp-h600dp")
+    @GraphicsMode(GraphicsMode.Mode.NATIVE)
     fun navigationSliderScreenshotCompactArabicRtlLargeFont() = captureNavigationSlider("compact-ar-rtl", 1.3f)
 
     private fun captureNavigationSlider(name: String, fontScale: Float) {

@@ -6573,7 +6573,8 @@ class DiPlayActivity : ComponentActivity(), AppAppearanceOwner {
         val presets = if (wireless) buffer.wirelessPresets else buffer.wiredPresets
         val labels = presets.map { millis ->
             when (millis) {
-                buffer.DEFAULT_MILLIS -> getString(R.string.s_300_ms_default)
+                buffer.DEFAULT_MILLIS -> if (wireless) getString(R.string.settings_music_buffer_ms, millis)
+                    else getString(R.string.s_300_ms_default)
                 buffer.MOST_STABLE_MILLIS -> getString(R.string.s_1000_ms_most_stable)
                 else -> getString(R.string.settings_music_buffer_ms, millis)
             }
