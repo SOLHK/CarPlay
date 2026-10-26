@@ -15,6 +15,46 @@ import org.robolectric.annotation.Implements
 @RunWith(RobolectricTestRunner::class)
 @Config(sdk = [25, 28, 33], manifest = Config.NONE, shadows = [AudioRebufferCapacityTest.CapacityTrack::class])
 class AudioRebufferCapacityTest {
+    @Test fun longMusicBufferDoesNotStartAPartialBurstDuringTheReportedRadioGaps() {
+        val track = AudioTrack.Builder().setAudioAttributes(AudioAttributes.Builder().build())
+            .setAudioFormat(android.media.AudioFormat.Builder().setSampleRate(48_000)
+                .setEncoding(android.media.AudioFormat.ENCODING_PCM_16BIT)
+                .setChannelMask(android.media.AudioFormat.CHANNEL_OUT_STEREO).build())
+            .setBufferSizeInBytes(230_400).build()
+        val type = Class.forName("com.shilapi.xcertplay.media.AudioRenderer")
+        val renderer = type.declaredConstructors.single { it.parameterCount == 13 }
+            .apply { isAccessible = true }.newInstance(
+                AudioFormat(AudioCodecKind.LPCM, 48_000, 2, 96, "media"), false, false, 0, 0,
+                AudioFocusCoordinator(null, false, false), 0, 1000, { _: String -> }, 0L, false, null, false)
+        fun set(name: String, value: Any) = type.getDeclaredField(name).apply { isAccessible = true }.set(renderer, value)
+        val maintain = type.getDeclaredMethod("maintainPlaybackBuffer").apply { isAccessible = true }
+        try {
+            set("track", track)
+            set("mappedChannel", AudioChannel.MEDIA)
+            set("startThresholdBytes", 192_000)
+            set("bytesPerSecond", 192_000)
+            set("prebufferBytes", 76_800) // One 400 ms burst, less than the selected 1 s buffer.
+            CapacityTrack.playing = false
+            for (gapMillis in listOf(600L, 760L)) {
+                set("lastPcmWriteNs", System.nanoTime() - gapMillis * 1_000_000L)
+                maintain.invoke(renderer)
+                assertFalse("Started an underfilled music buffer during a ${gapMillis}ms radio gap", CapacityTrack.playing)
+            }
+            // A real final burst still drains, rather than remaining paused forever.
+            set("lastPcmWriteNs", System.nanoTime() - 1_100_000_000L)
+            maintain.invoke(renderer)
+            assertTrue(CapacityTrack.playing)
+
+            // Navigation retains the existing bounded tail delay.
+            CapacityTrack.playing = false
+            set("playbackStarted", false)
+            set("mappedChannel", AudioChannel.NAVIGATION)
+            set("lastPcmWriteNs", System.nanoTime() - 600_000_000L)
+            maintain.invoke(renderer)
+            assertTrue("Navigation inherited the music delay", CapacityTrack.playing)
+        } finally { track.release() }
+    }
+
     @Test fun residualAudioCountsTowardRestartBeforeAPausedTrackFills() {
         for (millis in MediaAudioBuffer.presets) {
             val plan = MediaAudioBuffer.plan(true, 48_000, 2, 4096, millis)

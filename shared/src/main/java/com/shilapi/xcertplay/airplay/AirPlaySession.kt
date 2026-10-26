@@ -59,6 +59,8 @@ interface AirPlayMediaHandler {
     fun onSessionClosed(session: AirPlaySession) {}
     fun setIapTunnelHandler(handler: ((BlockingDuplexByteStream) -> Boolean)?) {}
     fun onSetupResponseSent(session: AirPlaySession) {}
+    /** duckAudio (true) and unduckAudio (false): the iPhone marks the start and end of a navigation prompt. */
+    fun onAudioDuck(session: AirPlaySession, ducked: Boolean) {}
 }
 
 /**
@@ -88,6 +90,9 @@ class AirPlaySession(
         private set
     private var clusterStreamSetups = 0
     @Volatile private var mainScreenToken: Any? = null
+    @Volatile private var mainFrameRendered = false
+    // Activity 重建后仍可判断当前会话的中控主视频是否已经出帧。
+    val hasRenderedMainFrame: Boolean get() = mainFrameRendered && !closed.get()
 
     private val closed = AtomicBoolean(false)
     internal val isClosed: Boolean get() = closed.get()
@@ -99,6 +104,8 @@ class AirPlaySession(
     private var pendingNightMode: Boolean? = null
     private val firstTouchSendLogged = AtomicBoolean(false)
     private val touchSendFailureLogged = AtomicBoolean(false)
+    // Only the controller's single touch thread calls sendTouch.
+    private val touchSlots = AirPlayTouchSlots(AirPlayHid.TOUCH_CONTACTS)
     private val ntp = NtpClock()
     private var keepAliveSocket: DatagramSocket? = null
     private var keepAliveThread: Thread? = null
@@ -127,7 +134,9 @@ class AirPlaySession(
     internal fun logDebug(message: String) = debugLog(message)
 
     internal fun videoFrameRendered() {
-        if (!closed.get()) listener.onVideoFrameRendered(this)
+        if (closed.get()) return
+        mainFrameRendered = true
+        listener.onVideoFrameRendered(this)
     }
 
     internal fun logTrace(message: String) = trace(message)
@@ -332,8 +341,9 @@ class AirPlaySession(
         }
     }
 
+    /** [contacts] carry Android pointer ids; an empty list releases every finger. */
     fun sendTouch(contacts: List<AirPlayContact>): Boolean {
-        val scaled = contacts.map {
+        val scaled = touchSlots.assign(contacts).map {
             it.copy(x = it.x * config.main.widthPixels, y = it.y * config.main.heightPixels)
         }
         val report = AirPlayHid.touchReport(scaled)
@@ -757,6 +767,10 @@ class AirPlaySession(
             runCatching { asMap(BplistCodec.decode(data)) }.getOrNull()
                 ?.let { listener.onRemoteControlMessage(this, streamId, it) }
             return RtspMessage.Response(status = 200)
+        }
+        when (type) {
+            "duckAudio" -> media.onAudioDuck(this, true)
+            "unduckAudio" -> media.onAudioDuck(this, false)
         }
         if (type == "requestUI" && string(params["url"]) == VideoInCar.UI_URL) {
             listener.onVideoPlaybackUiRequested(this)

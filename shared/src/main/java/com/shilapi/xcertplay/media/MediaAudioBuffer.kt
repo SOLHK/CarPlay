@@ -11,6 +11,9 @@ package com.shilapi.xcertplay.media
 object MediaAudioBuffer {
     const val DEFAULT_MILLIS = 300
     const val MOST_STABLE_MILLIS = 1000
+    // The supplied DiLink 5.0 report has 0.5–0.76 s receive gaps. Keep USB's short
+    // default, but give a new wireless setup enough music to ride through those gaps.
+    const val WIRELESS_DEFAULT_MILLIS = MOST_STABLE_MILLIS
     val wirelessPresets = listOf(DEFAULT_MILLIS, 500, MOST_STABLE_MILLIS)
     val wiredPresets = listOf(50, 100, 150, 200) + (DEFAULT_MILLIS..MOST_STABLE_MILLIS step 100)
     /** Every delay a session can use; [plan] accepts any of them. */
@@ -21,7 +24,7 @@ object MediaAudioBuffer {
     private const val MIN_START_BUFFER_BYTES = 4 * 1024
 
     fun sanitize(millis: Int): Int = millis.takeIf { it in presets } ?: DEFAULT_MILLIS
-    fun sanitizeWireless(millis: Int): Int = millis.takeIf { it in wirelessPresets } ?: DEFAULT_MILLIS
+    fun sanitizeWireless(millis: Int): Int = millis.takeIf { it in wirelessPresets } ?: WIRELESS_DEFAULT_MILLIS
     fun sanitizeWired(millis: Int): Int = millis.takeIf { it in wiredPresets } ?: DEFAULT_MILLIS
 
     data class Plan(val trackBufferBytes: Int, val startBytes: Int)
@@ -49,5 +52,13 @@ object MediaAudioBuffer {
     fun startBytesFor(plannedStartBytes: Int, actualCapacityBytes: Int, writeChunkBytes: Int): Int {
         if (actualCapacityBytes <= 0) return plannedStartBytes
         return minOf(plannedStartBytes, actualCapacityBytes - writeChunkBytes).coerceAtLeast(writeChunkBytes)
+    }
+
+    /** A partial music burst must not bypass a long start buffer during a radio stall. */
+    fun tailWaitNanos(isMedia: Boolean, startBytes: Int, bytesPerSecond: Int): Long {
+        val startNanos = if (isMedia && bytesPerSecond > 0) {
+            startBytes.toLong() * 1_000_000_000L / bytesPerSecond
+        } else 0L
+        return maxOf(500_000_000L, startNanos)
     }
 }
