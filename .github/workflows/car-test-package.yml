@@ -1,0 +1,116 @@
+name: Standalone CarPlay audio test package
+
+on:
+  workflow_dispatch:
+  push:
+    branches: ['work/carplay-audio-test-package-*']
+
+permissions:
+  contents: read
+
+jobs:
+  package:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - name: Reject credential files in public source
+        run: python3 scripts/check_public_tree.py
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '25'
+      - uses: android-actions/setup-android@9fc6c4e9069bf8d3d10b2204b1fb8f6ef7065407
+        with:
+          packages: platform-tools platforms;android-37.0 build-tools;36.0.0 ndk;28.2.13676358
+      - uses: gradle/actions/setup-gradle@ed408507eac070d1f99cc633dbcf757c94c7933a
+      - name: Unit tests, lint and source-only debug builds
+        run: ./gradlew :shared:testDebugUnitTest :common:testDebugUnitTest :home:testDebugUnitTest :mobile:lintDebug :home:lintDebug :maphost:lintDebug :mobile:assembleDebug :home:assembleDebug :maphost:assembleDebug --stacktrace
+      - name: Prepare pinned public preview runtime input outside source
+        shell: bash
+        run: |
+          set -euo pipefail
+          preview="$RUNNER_TEMP/CarPlay-0.2.33.apk"
+          curl --fail --location --retry 3 --output "$preview" 'https://github.com/SOLHK/CarPlay/releases/download/v0.2.33/CarPlay-0.2.33.apk'
+          printf '%s  %s\n' '3c00239ac93c5884fd6dcd70cb7e421662c71463360dbf491f5500fab3a5cb5b' "$preview" | sha256sum --check
+          export CARPLAY_PREVIEW_APK="$preview"
+          export DIPLAY_AUTH_ASSETS_DIR="$RUNNER_TEMP/carplay-runtime-assets"
+          python3 - <<'PY'
+          import os
+          from pathlib import Path
+          from zipfile import ZipFile
+          destination = Path(os.environ['DIPLAY_AUTH_ASSETS_DIR']) / 'offline-mfi'
+          destination.mkdir(parents=True, exist_ok=True, mode=0o700)
+          with ZipFile(os.environ['CARPLAY_PREVIEW_APK']) as apk:
+              for name in ('identity.pk8', 'certificate.p7b'):
+                  data = apk.read('assets/offline-mfi/' + name)
+                  assert data, 'Empty runtime input'
+                  target = destination / name
+                  target.write_bytes(data)
+                  target.chmod(0o600)
+          PY
+          echo "DIPLAY_AUTH_ASSETS_DIR=$DIPLAY_AUTH_ASSETS_DIR" >> "$GITHUB_ENV"
+      - name: Build standalone connection package
+        run: ./gradlew :mobile:assembleStandaloneDebug --stacktrace
+      - name: Verify APK and collect delivery evidence
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p delivery
+          cp mobile/build/outputs/apk/debug/mobile-debug.apk delivery/CarPlay-0.2.34-audio-test.apk
+          "$ANDROID_HOME/build-tools/36.0.0/apksigner" verify --verbose --print-certs delivery/CarPlay-0.2.34-audio-test.apk > delivery/APK-SIGNATURE.txt
+          "$ANDROID_HOME/build-tools/36.0.0/aapt" dump badging delivery/CarPlay-0.2.34-audio-test.apk > delivery/APK-METADATA.txt
+          git archive --format=zip --output=delivery/CarPlay-0.2.34-source.zip HEAD
+          python3 - <<'PY'
+          import hashlib, os
+          from pathlib import Path
+          from zipfile import ZipFile
+          from xml.etree import ElementTree as ET
+          apk_path = Path('delivery/CarPlay-0.2.34-audio-test.apk')
+          with ZipFile(apk_path) as apk:
+              assert apk.testzip() is None
+              for name in ('identity.pk8', 'certificate.p7b'):
+                  assert apk.read('assets/offline-mfi/' + name) == (Path(os.environ['DIPLAY_AUTH_ASSETS_DIR']) / 'offline-mfi' / name).read_bytes()
+              assert any(name.startswith('lib/arm64-v8a/') for name in apk.namelist())
+          totals = {key: 0 for key in ('tests', 'failures', 'errors', 'skipped')}
+          reports = []
+          for module in ('shared', 'common', 'samples/home'):
+              files = list(Path(module, 'build/test-results/testDebugUnitTest').glob('TEST-*.xml'))
+              assert files, 'Missing test results: ' + module
+              for file in files:
+                  suite = ET.parse(file).getroot()
+                  for key in totals:
+                      totals[key] += int(suite.get(key, 0))
+                  reports.append(file)
+          assert totals['failures'] == totals['errors'] == 0, totals
+          with ZipFile('delivery/CarPlay-0.2.34-test-reports.zip', 'w') as output:
+              for module in ('shared', 'common', 'mobile', 'samples/home', 'samples/maphost'):
+                  for directory in ('build/reports', 'build/test-results'):
+                      base = Path(module, directory)
+                      for file in base.rglob('*'):
+                          if file.is_file():
+                              output.write(file, str(file))
+          Path('delivery/BUILD-REPORT.txt').write_text(
+              'Source commit: ' + os.environ['GITHUB_SHA'] + '\n'
+              'Upstream receiver: 9d89633035d1add5b044ba3de5e57dd078bf2511\n'
+              'Unit test totals: ' + str(totals) + '\n'
+              'Required unit tests, three lint checks and three debug builds passed.\n'
+              'assembleStandaloneDebug passed; runtime input byte comparison passed.\n'
+              'Package: com.solhk.carplay.hudtest; version: 0.2.34-hud-test; versionCode: 41.\n'
+              'Head-unit/iPhone/road playback validation is pending.\n')
+          with Path('delivery/SHA256SUMS.txt').open('w') as output:
+              for file in sorted(Path('delivery').iterdir()):
+                  if file.name != 'SHA256SUMS.txt':
+                      output.write(hashlib.sha256(file.read_bytes()).hexdigest() + '  ' + file.name + '\n')
+          PY
+      - uses: actions/upload-artifact@v4
+        with:
+          name: CarPlay-0.2.34-standalone-audio-test
+          path: delivery/
+          if-no-files-found: error
+          retention-days: 30
+      - name: Clean runtime input
+        if: always()
+        run: rm -rf "$RUNNER_TEMP/carplay-runtime-assets" "$RUNNER_TEMP/CarPlay-0.2.33.apk"
