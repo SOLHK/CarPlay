@@ -19,8 +19,8 @@ class MediaBufferPersistenceTest {
         prefs.edit().clear().apply()
     }
 
-    @Test fun freshInstallUsesTheDefaultForBothTransports() {
-        assertEquals(300, AirPlayPersistence.loadMediaBufferMillis(context, wireless = true))
+    @Test fun freshWirelessInstallCoversRadioGapsWhileUsbKeepsItsShortDefault() {
+        assertEquals(1000, AirPlayPersistence.loadMediaBufferMillis(context, wireless = true))
         assertEquals(300, AirPlayPersistence.loadMediaBufferMillis(context, wireless = false))
     }
 
@@ -35,7 +35,7 @@ class MediaBufferPersistenceTest {
         prefs.edit().putInt("media_buffer_ms", 50).apply()
         assertEquals(50, AirPlayPersistence.loadMediaBufferMillis(context, wireless = false))
         // 50 ms is not a wireless preset, so wireless falls back to the default.
-        assertEquals(300, AirPlayPersistence.loadMediaBufferMillis(context, wireless = true))
+        assertEquals(1000, AirPlayPersistence.loadMediaBufferMillis(context, wireless = true))
     }
 
     @Test fun changingWirelessDoesNotMoveAnInheritedWiredDelay() {
@@ -47,6 +47,14 @@ class MediaBufferPersistenceTest {
 
     @Test fun wirelessRejectsWiredOnlyPresets() {
         AirPlayPersistence.saveMediaBufferMillis(context, wireless = true, millis = 100)
-        assertEquals(300, AirPlayPersistence.loadMediaBufferMillis(context, wireless = true))
+        assertEquals(1000, AirPlayPersistence.loadMediaBufferMillis(context, wireless = true))
+    }
+
+    @Test fun savedWirelessChoicesSurviveTheNewInstallDefault() {
+        for (millis in listOf(300, 500, 1000)) {
+            prefs.edit().putInt("media_buffer_ms", millis).apply()
+            assertEquals(millis, AirPlayPersistence.loadMediaBufferMillis(context, wireless = true))
+            assertEquals(millis, AirPlayPersistence.loadMediaBufferMillis(context, wireless = false))
+        }
     }
 }

@@ -1,3 +1,11 @@
+# CarPlay 0.2.34 — 2026-10-26
+
+- Sync the receiver modules and associated tests/docs from DiPlay `6d3b8a8c` through `9d896330` (2026-10-24), preserving the CarPlay application IDs, interface, connection identifiers and preferences. The upstream website and publishing workflows remain separate.
+- Include upstream music clock fixes #993, #1070 and #1080: average the buffer over time, learn its actual operating level after each start, and count packets arriving during blocked writes. This avoids incorrectly speeding up burst-delivered music until it underruns.
+- New wireless installations use a 1000 ms music buffer to cover the 500–760 ms receive gaps in the supplied DiLink 5.0 report. USB keeps its 300 ms default; saved choices remain selected.
+- A partially filled 1000 ms music buffer waits for its full refill interval before the final-burst fallback, instead of prematurely starting after 500 ms. Calls and navigation keep their existing low-latency behavior.
+- The standalone test APK uses `com.solhk.carplay.hudtest`, a new test signing key and the runtime identity from this project's prior public preview. It installs separately from the reported `com.solhk.carplay` app. Vehicle acceptance is pending; receive gaps containing lost UDP packets may still be audible.
+
 # DiPlay 0.2.21 — 2026-10-17
 
 - Fix the 0.2.20 music lag by counting the music still waiting to be decoded in the clock adjustment, and bring music back after an interruption when the iPhone plays again (#814, #804).
