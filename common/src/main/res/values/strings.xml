@@ -344,6 +344,8 @@
     <string name="s_3_connect">3 · Connect</string>
     <string name="s_3_tap_check_and_enable_below_this_enables_the_cluster_ma">3. Tap Check and enable below. This enables the cluster map and automatic theme following. An active CarPlay session reconnects once. You can then disconnect the computer.</string>
     <string name="settings_music_buffer_ms">%1$d ms</string>
+    <string name="settings_music_buffer_default_ms">%1$d ms · default</string>
+    <string name="settings_music_buffer_description">A smaller music buffer responds faster. Increase it if audio cuts out. This is a buffer target, not a measured total delay. Applies at the next connection.</string>
     <string name="settings_music_buffer_wireless">Music buffer (wireless CarPlay)</string>
     <string name="settings_music_buffer_wired">Music buffer (USB cable)</string>
     <string name="s_5_ghz">5 GHz</string>

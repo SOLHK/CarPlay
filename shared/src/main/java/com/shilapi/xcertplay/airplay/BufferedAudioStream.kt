@@ -18,7 +18,7 @@ import java.util.concurrent.atomic.AtomicBoolean
  * SETRATEANCHORTIME with rate 0 pauses; FLUSHBUFFERED drops what was sent before a track change.
  *
  * Frames are length-prefixed RTP packets sealed with the stream's key (shk) like the other audio
- * streams. They are kept here and handed to the [MediaSink] about [LEAD_MILLIS] ahead of playback, so
+ * streams. They are kept here and handed to the [MediaSink] only a short renderer preload ahead, so
  * the media renderer (focus, ducking, channel settings) treats them like any music stream.
  */
 internal class BufferedAudioStream(
@@ -29,6 +29,7 @@ internal class BufferedAudioStream(
     private val nanoTime: () -> Long = System::nanoTime,
     private val pause: (Long) -> Unit = { Thread.sleep(it) },
     private val expectedPeer: InetAddress = InetAddress.getLoopbackAddress(),
+    private val startLatencyMillis: Long = sink.audioStartLatencyMillis(format).coerceAtLeast(1).toLong(),
 ) : Closeable {
     internal class Frame(val sequence: Int, val timestamp: Long, val rtp: ByteArray)
 
@@ -126,7 +127,7 @@ internal class BufferedAudioStream(
                     // Past the floor, hold the intake near FILL_RATE_MULTIPLE times real time.
                     // Reading the remaining two minutes as fast as TCP allows is a multi-megabit
                     // burst that starves the realtime audio and the video sharing the link.
-                    // Playback is anchored START_LATENCY_MILLIS after the first frame either way,
+                    // Playback uses the renderer's startup budget regardless of this intake pacing,
                     // so pacing the fill never delays the music, and a queue drained by playback
                     // or by a flush falls back below the floor and refills at full speed.
                     pacing = queue.size + fed.size >= pacedFillFloorFrames
@@ -163,18 +164,17 @@ internal class BufferedAudioStream(
         return null
     }
 
-    /** Hands frames to the sink while playing, keeping about [LEAD_MILLIS] of audio ahead of real time. */
+    /** The large network reserve stays here; only the renderer's start level plus one poll/frame is fed. */
     private fun feed() {
         try {
             while (!closed.get()) {
                 synchronized(lock) {
                     if (closed.get()) return
                     retireFedLocked()
-                    if (rate == 0 || queue.isEmpty() || leadMillisLocked() >= LEAD_MILLIS) {
+                    if (rate == 0 || queue.isEmpty() || leadMillisLocked() >= rendererLeadMillis() || rendererIsStalledLocked()) {
                         lock.wait(FEED_POLL_MILLIS)
                     } else {
-                        queue.pollFirst()?.also { frame ->
-                            fed.addLast(frame)
+                        queue.peekFirst()?.also { frame ->
                             val generation = outputGeneration
                             if (feedStartTimestamp == null) {
                                 feedStartTimestamp = frame.timestamp
@@ -185,10 +185,18 @@ internal class BufferedAudioStream(
                             // A sink may synchronously report state back to its owner. Respect a
                             // reentrant pause/flush/close just as a control call on another thread.
                             if (closed.get() || rate == 0 || generation != outputGeneration) return@synchronized
-                            fedSamples += SAMPLES_PER_FRAME
                             // The same lock orders every sink callback against pause/flush/close.
                             // Otherwise a stale RTP callback can recreate a renderer after stop.
-                            sink.onAudioRtp(id, format, frame.rtp, frame.timestamp.toInt())
+                            val accepted = sink.onBufferedAudioRtp(id, format, frame.rtp, frame.timestamp.toInt())
+                            if (closed.get() || rate == 0 || generation != outputGeneration) return@synchronized
+                            if (accepted) {
+                                queue.removeFirst()
+                                fed.addLast(frame)
+                                fedSamples += SAMPLES_PER_FRAME
+                            } else {
+                                // A full decoder queue is not a reason to drop prefetched music.
+                                lock.wait(FEED_POLL_MILLIS)
+                            }
                         }
                     }
                 }
@@ -206,9 +214,30 @@ internal class BufferedAudioStream(
         return fedSamples * 1000L / format.sampleRate - playedMillis
     }
 
+    private fun rendererLeadMillis(): Long {
+        // AudioTrack may require more than the requested 100/150 ms. Feed enough to cross its
+        // actual start threshold; otherwise a low-latency setting could leave it paused forever.
+        val actualStart = sink.audioStartLatencyMillis(format).coerceAtLeast(1).toLong()
+        val frameMillis = (SAMPLES_PER_FRAME * 1000L + format.sampleRate - 1L) / format.sampleRate
+        return maxOf(startLatencyMillis, actualStart) + FEED_POLL_MILLIS + frameMillis
+    }
+
+    private fun rendererIsStalledLocked(): Boolean {
+        val start = feedStartTimestamp ?: return false
+        val played = sink.audioPlaybackPosition(id) ?: return false
+        val playedSamples = (played - start) and U32
+        // Both sides must use the same unsigned domain after the playback head wraps (~25 h).
+        val delta = ((fedSamples and U32) - playedSamples) and U32
+        val pendingSamples = if (delta < 0x8000_0000L) delta else 0L
+        // Keep normal delivery paced to the source clock (needed for clock-drift measurement),
+        // but stop feeding a stuck device before its compressed queue fills and drops music.
+        val stallBudgetMillis = maxOf(1_000L, rendererLeadMillis() * 2L)
+        return pendingSamples * 1000L / format.sampleRate >= stallBudgetMillis
+    }
+
     /**
      * SETRATE / SETRATEANCHORTIME. Rate 1 starts at [rtpTime] (frames before it are dropped) about
-     * [START_LATENCY_MILLIS] from [nowNtp]; rate 0 pauses where playback is. Returns the new anchor.
+     * [startLatencyMillis] from [nowNtp]; rate 0 pauses where playback is. Returns the new anchor.
      */
     fun setRate(rtpTime: Long?, newRate: Int, nowNtp: BigInteger): Map<String, Any?>? = synchronized(lock) {
         if (closed.get()) return@synchronized null
@@ -218,7 +247,7 @@ internal class BufferedAudioStream(
             if (start != null) dropBeforeLocked(start)
             restartOutputLocked()
             anchorRtp = start
-            anchorNtp = nowNtp.add(millisToNtp(START_LATENCY_MILLIS))
+            anchorNtp = nowNtp.add(millisToNtp(startLatencyMillis))
         } else {
             val position = positionLocked()
             restoreFedLocked()
@@ -260,8 +289,12 @@ internal class BufferedAudioStream(
     private fun positionLocked(): Long? {
         val start = feedStartTimestamp
         if (start != null && rate > 0) {
-            val playedMillis = maxOf(0L, (nanoTime() - feedStartNs) / 1_000_000L - START_LATENCY_MILLIS)
-            return (start + playedMillis * format.sampleRate / 1000L) and U32
+            // Wall time alone runs ahead during slow device startup or an underrun. Deleting fed
+            // frames using that estimate loses unheard music on pause/resume. Prefer the hardware
+            // playback head and retain all frames until it actually moves.
+            sink.audioPlaybackPosition(id)?.let { return it and U32 }
+            val playedMillis = maxOf(0L, (nanoTime() - feedStartNs) / 1_000_000L - startLatencyMillis)
+            return (start + minOf(fedSamples, playedMillis * format.sampleRate / 1000L)) and U32
         }
         return anchorRtp
     }
@@ -337,9 +370,6 @@ internal class BufferedAudioStream(
         private const val PACED_FILL_FLOOR_MILLIS = 15_000L
         /** Ceiling on the intake past that floor, as a multiple of real time. */
         private const val FILL_RATE_MULTIPLE = 4L
-        internal const val LEAD_MILLIS = 1_000L
-        /** About when the first fed sample is heard: the media renderer's start level and the decoder. */
-        internal const val START_LATENCY_MILLIS = 400L
         private const val FEED_POLL_MILLIS = 20L
         private const val STATS_WINDOW_NS = 10_000_000_000L
         private const val SAMPLES_PER_FRAME = 1024L

@@ -9,7 +9,7 @@
         android:icon="@drawable/ic_carplay"
         android:label="@string/app_name"
         android:localeConfig="@xml/locales_config"
-        android:roundIcon="@drawable/ic_carplay"
+        android:roundIcon="@drawable/ic_carplay_round"
         android:supportsRtl="true"
         android:resizeableActivity="true"
         android:theme="@style/Theme.Xcertplay">

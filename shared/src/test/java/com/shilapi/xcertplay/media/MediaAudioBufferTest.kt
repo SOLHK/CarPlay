@@ -40,11 +40,12 @@ class MediaAudioBufferTest {
     }
 
     @Test
-    fun `wireless keeps the classic presets`() {
-        assertEquals(listOf(300, 500, 1000), MediaAudioBuffer.wirelessPresets)
+    fun `wireless adds 150 ms without removing stability presets`() {
+        assertEquals(listOf(150, 300, 500, 1000), MediaAudioBuffer.wirelessPresets)
         assertEquals(MediaAudioBuffer.WIRELESS_DEFAULT_MILLIS, MediaAudioBuffer.sanitizeWireless(50))
         assertEquals(MediaAudioBuffer.WIRELESS_DEFAULT_MILLIS, MediaAudioBuffer.sanitizeWireless(400))
         assertEquals(50, MediaAudioBuffer.sanitizeWired(50))
+        assertEquals(100, MediaAudioBuffer.sanitizeWired(250))
     }
 
     @Test
@@ -60,7 +61,7 @@ class MediaAudioBufferTest {
     fun `shortest music buffer still keeps the low-latency floor and headroom`() {
         val plan = MediaAudioBuffer.plan(true, 48_000, 2, minBufferBytes = 7_680, mediaMillis = 50)
         assertEquals(9_600, plan.startBytes)
-        assertEquals(48_000, plan.trackBufferBytes)
+        assertEquals(13_440, plan.trackBufferBytes)
         // A device minimum above the preset wins over it.
         assertEquals(15_360, MediaAudioBuffer.plan(true, 48_000, 2, minBufferBytes = 15_360, mediaMillis = 50).startBytes)
     }
@@ -76,5 +77,46 @@ class MediaAudioBufferTest {
         assertEquals(98_000, MediaAudioBuffer.startBytesFor(192_000, 100_000, 2_048 - 48))
         assertEquals(57_600, MediaAudioBuffer.startBytesFor(57_600, 134_400, 2_048))
         assertEquals(57_600, MediaAudioBuffer.startBytesFor(57_600, 0, 2_048))
+    }
+
+    @Test
+    fun `short media buffers do not add 200 ms of queued PCM`() {
+        for (millis in listOf(100, 150)) {
+            val plan = MediaAudioBuffer.plan(true, 48_000, 2, 7_680, millis)
+            assertEquals(millis * 192, plan.startBytes)
+            assertEquals((millis + 20) * 192, plan.trackBufferBytes)
+        }
+    }
+
+    @Test
+    fun `wired speech at every negotiated rate fits a 100 ms software capacity`() {
+        for (rate in listOf(8_000, 16_000, 24_000, 32_000, 44_100, 48_000)) {
+            for (channels in 1..2) {
+                val bytesPerSecond = rate * channels * 2
+                val plan = MediaAudioBuffer.plan(false, rate, channels,
+                    minBufferBytes = bytesPerSecond / 50, mediaMillis = 100, wired = true)
+                assertEquals(bytesPerSecond / 10, plan.trackBufferBytes)
+                assertEquals(bytesPerSecond / 50, plan.startBytes)
+            }
+        }
+    }
+
+    @Test
+    fun `platform minimum is retained even when it exceeds the requested budget`() {
+        val media = MediaAudioBuffer.plan(true, 48_000, 2, 96_000, 100, wired = true)
+        assertEquals(96_000, media.startBytes)
+        assertEquals(96_000, media.trackBufferBytes)
+        val voice = MediaAudioBuffer.plan(false, 16_000, 1, 6_400, 100, wired = true)
+        assertEquals(6_400, voice.startBytes)
+        assertEquals(6_400, voice.trackBufferBytes)
+    }
+
+    @Test
+    fun `short burst tail follows latency budget and long buffers still protect radio gaps`() {
+        assertEquals(100_000_000L, MediaAudioBuffer.tailWaitNanos(false, 4096, 32_000))
+        assertEquals(100_000_000L, MediaAudioBuffer.tailWaitNanos(true, 19_200, 192_000))
+        assertEquals(150_000_000L, MediaAudioBuffer.tailWaitNanos(true, 28_800, 192_000))
+        assertEquals(500_000_000L, MediaAudioBuffer.tailWaitNanos(true, 57_600, 192_000))
+        assertEquals(1_000_000_000L, MediaAudioBuffer.tailWaitNanos(true, 192_000, 192_000))
     }
 }

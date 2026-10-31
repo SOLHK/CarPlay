@@ -21,6 +21,22 @@ Select `mobile` to build the main CarPlay app.
 The `:common` and `:shared` modules are libraries.
 The applications use these libraries.
 
+### Version every app update
+
+Before delivering an update, increment both the visible patch version and Android's
+`versionCode`:
+
+```sh
+python3 scripts/version.py bump
+python3 scripts/version.py check --base origin/main
+```
+
+The helper increments `mobile` and the separate `automotive` app in their existing version
+series. Use `bump --module mobile` for a change confined to the main app. Shared receiver,
+UI, resource or build changes require both apps to increase. Pull-request and main-push
+CI reject changed apps whose `versionName` or `versionCode` did not increase over the
+base commit. Changes confined to tests or documentation do not require an app version.
+
 If the installed app is **DiPlay map host**, you selected `:maphost` or its APK.
 Build `:mobile` and select `mobile-debug.apk` to install the main app.
 A command such as `./gradlew assembleDebug` can build more than one application.

@@ -31,7 +31,16 @@ interface MediaSink {
     fun onScreenStreamActive(type: Int, active: Boolean) {}
     fun onAudioStarted(id: AudioStreamId, format: AudioFormat, firstSample: Int) {}
     fun onAudioRtp(id: AudioStreamId, format: AudioFormat, rtp: ByteArray, sample: Int) {}
+    /** False keeps an enhanced-buffering frame in the TCP reserve until renderer space is available. */
+    fun onBufferedAudioRtp(id: AudioStreamId, format: AudioFormat, rtp: ByteArray, sample: Int): Boolean {
+        onAudioRtp(id, format, rtp, sample)
+        return true
+    }
     fun onAudioStopped(id: AudioStreamId) {}
+    /** Receiver prebuffer, including a larger device minimum once the renderer knows it. */
+    fun audioStartLatencyMillis(format: AudioFormat): Int = 150
+    /** Current RTP sample at the output playback head; null when this sink cannot observe it. */
+    fun audioPlaybackPosition(id: AudioStreamId): Long? = null
     fun onMicrophoneStarted(id: AudioStreamId, config: MicrophoneConfig) {}
     fun onMicrophoneStopped(id: AudioStreamId) {}
     fun onIapMessage(bytes: ByteArray) {}
@@ -224,7 +233,11 @@ class CarPlayMediaEngine(
                     meta.firstSample = firstSample
                     meta.originNs = System.nanoTime()
                     sink.onAudioStarted(streamId, format, firstSample)
-                    microphoneStart?.onDownlink()
+                    // The sink may synchronously tear down/replace this stream from its start
+                    // callback. Do not resurrect the microphone after that reentrant stop.
+                    if (microphone != null && pendingMicrophone[streamKey] === microphone) {
+                        microphoneStart?.onDownlink()
+                    }
                 }
 
                 override fun onRtp(rtp: ByteArray, sample: Int) {
@@ -528,13 +541,15 @@ class CarPlayMediaEngine(
         val tornDown = streams.keys.filter { it.session === session && it.type == type }
         tornDown.forEach { key ->
             val streamId = AudioStreamId(key.type, key.audioType)
+            // Retire and quiesce the receive callbacks before removing their renderer.
+            // Otherwise an in-flight RTP packet can recreate the old song after stop.
+            streams.remove(key)?.close()
             if (pendingMicrophone.remove(key) != null) sink.onMicrophoneStopped(streamId)
             audioMeta.remove(key)
             audioCaptures.remove(key)?.close()
             // BufferedAudioStream owns serialized sink cleanup; stopping it first from here
             // could interleave with its in-flight delivery and recreate a stale renderer.
             if (key.type != BufferedAudioStream.STREAM_TYPE) sink.onAudioStopped(streamId)
-            streams.remove(key)?.close()
         }
         if (isScreenStreamType(type)) sink.onScreenStreamActive(type, false)
     }

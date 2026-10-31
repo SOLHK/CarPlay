@@ -2,9 +2,9 @@
 
 An independent Android head-unit CarPlay receiver under development by SOLHK. CarPlay 0.2.34 syncs the receiver and tests through [DiPlay main on 2026-10-24](https://github.com/shihabal3amri/DiPlay/tree/9d89633035d1add5b044ba3de5e57dd078bf2511), starting from [DiPlay 0.2.21](https://github.com/shihabal3amri/DiPlay/tree/6d3b8a8ce927cb4b115b8c3881f17619433e93b1); the previous SOLHK/CarPlay 0.2.33 source tree is not part of the current files. The receiver keeps DiPlay's connection core and settings persistence while its own interface is being rebuilt.
 
-The app is **not made, certified, or endorsed by Apple**. Its dashboard-and-route icon is original. Apple CarPlay remains a trademark of Apple Inc. The projected interface is drawn by the iPhone, so Android UI changes affect only this receiver's own screens.
+The app is **not made, certified, or endorsed by Apple**. The launcher uses a vector rendering of the green CarPlay mark; see [the icon notice](docs/THIRD_PARTY_NOTICES.md#carplay-icon). Apple CarPlay remains a trademark of Apple Inc. The projected interface is drawn by the iPhone, so Android UI changes affect only this receiver's own screens.
 
-See [the 0.2.34 changes and installation notes](docs/CARPLAY-0.2.34.md) for the music fix, package choice and validation limits.
+CarPlay **0.2.35** adds a 150 ms wireless music preset, 100 ms USB defaults, faster buffered-music restart, bounded USB video pacing, the CarPlay launcher mark, and a version-increment CI check. See [the update and validation notes](docs/CARPLAY-0.2.35.md). These are receiver buffer and scheduling targets; end-to-end car measurements remain required.
 
 ## Current development status
 

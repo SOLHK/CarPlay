@@ -1,6 +1,7 @@
 package com.shilapi.xcertplay
 
 import com.shilapi.xcertplay.media.CarPlayVideoLayout
+import com.shilapi.xcertplay.media.VideoPacing
 import kotlin.math.roundToInt
 
 internal enum class CarPlayVideoSurfaceMode { TEXTURE, SURFACE }
@@ -57,9 +58,11 @@ internal data class CarPlaySurfaceBounds(val left: Int, val top: Int, val width:
  * Smooth video's starting delay over the link's base delay; it then adjusts to the frames the decoder
  * releases. On my Tang the Qualcomm decoder released a frame only after about two more had been queued
  * (p90 69-77 ms at about 56 fps, runs A1/A2 in docs/SMOOTH_WIRELESS.md), so it starts at three frame
- * intervals plus 40 ms: 90 ms at 60 fps.
+ * intervals plus 40 ms: 90 ms at 60 fps. USB caps the initial and adaptive software pacing budget
+ * at 100 ms; wireless retains the longer smoothing window.
  */
-internal fun smoothVideoDelayMillis(fps: Int): Int = 40 + 3_000 / fps.coerceIn(30, 60)
+internal fun smoothVideoDelayMillis(fps: Int, wiredTransport: Boolean = false): Int =
+    VideoPacing.initialDelayMillis(fps, wiredTransport)
 
 /**
  * Whether the last picture shown over a SurfaceView that came back can go: a frame was rendered since it came

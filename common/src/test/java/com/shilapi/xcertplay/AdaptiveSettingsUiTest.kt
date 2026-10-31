@@ -791,6 +791,148 @@ class AdaptiveSettingsUiTest {
         }
     }
 
+    @Test fun musicChoicesShowTheirOwnDefaultsAndWirelessIncludes150Millis() {
+        val screen = openSettings()
+        ReflectionHelpers.setField(screen, "settingsCategory", SettingsCategory.AUDIO)
+        ReflectionHelpers.callInstanceMethod<Unit>(screen, "render")
+        val wireless = texts(screen).single {
+            it.text.startsWith(screen.getString(R.string.settings_music_buffer_wireless))
+        }
+        assertEquals("${screen.getString(R.string.settings_music_buffer_wireless)} · " +
+            screen.getString(R.string.settings_music_buffer_default_ms, 150), wireless.text.toString())
+        wireless.performClick()
+        val wirelessDialog = ShadowAlertDialog.getLatestAlertDialog()
+        val wirelessLabels = (0 until wirelessDialog.listView.count).map {
+            wirelessDialog.listView.adapter.getItem(it).toString()
+        }
+        assertEquals(screen.getString(R.string.settings_music_buffer_default_ms, 150), wirelessLabels.first())
+        assertEquals(4, wirelessLabels.size)
+        assertTrue(screen.getString(R.string.settings_music_buffer_ms, 300) in wirelessLabels)
+        assertFalse(screen.getString(R.string.settings_music_buffer_ms, 100) in wirelessLabels)
+        wirelessDialog.dismiss()
+
+        val wired = texts(screen).single {
+            it.text.startsWith(screen.getString(R.string.settings_music_buffer_wired))
+        }
+        assertEquals("${screen.getString(R.string.settings_music_buffer_wired)} · " +
+            screen.getString(R.string.settings_music_buffer_default_ms, 100), wired.text.toString())
+        wired.performClick()
+        val wiredDialog = ShadowAlertDialog.getLatestAlertDialog()
+        assertEquals(screen.getString(R.string.settings_music_buffer_default_ms, 100),
+            wiredDialog.listView.adapter.getItem(1).toString())
+        wiredDialog.dismiss()
+    }
+
+    @Test fun wirelessMusicBufferWaitsForReconnectWithoutInterruptingTheSong() =
+        verifyMusicBufferReconnectConsent(wirelessSession = true, wirelessSetting = true)
+
+    @Test fun wiredMusicBufferWaitsForReconnectWithoutInterruptingTheSong() =
+        verifyMusicBufferReconnectConsent(wirelessSession = false, wirelessSetting = false)
+
+    @Test fun changingWirelessBufferDoesNotMarkTheWiredSessionForReconnect() =
+        verifyMusicBufferReconnectConsent(wirelessSession = false, wirelessSetting = true)
+
+    private fun verifyMusicBufferReconnectConsent(wirelessSession: Boolean, wirelessSetting: Boolean) {
+        AirPlayPersistence.saveWirelessEnabled(context, wirelessSession)
+        AirPlayPersistence.saveMediaBufferMillis(context, wirelessSetting, 300)
+        val screen = openSettings()
+        val session = mock(CarPlayController::class.java)
+        var stops = 0
+        CarPlayBackgroundSession.store(session, mock(AndroidMediaSink::class.java), 800, 480, Any(),
+            CarPlaySessionDisplay(800, 480, Surface.ROTATION_0, false, false, 800, 480)) { stops++ }
+        CarPlayBackgroundSession.active = true
+        try {
+            PendingReconnect.clear()
+            ReflectionHelpers.setField(screen, "settingsCategory", SettingsCategory.AUDIO)
+            ReflectionHelpers.callInstanceMethod<Unit>(screen, "render")
+            val title = if (wirelessSetting) R.string.settings_music_buffer_wireless else R.string.settings_music_buffer_wired
+            texts(screen).single { it.text.startsWith(screen.getString(title)) }.performClick()
+            val dialog = ShadowAlertDialog.getLatestAlertDialog()
+            assertEquals(screen.getString(R.string.save), dialog.getButton(AlertDialog.BUTTON_POSITIVE).text.toString())
+            shadowOf(dialog).clickOnItem(if (wirelessSetting) 0 else 1)
+            dialog.getButton(AlertDialog.BUTTON_POSITIVE).performClick()
+            shadowOf(Looper.getMainLooper()).idle()
+
+            assertEquals(if (wirelessSetting) 150 else 100,
+                AirPlayPersistence.loadMediaBufferMillis(context, wirelessSetting))
+            assertEquals(wirelessSession == wirelessSetting, PendingReconnect.isPending(session))
+            assertEquals(0, stops)
+            assertSame(session, CarPlayBackgroundSession.snapshot()?.controller)
+            assertNull(shadowOf(screen).nextStartedActivity)
+        } finally {
+            CarPlayBackgroundSession.clear()
+            PendingReconnect.clear()
+        }
+    }
+
+    @Test @Config(sdk = [29], qualifiers = "zh-rCN-w320dp-h600dp")
+    @GraphicsMode(GraphicsMode.Mode.NATIVE)
+    fun musicBufferScreenshotCompactChineseLargeFont() = captureMusicBuffer("compact-zh-cn")
+
+    @Test @Config(sdk = [29], qualifiers = "en-w1000dp-h700dp")
+    @GraphicsMode(GraphicsMode.Mode.NATIVE)
+    fun musicBufferScreenshotExpandedLargeFont() = captureMusicBuffer("expanded-en")
+
+    @Test @Config(sdk = [29], qualifiers = "ar-ldrtl-w320dp-h600dp")
+    @GraphicsMode(GraphicsMode.Mode.NATIVE)
+    fun musicBufferScreenshotCompactArabicRtlLargeFont() = captureMusicBuffer("compact-ar-rtl")
+
+    private fun captureMusicBuffer(name: String) {
+        RuntimeEnvironment.setFontScale(1.3f)
+        val screen = openSettings()
+        ReflectionHelpers.setField(screen, "settingsCategory", SettingsCategory.AUDIO)
+        ReflectionHelpers.callInstanceMethod<Unit>(screen, "render")
+        layoutRoot(screen)
+        val scroll = ReflectionHelpers.getField<ScrollView>(screen, "rootScroll")
+        val wireless = texts(screen).single {
+            it.text.startsWith(screen.getString(R.string.settings_music_buffer_wireless))
+        }
+        val wired = texts(screen).single {
+            it.text.startsWith(screen.getString(R.string.settings_music_buffer_wired))
+        }
+        val description = texts(screen).single { it.text == screen.getString(R.string.settings_music_buffer_description) }
+        var top = 0
+        var ancestor: View? = wireless
+        while (ancestor != null && ancestor !== scroll) {
+            top += ancestor.top
+            ancestor = ancestor.parent as? View
+        }
+        assertSame(scroll, ancestor)
+        val margin = (12 * screen.resources.displayMetrics.density).toInt()
+        scroll.scrollTo(0, (top - margin).coerceAtLeast(0))
+        shadowOf(Looper.getMainLooper()).idle()
+        assertTrue("Capture must scroll down to the music controls", scroll.scrollY > 0)
+        for (target in listOf(wireless, wired, description)) {
+            val visible = Rect()
+            assertTrue("Music control must be visible: ${target.text}", target.getGlobalVisibleRect(visible))
+            assertEquals("Music control must not be cropped: ${target.text}", target.height, visible.height())
+            val textLayout = checkNotNull(target.layout)
+            assertTrue("Wrapped music text must fit inside its control: ${target.text}",
+                textLayout.height <= target.height - target.compoundPaddingTop - target.compoundPaddingBottom)
+            assertEquals("All music text must be laid out", target.text.length,
+                textLayout.getLineEnd(textLayout.lineCount - 1))
+            for (line in 0 until textLayout.lineCount) {
+                assertEquals("Music text must not be ellipsized", 0, textLayout.getEllipsisCount(line))
+            }
+        }
+        val root = screen.findViewById<ViewGroup>(android.R.id.content).getChildAt(0)
+        val bitmap = Bitmap.createBitmap(root.width, root.height, Bitmap.Config.ARGB_8888)
+        try {
+            val canvas = Canvas(bitmap)
+            // A parent normally applies a child's scroll offset. Direct root.draw() needs that
+            // transform here too: on compact screens the root itself is the scrolled ScrollView.
+            canvas.translate(-root.scrollX.toFloat(), -root.scrollY.toFloat())
+            root.draw(canvas)
+            val output = Paths.get("build/reports/carplay-ui/music-buffer-$name.png")
+            Files.createDirectories(output.parent)
+            Files.newOutputStream(output).use { stream ->
+                assertTrue(bitmap.compress(Bitmap.CompressFormat.PNG, 100, stream))
+            }
+        } finally {
+            bitmap.recycle()
+        }
+    }
+
     @Test fun navigationAttenuationSliderSavesAndUpdatesActiveAudioWithoutReconnect() {
         val screen = openSettings()
         val session = mock(CarPlayController::class.java)

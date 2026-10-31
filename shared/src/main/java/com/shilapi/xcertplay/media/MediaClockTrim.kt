@@ -15,7 +15,7 @@ import kotlin.math.roundToLong
  * so the level stays at its target.
  * The trim is bounded by [MAX_TRIM] (26 cents at most) and settles at the head unit's own drift, which is a
  * hardware constant, so the next music stream starts from the trim this one learned.
- * The level music holds once it plays is not the start threshold. Buffered music (#1031) is fed a second ahead of
+ * The level music holds once it plays is not the start threshold. Buffered music (#1031) is fed ahead of
  * real time, and realtime music over Wi-Fi comes in bursts, so playback starts partway through one and the rest
  * lands on top (#1068).
  */
@@ -24,6 +24,8 @@ internal class MediaClockTrim(
     private var targetFrames: Long,
     private var integral: Double = learnedTrim,
     private val measuresTarget: Boolean = false,
+    /** Enhanced music is paced continuously; a long write gap must not teach a lower target. */
+    private val measurementGapLimitNs: Long = Long.MAX_VALUE,
 ) {
     private class Measuring(val halfStartNs: Long? = null, val earlierHalfMean: Double? = null) {
         var levelFrameNs = 0.0
@@ -69,7 +71,15 @@ internal class MediaClockTrim(
         val measure = measuring
         if (measure != null) {
             if (!headMoving) return
-            addToMeasurement(measure, nowNs, elapsedNs, meanSinceLastWrite)
+            if (lastSampleNs > 0L && elapsedNs > measurementGapLimitNs) {
+                // A short buffer loses a meaningful fraction of its level during a 100–200 ms
+                // stall. The absolute agreement check between two measurement halves can still
+                // accept that biased half, then accelerate perfectly timed music for seconds.
+                // Start a clean window after a discontinuity in a continuously paced stream.
+                measuring = Measuring(nowNs)
+            } else {
+                addToMeasurement(measure, nowNs, elapsedNs, meanSinceLastWrite)
+            }
         } else {
             val previous = level
             level = if (previous == null || elapsedNs > STALE_NS) error(buffered.toDouble())
@@ -146,6 +156,7 @@ internal class MediaClockTrim(
         const val MAX_STEP_SECONDS = 2.0
         const val MEASURE_HALF_NS = 1_500_000_000L
         const val HALVES_AGREE_SECONDS = 0.2
+        const val BUFFERED_MEASUREMENT_GAP_NS = 100_000_000L
 
         /** The drift the last music stream settled on. Each process plays to one head unit. */
         @Volatile var learnedTrim = 0.0

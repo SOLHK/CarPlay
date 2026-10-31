@@ -12,9 +12,11 @@ Upstream credits [LIVI](https://github.com/f-io/LIVI) and [Showcase](https://git
 
 ## CarPlay icon
 
-The unmodified icon was obtained from Apple's developer site at:
-
-https://developer.apple.com/assets/elements/icons/carplay/carplay-96x96_2x.png
+The launcher and receiver UI use Android vector renderings of the green circular-play
+CarPlay mark, with adaptive, round and monochrome variants. The visual reference is
+Apple's [Connect iPhone to CarPlay](https://support.apple.com/en-ph/guide/iphone/iph6860e6b53/ios)
+user guide. The previous upstream raster icon reference was
+https://developer.apple.com/assets/elements/icons/carplay/carplay-96x96_2x.png.
 
 CarPlay and the CarPlay icon are Apple Inc. marks/assets. This asset is not covered by the project's open-source code license. Its use here does not imply Apple approval or certification.
 

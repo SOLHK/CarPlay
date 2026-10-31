@@ -343,6 +343,8 @@
     <string name="s_3_connect">3 · 连接</string>
     <string name="s_3_tap_check_and_enable_below_this_enables_the_cluster_ma">3. 点击下方“检查并启用”。这将启用仪表盘地图和自动主题跟随。正在进行的 CarPlay 会话会重新连接一次，之后即可断开电脑。</string>
     <string name="settings_music_buffer_ms">%1$d 毫秒</string>
+    <string name="settings_music_buffer_default_ms">%1$d 毫秒 · 默认</string>
+    <string name="settings_music_buffer_description">音乐缓冲越小，播放响应越快；若出现断音，可提高缓冲。此值是缓冲目标，不代表实测总延迟。下次连接生效。</string>
     <string name="settings_music_buffer_wireless">音乐缓冲（无线）</string>
     <string name="settings_music_buffer_wired">音乐缓冲（USB 有线）</string>
     <string name="s_5_ghz">5 GHz</string>

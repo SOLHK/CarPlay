@@ -21,6 +21,7 @@ import org.mockito.Mockito.*
 import org.robolectric.Robolectric
 import org.robolectric.RobolectricTestRunner
 import org.robolectric.Shadows.shadowOf
+import org.robolectric.android.util.concurrent.PausedExecutorService
 import org.robolectric.annotation.Config
 import org.robolectric.annotation.LooperMode
 import org.robolectric.shadows.ShadowBuild
@@ -38,6 +39,10 @@ class CarPlayHostClusterStartupTest {
 
     @Before fun setUp() {
         activity = Robolectric.buildActivity(CarPlayHostActivity::class.java).get()
+        // Theme commands do not affect cluster startup. Keep their calls to the session mock
+        // off background threads while this test stubs its main-frame state.
+        (get("airPlayCommandExecutor") as ExecutorService).shutdownNow()
+        set("airPlayCommandExecutor", PausedExecutorService())
         AirPlayPersistence.saveClusterMapEnabled(activity, true)
         controller = mock(CarPlayController::class.java)
         sink = mock(AndroidMediaSink::class.java)

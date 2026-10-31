@@ -42,6 +42,10 @@ class BufferedMusicClockTrimTest {
 
     @Test fun anAccurateHeadUnitPlaysBufferedMusicAtTheIphonesRateWithTheLongestBuffer() = playsAtTheIphonesRate(1000)
 
+    @Test fun wiredLowLatencyBufferKeepsTheIphonesRateAcrossTrackChanges() = playsAtTheIphonesRate(100)
+
+    @Test fun wirelessLowLatencyBufferKeepsTheIphonesRateAcrossTrackChanges() = playsAtTheIphonesRate(150)
+
     @Test fun aFastHeadUnitIsTrimmedToItsDriftWithoutRunningLow() = settlesAtTheDrift(300, 0.0076)
 
     @Test fun aSlowHeadUnitIsTrimmedToItsDriftWithoutRunningLow() = settlesAtTheDrift(1000, -0.0025)
@@ -220,6 +224,7 @@ class BufferedMusicClockTrimTest {
         HeadUnitTrack.capacityFrames = MediaAudioBuffer.plan(true, 48_000, 2, MIN_BUFFER_BYTES, unit.startMs).trackBufferBytes / 4
         val events = ConcurrentLinkedQueue<SinkEvent>()
         val sink = object : MediaSink {
+            override fun audioStartLatencyMillis(format: AudioFormat) = unit.startMs
             override fun onAudioStarted(id: AudioStreamId, format: AudioFormat, firstSample: Int) { events += SinkEvent.Started }
             override fun onAudioRtp(id: AudioStreamId, format: AudioFormat, rtp: ByteArray, sample: Int) { events += SinkEvent.Rtp(rtp, sample) }
             override fun onAudioStopped(id: AudioStreamId) { events += SinkEvent.Stopped }
