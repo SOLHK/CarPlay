@@ -762,6 +762,8 @@ class CarPlayMediaEngine(
         private const val STREAM_TYPE_MAIN_SCREEN = 110
         private const val STREAM_TYPE_ALT_SCREEN = 111
         private const val STREAM_TYPE_MAIN_AUDIO = 100
+        private const val STREAM_TYPE_ALT_AUDIO = 101
+        private const val STREAM_TYPE_MAIN_HIGH_AUDIO = 102
         private const val STREAM_TYPE_DATA = 130
         private const val DATASTREAM_OUTPUT_KEY = "DataStream-Output-Encryption-Key"
         private const val DATASTREAM_INPUT_KEY = "DataStream-Input-Encryption-Key"
