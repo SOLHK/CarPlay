@@ -1816,6 +1816,9 @@ private class AudioRenderer(
 
     private val pcmChannels = if (format.channels >= 2) 2 else 1
     private val voiceFilter = if (voiceFilter && format.sampleRate > 0) VoiceFilter(format.sampleRate, pcmChannels) else null
+    // A speakerphone call uses the MEDIA output route but remains live speech. It must not
+    // inherit music prebuffering, clock-rate trim, or pause-and-refill recovery.
+    private val musicContent = mappedSelection().contentType == AudioContentType.MUSIC
 
     private var trackAttributes: AudioAttributes? = null
     private var mappedChannel: AudioChannel? = null
@@ -1840,6 +1843,10 @@ private class AudioRenderer(
     private var prebufferBytes = 0
     @Volatile private var startThresholdBytes = 0
     @Volatile private var platformStartThresholdBytes = 0
+    /** A short final burst temporarily lowers the native gate, never the PCM playback clock. */
+    private var tailStartThresholdFrames: Int? = null
+    private var tailStartHeadAtLowering = 0
+    private var tailStartGateAttempted = false
     private var fadeApplied = false
     private var droppedPacketsLogged = false
     private var firstAacPayloadLogged = false
@@ -1876,6 +1883,8 @@ private class AudioRenderer(
     private val bufferProgress = AudioBufferProgress(if (format.channels >= 2) 4 else 2)
     private var underrunsAtPlaybackStart = 0
     private var headAtPlaybackStart = 0
+    private var observedPlaybackHead = 0
+    private var lastPlaybackProgressNs = 0L
     private var droppedAtLastTrim = 0
     private var clockTrim: MediaClockTrim? = null
     /** Called when this call's track is routed to the earpiece; the sink moves the call to the loudspeaker. */
@@ -2085,7 +2094,7 @@ private class AudioRenderer(
         actualLegacyStreamType = streamOverride.takeIf { it != 0 }
         var attributes = audioAttributesFor(selection, streamOverride)
         trackAttributes = attributes
-        val plan = MediaAudioBuffer.plan(selection.channel == AudioChannel.MEDIA,
+        val plan = MediaAudioBuffer.plan(usesMusicBuffer(),
             format.sampleRate, format.channels, minBuffer, mediaBufferMillis, wired = wiredTransport)
         bytesPerSecond = format.sampleRate * frameBytes
         val built: AudioTrack
@@ -2151,7 +2160,7 @@ private class AudioRenderer(
         startThresholdBytes = MediaAudioBuffer.startBytesFor(plan.startBytes, capacityBytes, PREBUFFER_WRITE_CHUNK_BYTES)
         platformStartThresholdBytes = audioTrackStartThresholdBytes(built, startThresholdBytes, frameBytes)
         // Only music plays long enough for the clocks to drift apart; calls keep their echo reference exact.
-        clockTrim = if (mappedChannel == AudioChannel.MEDIA) MediaClockTrim(format.sampleRate, (startThresholdBytes / frameBytes).toLong(),
+        clockTrim = if (usesMusicBuffer()) MediaClockTrim(format.sampleRate, (startThresholdBytes / frameBytes).toLong(),
             measuresTarget = true,
             measurementGapLimitNs = if (format.payloadType == BufferedAudioStream.STREAM_TYPE)
                 MediaClockTrim.BUFFERED_MEASUREMENT_GAP_NS else Long.MAX_VALUE) else null
@@ -2238,6 +2247,8 @@ private class AudioRenderer(
         )
         return if (speakerphoneCall) AudioChannelMapper.playCallOnSpeaker(selection) else selection
     }
+
+    private fun usesMusicBuffer(): Boolean = mappedChannel == AudioChannel.MEDIA && musicContent
 
     private fun audioAttributesFor(selection: AudioChannelSelection): AudioAttributes =
         AudioAttributes.Builder()
@@ -2558,6 +2569,9 @@ private class AudioRenderer(
             writtenFramesThisWindow += framesWritten
             bufferProgress.written(count)
             lastPcmWriteNs = System.nanoTime()
+            observePlaybackProgress(track, lastPcmWriteNs)
+            tailStartGateAttempted = false
+            if (playbackStarted) restoreStartThresholdAfterPlayback(track)
             if (playbackStarted) reportNavigationPlayback(track)
             if (playbackStarted) trimClock(track)
             if (!playbackStarted) {
@@ -2583,6 +2597,8 @@ private class AudioRenderer(
         diagnosticStage = "track-play"
         underrunsAtPlaybackStart = track.underrunCount
         headAtPlaybackStart = track.playbackHeadPosition
+        observedPlaybackHead = headAtPlaybackStart
+        lastPlaybackProgressNs = System.nanoTime()
         clockTrim?.measureAgain()
         track.play()
         playbackStarted = true
@@ -2590,6 +2606,54 @@ private class AudioRenderer(
         if (rebufferCount > 0 && rebufferRecoverReportCount < MAX_REBUFFER_REPORTS) {
             rebufferRecoverReportCount++
             report("Audio: rebuffer recovered audioType=${format.audioType} rebufferCount=$rebufferCount")
+        }
+    }
+
+    private fun startPartialPlayback(track: AudioTrack) = synchronized(trackStateLock) {
+        if (!running) return@synchronized
+        tailStartGateAttempted = true
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
+            // play() does not bypass AudioTrack's native startup gate. Without lowering that
+            // gate a short prompt or music tail can remain silent until an unrelated later burst.
+            val head = track.playbackHeadPosition
+            val queuedFrames = (bufferProgress.queuedBytes(head) / frameBytes)
+                .coerceAtMost(Int.MAX_VALUE.toLong()).toInt()
+            if (queuedFrames > 0) runCatching {
+                val original = track.startThresholdInFrames
+                if (original > queuedFrames) {
+                    val applied = track.setStartThresholdInFrames(queuedFrames)
+                    if (applied > 0) {
+                        if (tailStartThresholdFrames == null) {
+                            tailStartThresholdFrames = original
+                            tailStartHeadAtLowering = head
+                        }
+                        platformStartThresholdBytes = applied * frameBytes
+                    }
+                }
+            }
+        }
+        if (!playbackStarted) startPlayback(track)
+    }
+
+    private fun restoreStartThresholdAfterPlayback(track: AudioTrack) {
+        val original = tailStartThresholdFrames ?: return
+        // A successful play() is not proof of audio output: restoring before the head moves
+        // would close the native gate again and strand the same short burst.
+        if (!playbackStarted || track.playbackHeadPosition == tailStartHeadAtLowering) return
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) runCatching {
+            val applied = track.setStartThresholdInFrames(original)
+            if (applied > 0) {
+                platformStartThresholdBytes = applied * frameBytes
+                tailStartThresholdFrames = null
+            }
+        }
+    }
+
+    private fun observePlaybackProgress(track: AudioTrack, nowNs: Long) {
+        val head = track.playbackHeadPosition
+        if (head != observedPlaybackHead) {
+            observedPlaybackHead = head
+            lastPlaybackProgressNs = nowNs
         }
     }
 
@@ -2653,7 +2717,10 @@ private class AudioRenderer(
 
     private fun maintainPlaybackBuffer() {
         val track = track ?: return
-        if (bufferProgress.shouldRebuffer(mappedChannel == AudioChannel.MEDIA, playbackStarted,
+        val nowNs = System.nanoTime()
+        observePlaybackProgress(track, nowNs)
+        restoreStartThresholdAfterPlayback(track)
+        if (bufferProgress.shouldRebuffer(usesMusicBuffer(), playbackStarted,
                 track.underrunCount > underrunsAtPlaybackStart, queue.isEmpty(), track.playbackHeadPosition,
                 startThresholdBytes / 2L)) {
             // The hardware buffer has starved below the recovery floor. Pause without flushing
@@ -2665,6 +2732,7 @@ private class AudioRenderer(
             prebufferBytes = bufferProgress.queuedBytes(track.playbackHeadPosition)
                 .coerceAtMost(startThresholdBytes.toLong()).toInt()
             lastPcmWriteNs = System.nanoTime()
+            tailStartGateAttempted = false
             rebufferCount++
             if (rebufferPauseReportCount < MAX_REBUFFER_REPORTS) {
                 rebufferPauseReportCount++
@@ -2674,10 +2742,16 @@ private class AudioRenderer(
         }
         // A short final burst may never reach the start threshold. Play it after a bounded wait,
         // but give a long music buffer time to refill across a radio gap before bypassing it.
-        if (!playbackStarted && prebufferBytes > 0 && queue.isEmpty() &&
-            System.nanoTime() - lastPcmWriteNs >= MediaAudioBuffer.tailWaitNanos(
-                mappedChannel == AudioChannel.MEDIA, startThresholdBytes, bytesPerSecond)) {
-            startPlayback(track)
+        val tailWaitNs = MediaAudioBuffer.tailWaitNanos(usesMusicBuffer(), startThresholdBytes, bytesPerSecond)
+        // Navigation can underrun between prompts without ever calling play() again. Detect a
+        // stalled current burst, not just the original play() head, and leave moving tails alone.
+        val nativeStartupPending = playbackStarted && Build.VERSION.SDK_INT >= Build.VERSION_CODES.S &&
+            nowNs - lastPlaybackProgressNs >= tailWaitNs &&
+            bufferProgress.queuedBytes(track.playbackHeadPosition) in 1L until platformStartThresholdBytes.toLong()
+        if ((!playbackStarted || nativeStartupPending) && !tailStartGateAttempted &&
+            prebufferBytes > 0 && queue.isEmpty() &&
+            nowNs - lastPcmWriteNs >= tailWaitNs) {
+            startPartialPlayback(track)
         }
     }
 

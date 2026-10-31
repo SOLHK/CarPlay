@@ -25,7 +25,11 @@ internal object BydStandaloneNavigationBridge {
     }
 
     fun onFrame(frame: Iap2Frame) = synchronized(lock) {
-        route.accept(frame.messageId, frame.payload)
+        if (route.accept(frame.messageId, frame.payload) != BydHudRouteChange.NONE) {
+            // Already on the output worker: publish new turns, distances and route ends now.
+            // The 250 ms tick remains for keepalive/expiry/retry, not as a delivery gate.
+            refreshLocked()
+        }
         Unit
     }
 
@@ -35,8 +39,10 @@ internal object BydStandaloneNavigationBridge {
         Unit
     }
 
-    private fun tick() = synchronized(lock) {
-        if (BydStandaloneHudOutput.syntheticHold) return@synchronized
+    private fun tick() = synchronized(lock) { refreshLocked() }
+
+    private fun refreshLocked() {
+        if (BydStandaloneHudOutput.syntheticHold) return
         try {
             val frame = if (context?.let(BydOutputSettings::enabled) == true)
                 route.currentApple()?.let(BydClusterFrame::from) else null

@@ -44,14 +44,41 @@ class AudioRebufferCapacityTest {
             set("lastPcmWriteNs", System.nanoTime() - 1_100_000_000L)
             maintain.invoke(renderer)
             assertTrue(CapacityTrack.playing)
+        } finally { track.release() }
+    }
 
-            // Navigation retains the existing bounded tail delay.
-            CapacityTrack.playing = false
-            set("playbackStarted", false)
+    @Test fun navigationPartialBurstDoesNotInheritTheSelectedLongMusicDelay() {
+        val plan = MediaAudioBuffer.plan(false, 16_000, 1, 1280, 1000)
+        CapacityTrack.capacity = plan.trackBufferBytes
+        CapacityTrack.queued = 0
+        CapacityTrack.playing = false
+        CapacityTrack.blocked = false
+        val track = AudioTrack.Builder().setAudioAttributes(AudioAttributes.Builder().build())
+            .setAudioFormat(android.media.AudioFormat.Builder().setSampleRate(16_000)
+                .setEncoding(android.media.AudioFormat.ENCODING_PCM_16BIT)
+                .setChannelMask(android.media.AudioFormat.CHANNEL_OUT_MONO).build())
+            .setBufferSizeInBytes(plan.trackBufferBytes).build()
+        val type = Class.forName("com.shilapi.xcertplay.media.AudioRenderer")
+        val renderer = type.declaredConstructors.single { it.parameterCount == 13 }
+            .apply { isAccessible = true }.newInstance(
+                AudioFormat(AudioCodecKind.LPCM, 16_000, 1, 100, "default"), false, false, 0, 0,
+                AudioFocusCoordinator(null, false, false), 0, 1000, { _: String -> }, 0L, false, null, false)
+        fun set(name: String, value: Any) = type.getDeclaredField(name).apply { isAccessible = true }.set(renderer, value)
+        val maintain = type.getDeclaredMethod("maintainPlaybackBuffer").apply { isAccessible = true }
+        try {
+            set("track", track)
             set("mappedChannel", AudioChannel.NAVIGATION)
-            set("lastPcmWriteNs", System.nanoTime() - 600_000_000L)
+            set("startThresholdBytes", plan.startBytes)
+            set("bytesPerSecond", 32_000)
+            type.getDeclaredMethod("writePcm", ByteArray::class.java, Int::class.javaPrimitiveType,
+                Int::class.javaPrimitiveType).apply { isAccessible = true }
+                .invoke(renderer, ByteArray(640), 0, 640)
+            set("lastPcmWriteNs", System.nanoTime() - 50_000_000L)
             maintain.invoke(renderer)
-            assertTrue("Navigation inherited the music delay", CapacityTrack.playing)
+            assertFalse("A partial navigation burst skipped its bounded tail wait", CapacityTrack.playing)
+            set("lastPcmWriteNs", System.nanoTime() - 150_000_000L)
+            maintain.invoke(renderer)
+            assertTrue("Navigation inherited the selected 1000 ms music delay", CapacityTrack.playing)
         } finally { track.release() }
     }
 

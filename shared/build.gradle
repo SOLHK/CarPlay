@@ -44,3 +44,10 @@ dependencies {
     testImplementation libs.junit
     testImplementation 'org.robolectric:robolectric:4.17'
 }
+
+tasks.withType(Test).configureEach {
+    // Shared receiver tests load multiple Android framework versions. The default 512 MiB
+    // heap exhausts while loading later SDKs; retain all cases in one bounded test worker.
+    maxHeapSize = '1536m'
+    maxParallelForks = 1
+}

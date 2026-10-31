@@ -1,6 +1,7 @@
 package com.shilapi.xcertplay.media
 
 import org.junit.Assert.assertEquals
+import org.junit.Assert.assertTrue
 import org.junit.Test
 
 class MediaAudioBufferTest {
@@ -25,8 +26,8 @@ class MediaAudioBufferTest {
     @Test
     fun `calls and prompts keep the low-latency buffer`() {
         val plan = MediaAudioBuffer.plan(false, 16_000, 1, minBufferBytes = 1_280, mediaMillis = 1000)
-        assertEquals(4 * 1024, plan.startBytes)
-        assertEquals(16 * 1024, plan.trackBufferBytes)
+        assertEquals(1_280, plan.startBytes)
+        assertEquals(3_200, plan.trackBufferBytes)
         val guidance = AudioChannelMapper.map("default", 100, AudioChannelMappingMode.AUTOMOTIVE_BUS)
         assertEquals(plan, MediaAudioBuffer.plan(guidance.channel == AudioChannel.MEDIA,
             16_000, 1, minBufferBytes = 1_280, mediaMillis = 1000))
@@ -89,16 +90,26 @@ class MediaAudioBufferTest {
     }
 
     @Test
-    fun `wired speech at every negotiated rate fits a 100 ms software capacity`() {
+    fun `wired and wireless speech at every negotiated rate fit within a 100 ms software capacity`() {
         for (rate in listOf(8_000, 16_000, 24_000, 32_000, 44_100, 48_000)) {
             for (channels in 1..2) {
                 val bytesPerSecond = rate * channels * 2
-                val plan = MediaAudioBuffer.plan(false, rate, channels,
-                    minBufferBytes = bytesPerSecond / 50, mediaMillis = 100, wired = true)
-                assertEquals(bytesPerSecond / 10, plan.trackBufferBytes)
-                assertEquals(bytesPerSecond / 50, plan.startBytes)
+                for (wired in listOf(false, true)) {
+                    val plan = MediaAudioBuffer.plan(false, rate, channels,
+                        minBufferBytes = bytesPerSecond / 50, mediaMillis = 1000, wired = wired)
+                    assertTrue(plan.trackBufferBytes in bytesPerSecond / 50..bytesPerSecond / 10)
+                    if (wired) assertEquals(bytesPerSecond / 10, plan.trackBufferBytes)
+                    assertEquals(bytesPerSecond / 50, plan.startBytes)
+                }
             }
         }
+    }
+
+    @Test
+    fun `high rate wireless speech never grows a buffer that was already below 100 ms`() {
+        val plan = MediaAudioBuffer.plan(false, 48_000, 2, 3840, 1000, wired = false)
+        assertEquals(16 * 1024, plan.trackBufferBytes)
+        assertEquals(3840, plan.startBytes)
     }
 
     @Test
@@ -109,6 +120,7 @@ class MediaAudioBufferTest {
         val voice = MediaAudioBuffer.plan(false, 16_000, 1, 6_400, 100, wired = true)
         assertEquals(6_400, voice.startBytes)
         assertEquals(6_400, voice.trackBufferBytes)
+        assertEquals(voice, MediaAudioBuffer.plan(false, 16_000, 1, 6_400, 1000, wired = false))
     }
 
     @Test

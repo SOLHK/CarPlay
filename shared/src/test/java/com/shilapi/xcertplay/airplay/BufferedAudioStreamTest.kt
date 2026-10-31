@@ -178,8 +178,8 @@ class BufferedAudioStreamTest {
                 waitFor { packets.size >= 9 }
                 // Model a slow ROM that has still not advanced its playback head one second later.
                 now.set(1_000_000_000L)
-                waitFor { packets.size >= 47 }
-                assertTrue("A stopped device must backpressure the renderer rather than fill its packet queue", packets.size <= 48)
+                Thread.sleep(100)
+                assertEquals("A stopped device must retain the low-latency lead rather than accumulate a second of music", 9, packets.size)
                 val paused = stream.setRate(null, 0, BigInteger.ZERO)!!
                 assertEquals(base, paused["rtpTime"])
                 stream.setRate(base, 1, BigInteger.ZERO)
@@ -212,6 +212,96 @@ class BufferedAudioStreamTest {
                 waitFor { packets.size >= 26 }
                 Thread.sleep(60)
                 assertEquals("Feed must cross the device minimum without an extra second of queue", 26, packets.size)
+            }
+        } finally { stream.close() }
+    }
+
+    @Test
+    fun aWiredTcpStarvationDoesNotBuildASecondOfRendererBacklogWhenPacketsReturn() =
+        starvationRecoveryPreservesTheRendererBudget(100)
+
+    @Test
+    fun aWirelessTcpStarvationDoesNotBuildASecondOfRendererBacklogWhenPacketsReturn() =
+        starvationRecoveryPreservesTheRendererBudget(150)
+
+    private fun starvationRecoveryPreservesTheRendererBudget(startMillis: Int) {
+        val base = 0xffff_fc00L
+        val now = AtomicLong()
+        val played = AtomicLong(base)
+        val packets = CopyOnWriteArrayList<Int>()
+        val sink = object : MediaSink {
+            override fun audioStartLatencyMillis(format: AudioFormat) = startMillis
+            override fun audioPlaybackPosition(id: AudioStreamId) = played.get()
+            override fun onAudioRtp(id: AudioStreamId, format: AudioFormat, rtp: ByteArray, sample: Int) {
+                packets += sample
+            }
+        }
+        val stream = BufferedAudioStream(key, format, sink, nanoTime = now::get)
+        // The production feeder reserves one 20 ms poll plus a rounded-up AAC frame.
+        val budgetFrames = ((startMillis + 20 + 22) * 48 + 1023) / 1024
+        try {
+            stream.start()
+            Socket(InetAddress.getLoopbackAddress(), stream.port).use { socket ->
+                val out = DataOutputStream(socket.getOutputStream())
+                fun send(from: Int, count: Int) {
+                    repeat(count) { offset ->
+                        val index = from + offset
+                        val body = seal(index, (base + index * 1024L) and 0xffff_ffffL, byteArrayOf(0x21))
+                        out.writeShort(body.size + 2); out.write(body)
+                    }
+                    out.flush()
+                }
+                send(0, budgetFrames)
+                stream.setRate(base, 1, BigInteger.ZERO)
+                waitFor { packets.size == budgetFrames && queuedFrames(stream) == 0 }
+                // Everything audible has drained during the TCP outage. The next burst must
+                // replenish only the startup budget, not repay five seconds of wall-clock debt.
+                played.set((base + budgetFrames * 1024L) and 0xffff_ffffL)
+                now.set(5_000_000_000L)
+                send(budgetFrames, 100)
+                waitFor { packets.size >= budgetFrames * 2 }
+                Thread.sleep(100)
+                assertEquals("TCP recovery inflated a ${startMillis}ms renderer budget", budgetFrames * 2, packets.size)
+                assertEquals("Recovery must retain every unheard frame in timestamp order",
+                    (0 until budgetFrames * 2).map { (base + it * 1024L).toInt() }, packets.toList())
+                assertEquals("Unfed music must remain in the TCP reserve", 100 - budgetFrames, queuedFrames(stream))
+                assertEquals("Pacing must not invent audible progress", played.get(),
+                    stream.feedback(BigInteger.ZERO, 1L)["sampleTime"])
+            }
+        } finally { stream.close() }
+    }
+
+    @Test
+    fun fallbackProgressDoesNotSkipUnheardRecoveryMusicOnPauseAndResume() {
+        val now = AtomicLong()
+        val sink = RecordingSink() // No hardware playback head: exercise the conservative estimate.
+        val stream = BufferedAudioStream(key, format, sink, nanoTime = now::get)
+        val base = 0xffff_fc00L
+        try {
+            stream.start()
+            Socket(InetAddress.getLoopbackAddress(), stream.port).use { socket ->
+                val out = DataOutputStream(socket.getOutputStream())
+                fun send(from: Int, count: Int) {
+                    repeat(count) { offset ->
+                        val index = from + offset
+                        val body = seal(index, (base + index * 1024L) and 0xffff_ffffL, byteArrayOf(0x21))
+                        out.writeShort(body.size + 2); out.write(body)
+                    }
+                    out.flush()
+                }
+                send(0, 9)
+                stream.setRate(base, 1, BigInteger.ZERO)
+                waitFor { sink.rtp.size == 9 && queuedFrames(stream) == 0 }
+                now.set(5_000_000_000L)
+                val drained = stream.feedback(BigInteger.ZERO, 1L)["sampleTime"] as Long
+                assertEquals((base + 9 * 1024L) and 0xffff_ffffL, drained)
+                send(9, 30)
+                waitFor { sink.rtp.size >= 18 }
+                val paused = stream.setRate(null, 0, BigInteger.ZERO)!!
+                assertEquals("Starvation recovery retired music before it could play", drained, paused["rtpTime"])
+                stream.setRate(drained, 1, BigInteger.ZERO)
+                waitFor { sink.started.size == 2 }
+                assertEquals("Resume skipped unheard recovery packets", drained.toInt(), sink.started.last())
             }
         } finally { stream.close() }
     }
@@ -506,6 +596,54 @@ class BufferedAudioStreamTest {
                 Thread.sleep(100)
                 assertTrue(packets.isEmpty())
                 assertEquals(13L, queuedBytes(stream))
+            }
+        } finally { stream.close() }
+    }
+
+    @Test
+    fun reentrantPauseDuringSinkStopStopsOnceAndOverridesTheOlderStart() =
+        controlFromStopCallbackWins(requestedRate = 1, reentrantRate = 0)
+
+    @Test
+    fun reentrantStartDuringSinkStopOverridesTheOlderPause() =
+        controlFromStopCallbackWins(requestedRate = 0, reentrantRate = 1)
+
+    private fun controlFromStopCallbackWins(requestedRate: Int, reentrantRate: Int) {
+        val starts = CopyOnWriteArrayList<Int>()
+        val packets = CopyOnWriteArrayList<Int>()
+        var stops = 0
+        lateinit var stream: BufferedAudioStream
+        val sink = object : MediaSink {
+            override fun onAudioStarted(id: AudioStreamId, format: AudioFormat, firstSample: Int) { starts += firstSample }
+            override fun onAudioRtp(id: AudioStreamId, format: AudioFormat, rtp: ByteArray, sample: Int) { packets += sample }
+            override fun onAudioStopped(id: AudioStreamId) {
+                stops++
+                if (stops == 1) stream.setRate(2048L, reentrantRate, BigInteger.ZERO)
+            }
+        }
+        stream = BufferedAudioStream(key, format, sink, nanoTime = { 0L })
+        try {
+            stream.start()
+            Socket(InetAddress.getLoopbackAddress(), stream.port).use { socket ->
+                val out = DataOutputStream(socket.getOutputStream())
+                repeat(3) { index ->
+                    val body = seal(index, (index + 1) * 1024L, byteArrayOf(0x21))
+                    out.writeShort(body.size + 2); out.write(body)
+                }
+                out.flush()
+                stream.setRate(1024L, 1, BigInteger.ZERO)
+                waitFor { packets.size == 3 }
+                val result = stream.setRate(1024L, requestedRate, BigInteger.ZERO)!!
+                assertEquals("Stop recursively reentered the old renderer", 1, stops)
+                assertEquals("The older control overwrote its callback's newer control", reentrantRate, result["rate"])
+                assertEquals(reentrantRate, stream.anchor()!!["rate"])
+                if (reentrantRate == 1) {
+                    assertEquals(2048L, result["rtpTime"])
+                    waitFor { starts.size == 2 }
+                    assertEquals(2048, starts.last())
+                } else {
+                    assertEquals(1, starts.size)
+                }
             }
         } finally { stream.close() }
     }

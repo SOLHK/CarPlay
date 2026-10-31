@@ -25,6 +25,7 @@ object MediaAudioBuffer {
     private const val MIN_TRACK_BUFFER_BYTES = 16 * 1024
     private const val MIN_START_BUFFER_BYTES = 4 * 1024
     private const val LOW_LATENCY_HEADROOM_MILLIS = 20
+    private const val VOICE_BUFFER_MILLIS = 100
 
     fun sanitize(millis: Int): Int = millis.takeIf { it in presets } ?: DEFAULT_MILLIS
     fun sanitizeWireless(millis: Int): Int = millis.takeIf { it in wirelessPresets } ?: WIRELESS_DEFAULT_MILLIS
@@ -39,11 +40,17 @@ object MediaAudioBuffer {
     fun plan(isMedia: Boolean, sampleRate: Int, channels: Int, minBufferBytes: Int, mediaMillis: Int,
         wired: Boolean = false): Plan {
         val bytesPerSecond = sampleRate.toLong() * channels.coerceIn(1, 2) * 2
-        // Byte-count floors become hundreds of milliseconds for mono speech. Use a time budget
-        // on USB while still respecting the platform minimum, which cannot be promised away.
-        if (wired && !isMedia) {
+        // Byte-count floors become hundreds of milliseconds for mono navigation and calls:
+        // 16 KiB is over a second at 8 kHz. Speech needs a time budget on Wi-Fi as well as USB.
+        // Keep the platform minimum, which can still exceed the requested software budget.
+        if (!isMedia) {
+            val budgetBytes = (bytesPerSecond * VOICE_BUFFER_MILLIS / 1000).toInt()
+            // At high sample rates the old wireless buffer can already be shorter than 100 ms.
+            // Keep that smaller capacity rather than turning this latency fix into a regression.
+            val capacityBytes = if (wired) budgetBytes
+                else minOf(budgetBytes, maxOf(minBufferBytes * 4, MIN_TRACK_BUFFER_BYTES))
             return Plan(
-                trackBufferBytes = maxOf(minBufferBytes, (bytesPerSecond * WIRED_DEFAULT_MILLIS / 1000).toInt()),
+                trackBufferBytes = maxOf(minBufferBytes, capacityBytes),
                 startBytes = maxOf(minBufferBytes, (bytesPerSecond * LOW_LATENCY_HEADROOM_MILLIS / 1000).toInt()),
             )
         }
@@ -51,7 +58,6 @@ object MediaAudioBuffer {
             trackBufferBytes = maxOf(minBufferBytes * 4, MIN_TRACK_BUFFER_BYTES),
             startBytes = maxOf(minBufferBytes, MIN_START_BUFFER_BYTES),
         )
-        if (!isMedia) return lowLatency
         val millis = sanitize(mediaMillis)
         val start = (bytesPerSecond * millis / 1000).toInt()
         val shortBuffer = millis <= TRACK_SWITCH_MILLIS

@@ -48,6 +48,7 @@ class AudioStream(
     }
 
     private val closed = AtomicBoolean(false)
+    private val lifecycleLock = Any()
     // Close is a delivery barrier: an old stream must finish its sink callbacks before
     // its owner stops/replaces the renderer. Reentrant close from a callback is allowed.
     private val deliveryLock = Any()
@@ -60,31 +61,45 @@ class AudioStream(
     private var controlThread: Thread? = null
     private var started = false
 
-    fun listen(listener: Listener): Pair<Int, Int> {
+    fun listen(listener: Listener): Pair<Int, Int> = synchronized(lifecycleLock) {
+        check(!closed.get()) { "Audio stream is closed" }
+        check(dataSocket == null) { "Audio stream is already listening" }
         val data = bindAnyPort()
-        // Keep short Wi-Fi bursts in the kernel while decrypting or scheduling pauses
-        // the receive thread. The platform may cap this request; log the actual size.
-        val originalBufferBytes = runCatching { data.receiveBufferSize }.getOrDefault(0)
-        if (originalBufferBytes < AUDIO_RECEIVE_BUFFER_BYTES) {
-            runCatching { data.receiveBufferSize = AUDIO_RECEIVE_BUFFER_BYTES }
+        var control: DatagramSocket? = null
+        try {
+            // Keep short Wi-Fi bursts in the kernel while decrypting or scheduling pauses
+            // the receive thread. The platform may cap this request; log the actual size.
+            val originalBufferBytes = runCatching { data.receiveBufferSize }.getOrDefault(0)
+            if (originalBufferBytes < AUDIO_RECEIVE_BUFFER_BYTES) {
+                runCatching { data.receiveBufferSize = AUDIO_RECEIVE_BUFFER_BYTES }
+            }
+            onDiagnostic("Audio UDP receive buffer type=$streamType original=$originalBufferBytes requested=$AUDIO_RECEIVE_BUFFER_BYTES actual=${runCatching { data.receiveBufferSize }.getOrDefault(0)}")
+            // A diagnostic callback can synchronously close its owning session.
+            check(!closed.get()) { "Audio stream closed while starting" }
+            val rtcp = bindAnyPort()
+            control = rtcp
+            dataSocket = data
+            controlSocket = rtcp
+            dataThread = Thread({ runData(data, listener) }, "airplay-audio-rx").apply { isDaemon = true }
+            controlThread = Thread({ runControl(rtcp) }, "airplay-rtcp-rx").apply { isDaemon = true }
+            dataThread!!.start()
+            controlThread!!.start()
+            data.localPort to rtcp.localPort
+        } catch (error: Throwable) {
+            closed.set(true)
+            data.close()
+            control?.close()
+            dataThread?.interrupt()
+            controlThread?.interrupt()
+            throw error
         }
-        onDiagnostic("Audio UDP receive buffer type=$streamType original=$originalBufferBytes requested=$AUDIO_RECEIVE_BUFFER_BYTES actual=${runCatching { data.receiveBufferSize }.getOrDefault(0)}")
-        val control = bindAnyPort()
-        dataSocket = data
-        controlSocket = control
-        dataThread = Thread({ runData(data, listener) }, "airplay-audio-rx").apply {
-            isDaemon = true
-            start()
-        }
-        controlThread = Thread({ runControl(control) }, "airplay-rtcp-rx").apply {
-            isDaemon = true
-            start()
-        }
-        return data.localPort to control.localPort
     }
 
     override fun close() {
-        if (closed.compareAndSet(false, true)) {
+        closed.set(true)
+        // Serialize socket ownership with listen, including a close during initial binding.
+        // Every closer waits for this cleanup as well as the callback delivery barrier below.
+        synchronized(lifecycleLock) {
             dataSocket?.close()
             controlSocket?.close()
             dataThread?.interrupt()
@@ -207,9 +222,14 @@ class AudioStream(
 
     private fun bindAnyPort(): DatagramSocket {
         val socket = DatagramSocket(null)
-        socket.reuseAddress = true
-        socket.bind(InetSocketAddress(InetAddress.getByName("::"), 0))
-        return socket
+        try {
+            socket.reuseAddress = true
+            socket.bind(InetSocketAddress(InetAddress.getByName("::"), 0))
+            return socket
+        } catch (error: Throwable) {
+            socket.close()
+            throw error
+        }
     }
 
     private fun readU32Be(source: ByteArray, offset: Int): Int =

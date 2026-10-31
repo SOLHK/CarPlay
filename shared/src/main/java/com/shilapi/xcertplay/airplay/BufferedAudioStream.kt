@@ -62,8 +62,10 @@ internal class BufferedAudioStream(
     private var anchorRtp: Long? = null
     private var anchorNtp: BigInteger? = null
     private var feedStartTimestamp: Long? = null
+    // Pacing origin, rebased only after starvation; it does not change the source RTP anchor.
     private var feedStartNs = 0L
     private var fedSamples = 0L
+    private var estimatedPlayedSamples = 0L
     private var outputGeneration = 0L
 
     val port: Int get() = boundPort
@@ -171,6 +173,7 @@ internal class BufferedAudioStream(
                 synchronized(lock) {
                     if (closed.get()) return
                     retireFedLocked()
+                    recoverStarvedFeedClockLocked()
                     if (rate == 0 || queue.isEmpty() || leadMillisLocked() >= rendererLeadMillis() || rendererIsStalledLocked()) {
                         lock.wait(FEED_POLL_MILLIS)
                     } else {
@@ -180,6 +183,7 @@ internal class BufferedAudioStream(
                                 feedStartTimestamp = frame.timestamp
                                 feedStartNs = nanoTime()
                                 fedSamples = 0
+                                estimatedPlayedSamples = 0
                                 sink.onAudioStarted(id, format, frame.timestamp.toInt())
                             }
                             // A sink may synchronously report state back to its owner. Respect a
@@ -214,6 +218,20 @@ internal class BufferedAudioStream(
         return fedSamples * 1000L / format.sampleRate - playedMillis
     }
 
+    private fun recoverStarvedFeedClockLocked() {
+        if (rate == 0 || feedStartTimestamp == null) return
+        // Healthy delivery stays paced to the source clock so the renderer can measure drift.
+        // Once more than a frame/poll late, however, repaying elapsed wall time would dump up
+        // to the one-second stall limit into the renderer after a TCP outage. Keep that music
+        // in the network reserve and replenish only the ordinary renderer lead instead.
+        val frameMillis = (SAMPLES_PER_FRAME * 1000L + format.sampleRate - 1L) / format.sampleRate
+        if (leadMillisLocked() >= -maxOf(FEED_POLL_MILLIS, frameMillis)) return
+        val pending = rendererPendingSamplesLocked()
+            ?: (fedSamples - estimatedPlayedSamples).coerceAtLeast(0L)
+        val pacedSamples = (fedSamples - pending).coerceAtLeast(0L)
+        feedStartNs = nanoTime() - pacedSamples * 1000L / format.sampleRate * 1_000_000L
+    }
+
     private fun rendererLeadMillis(): Long {
         // AudioTrack may require more than the requested 100/150 ms. Feed enough to cross its
         // actual start threshold; otherwise a low-latency setting could leave it paused forever.
@@ -223,16 +241,20 @@ internal class BufferedAudioStream(
     }
 
     private fun rendererIsStalledLocked(): Boolean {
-        val start = feedStartTimestamp ?: return false
-        val played = sink.audioPlaybackPosition(id) ?: return false
-        val playedSamples = (played - start) and U32
-        // Both sides must use the same unsigned domain after the playback head wraps (~25 h).
-        val delta = ((fedSamples and U32) - playedSamples) and U32
-        val pendingSamples = if (delta < 0x8000_0000L) delta else 0L
+        val pendingSamples = rendererPendingSamplesLocked() ?: return false
         // Keep normal delivery paced to the source clock (needed for clock-drift measurement),
         // but stop feeding a stuck device before its compressed queue fills and drops music.
         val stallBudgetMillis = maxOf(1_000L, rendererLeadMillis() * 2L)
         return pendingSamples * 1000L / format.sampleRate >= stallBudgetMillis
+    }
+
+    private fun rendererPendingSamplesLocked(): Long? {
+        val start = feedStartTimestamp ?: return null
+        val played = sink.audioPlaybackPosition(id) ?: return null
+        val playedSamples = (played - start) and U32
+        // Both sides must use the same unsigned domain after the playback head wraps (~25 h).
+        val delta = ((fedSamples and U32) - playedSamples) and U32
+        return if (delta < 0x8000_0000L) delta else 0L
     }
 
     /**
@@ -245,7 +267,6 @@ internal class BufferedAudioStream(
             val start = rtpTime ?: positionLocked() ?: queue.peekFirst()?.timestamp
             restoreFedLocked()
             if (start != null) dropBeforeLocked(start)
-            restartOutputLocked()
             anchorRtp = start
             anchorNtp = nowNtp.add(millisToNtp(startLatencyMillis))
         } else {
@@ -253,11 +274,13 @@ internal class BufferedAudioStream(
             restoreFedLocked()
             position?.let { anchorRtp = it; dropBeforeLocked(it) }
             anchorNtp = nowNtp
-            restartOutputLocked()
         }
         rate = newRate.coerceIn(0, 1)
+        // Publish the control state before the stop callback. A synchronous newer control
+        // from that callback must win, rather than being overwritten when this one returns.
+        restartOutputLocked()
         lock.notifyAll()
-        anchorLocked()
+        if (closed.get()) null else anchorLocked()
     }
 
     /** GETANCHOR: the current anchor, or null before the first SETRATE. */
@@ -294,7 +317,11 @@ internal class BufferedAudioStream(
             // playback head and retain all frames until it actually moves.
             sink.audioPlaybackPosition(id)?.let { return it and U32 }
             val playedMillis = maxOf(0L, (nanoTime() - feedStartNs) / 1_000_000L - startLatencyMillis)
-            return (start + minOf(fedSamples, playedMillis * format.sampleRate / 1000L)) and U32
+            // After starvation the pacing origin moves forward. Preserve already reported
+            // progress, but do not immediately retire newly fed, still unheard recovery music.
+            estimatedPlayedSamples = maxOf(estimatedPlayedSamples,
+                minOf(fedSamples, playedMillis * format.sampleRate / 1000L))
+            return (start + estimatedPlayedSamples) and U32
         }
         return anchorRtp
     }
@@ -331,10 +358,14 @@ internal class BufferedAudioStream(
     /** Stops what the sink still holds, so a pause or a track change is heard at once. */
     private fun restartOutputLocked() {
         outputGeneration++
-        if (feedStartTimestamp != null) runCatching { sink.onAudioStopped(id) }
-            .onFailure { log("Buffered audio: output cleanup failed (${it.javaClass.simpleName})") }
+        val hadOutput = feedStartTimestamp != null
         feedStartTimestamp = null
         fedSamples = 0
+        estimatedPlayedSamples = 0
+        // A stop callback can synchronously pause/flush/start again. Detach the old output
+        // first so reentry cannot stop it recursively or have its new state cleared here.
+        if (hadOutput) runCatching { sink.onAudioStopped(id) }
+            .onFailure { log("Buffered audio: output cleanup failed (${it.javaClass.simpleName})") }
     }
 
     override fun close() {
