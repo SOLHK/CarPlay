@@ -171,13 +171,20 @@ class CarPlayMediaEngine(
                         "screen stream ended type=$type reason=${cause?.message ?: "peer EOF"}",
                     )
                     if (streams.remove(streamKey, screen)) {
-                        sink.onScreenStreamActive(type, false)
+                        if (!hasScreenOwner(type)) sink.onScreenStreamActive(type, false)
+                        // Replacement close is not a transport failure: an old decoder must not
+                        // tear down a session that already owns a newer screen.
+                        session.close()
                     }
-                    session.close()
                 }
             },
         )
         streams.put(streamKey, screen)?.close()
+        // Only one screen of each type can drive the sink. Retire any previous session's
+        // receiver before it can publish stale frames into the replacement decoder.
+        streams.keys.filter { it.type == type && it != streamKey }.forEach { oldKey ->
+            streams.remove(oldKey)?.close()
+        }
         sink.onScreenStreamActive(type, true)
         return port
     }
@@ -230,6 +237,7 @@ class CarPlayMediaEngine(
         val (dataPort, controlPort) = audio.listen(
             object : AudioStream.Listener {
                 override fun onStarted(firstSample: Int) {
+                    if (streams[streamKey] !== audio) return
                     meta.firstSample = firstSample
                     meta.originNs = System.nanoTime()
                     sink.onAudioStarted(streamId, format, firstSample)
@@ -241,6 +249,7 @@ class CarPlayMediaEngine(
                 }
 
                 override fun onRtp(rtp: ByteArray, sample: Int) {
+                    if (streams[streamKey] !== audio) return
                     meta.position.observeRtp(sample)
                     clockProbe.observe(sample, System.nanoTime())?.let { hz ->
                         session.logDebug(
@@ -262,6 +271,17 @@ class CarPlayMediaEngine(
                 }
             },
         )
+        // A renderer is keyed by (type, audioType), not by AirPlaySession. The new
+        // session must retire an old receiver with that same sink identity, otherwise
+        // late old RTP and TEARDOWN can corrupt the new song or navigation prompt.
+        val oldOwners = streams.keys.filter { it != streamKey && it.type == type && it.audioType == audioType }
+        oldOwners.forEach { oldKey ->
+            streams.remove(oldKey)?.close()
+            if (pendingMicrophone.remove(oldKey) != null) sink.onMicrophoneStopped(streamId)
+            audioMeta.remove(oldKey)
+            audioCaptures.remove(oldKey)?.close()
+        }
+        if (oldOwners.isNotEmpty()) sink.onAudioStopped(streamId)
         streams[streamKey] = audio
         audioMeta[streamKey] = meta
         if (microphoneStart != null && MicrophoneStart.startsWithoutDownlink(audioType)) {
@@ -496,7 +516,9 @@ class CarPlayMediaEngine(
     }
 
     override fun onFeedback(session: AirPlaySession): Map<String, Any?>? {
-        val active = audioMeta.values.toList()
+        // The phone only understands feedback for streams belonging to this control
+        // connection; other sessions may still be closing during a wireless handoff.
+        val active = audioMeta.entries.filter { it.key.session === session }.map { it.value }
         val buffered = bufferedStreams[session]
         if (active.isEmpty() && buffered == null) return null
         val streams = active.map { meta ->
@@ -541,22 +563,27 @@ class CarPlayMediaEngine(
         val tornDown = streams.keys.filter { it.session === session && it.type == type }
         tornDown.forEach { key ->
             val streamId = AudioStreamId(key.type, key.audioType)
-            // Retire and quiesce the receive callbacks before removing their renderer.
-            // Otherwise an in-flight RTP packet can recreate the old song after stop.
-            streams.remove(key)?.close()
-            if (pendingMicrophone.remove(key) != null) sink.onMicrophoneStopped(streamId)
+            // Retire and quiesce receiver callbacks before considering sink cleanup.
+            val retired = streams.remove(key)
+            retired?.close()
+            val isLastAudioOwner = !hasAudioOwner(key)
+            if (pendingMicrophone.remove(key) != null && isLastAudioOwner) sink.onMicrophoneStopped(streamId)
             audioMeta.remove(key)
             audioCaptures.remove(key)?.close()
-            // BufferedAudioStream owns serialized sink cleanup; stopping it first from here
-            // could interleave with its in-flight delivery and recreate a stale renderer.
-            if (key.type != BufferedAudioStream.STREAM_TYPE) sink.onAudioStopped(streamId)
+            // Old-session TEARDOWN must never stop the renderer of a new session.
+            if (retired != null && isAudioStreamType(key.type) && isLastAudioOwner) sink.onAudioStopped(streamId)
         }
-        if (isScreenStreamType(type)) sink.onScreenStreamActive(type, false)
+        if (isScreenStreamType(type) && !hasScreenOwner(type)) sink.onScreenStreamActive(type, false)
     }
 
     override fun onAudioDuck(session: AirPlaySession, ducked: Boolean) {
-        if (ducked) duckingSession.set(session) else duckingSession.compareAndSet(session, null)
-        sink.onAudioDuck(ducked)
+        if (ducked) {
+            duckingSession.set(session)
+            sink.onAudioDuck(true)
+        } else if (duckingSession.compareAndSet(session, null)) {
+            // A late unduck from a retired phone cannot cancel a newer phone's prompt.
+            sink.onAudioDuck(false)
+        }
     }
 
     override fun onSessionClosed(session: AirPlaySession) {
@@ -568,14 +595,28 @@ class CarPlayMediaEngine(
         val sessionStreams = streams.keys.filter {
             it.session === session && it.type != BufferedAudioStream.STREAM_TYPE
         }
-        sessionStreams
-            .filter { isScreenStreamType(it.type) }
-            .forEach { sink.onScreenStreamActive(it.type, false) }
-        sessionStreams.forEach { streams.remove(it)?.close() }
-        audioMeta.clear()
-        pendingMicrophone.clear()
-        audioCaptures.values.forEach(AudioPacketCapture::close)
-        audioCaptures.clear()
+        sessionStreams.forEach { key ->
+            val retired = streams.remove(key) ?: return@forEach
+            retired.close()
+            if (isScreenStreamType(key.type)) {
+                if (!hasScreenOwner(key.type)) sink.onScreenStreamActive(key.type, false)
+            } else if (isAudioStreamType(key.type) && !hasAudioOwner(key)) {
+                // An abnormal transport drop does not send RTSP TEARDOWN. Release the
+                // decoder/focus and microphone only if no replacement stream owns the ID.
+                val id = AudioStreamId(key.type, key.audioType)
+                if (pendingMicrophone.remove(key) != null) sink.onMicrophoneStopped(id)
+                sink.onAudioStopped(id)
+            }
+        }
+        audioMeta.keys.filter { it.session === session }.forEach(audioMeta::remove)
+        pendingMicrophone.keys.filter { it.session === session }.forEach { key ->
+            if (pendingMicrophone.remove(key) != null && !hasAudioOwner(key)) {
+                sink.onMicrophoneStopped(AudioStreamId(key.type, key.audioType))
+            }
+        }
+        audioCaptures.keys.filter { it.session === session }.forEach { key ->
+            audioCaptures.remove(key)?.close()
+        }
     }
 
     /** Removes ownership before a close that may block on delivery or invoke the sink. */
@@ -690,6 +731,15 @@ class CarPlayMediaEngine(
 
     private fun isScreenStreamType(type: Int): Boolean =
         type == STREAM_TYPE_MAIN_SCREEN || type == STREAM_TYPE_ALT_SCREEN
+
+    private fun isAudioStreamType(type: Int): Boolean =
+        type == STREAM_TYPE_MAIN_AUDIO || type == STREAM_TYPE_ALT_AUDIO || type == STREAM_TYPE_MAIN_HIGH_AUDIO
+
+    private fun hasScreenOwner(type: Int): Boolean =
+        streams.keys.any { it.type == type && isScreenStreamType(it.type) }
+
+    private fun hasAudioOwner(key: StreamKey): Boolean =
+        streams.keys.any { it.type == key.type && it.audioType == key.audioType }
 
     internal companion object {
         /**
