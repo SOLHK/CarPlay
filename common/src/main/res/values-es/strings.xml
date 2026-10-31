@@ -332,6 +332,8 @@
     <string name="s_3_connect">3 · Conéctate</string>
     <string name="s_3_tap_check_and_enable_below_this_enables_the_cluster_ma">3. Toca «Comprobar y activar» abajo. Esto activa el mapa del cuadro y el seguimiento automático del tema. Una sesión de CarPlay activa se reconectará una vez. Después puedes desconectar el ordenador.</string>
     <string name="settings_music_buffer_ms">%1$d ms</string>
+    <string name="settings_music_buffer_default_ms">%1$d ms · predeterminado</string>
+    <string name="settings_music_buffer_description">Un búfer de música menor responde más rápido. Auméntalo si se corta el audio. Es un objetivo de búfer, no una medición del retraso total. Se aplica en la próxima conexión.</string>
     <string name="settings_music_buffer_wireless">Búfer de música (inalámbrico)</string>
     <string name="settings_music_buffer_wired">Búfer de música (cable USB)</string>
     <string name="s_60_fps_smoother_motion">60 img/s · movimiento más suave</string>

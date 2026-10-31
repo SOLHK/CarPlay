@@ -5316,11 +5316,12 @@ open class CarPlayHostActivity : ComponentActivity() {
             callVoiceFilter = AirPlayPersistence.loadCallVoiceFilter(this),
             callSpeakerphone = { AirPlayPersistence.loadCallSpeakerphone(this) },
             // Only a SurfaceView honours release timestamps; smooth video always selects one.
-            videoPacingDelayMillis = if (smoothVideo) smoothVideoDelayMillis(fps) else 0,
+            videoPacingDelayMillis = if (smoothVideo) smoothVideoDelayMillis(fps, wiredTransport = !wirelessEnabled) else 0,
             mainVideoFrameRate = fps,
             vendorLowLatencyDecoder = AirPlayPersistence.loadLowLatencyDecoder(this),
             mtkDecoderTuningEnabled = AirPlayPersistence.loadMtkDecoderTuning(this),
             navigationPromptAudioFocus = AirPlayPersistence.loadNavigationPromptAudioFocus(this),
+            wiredTransport = !wirelessEnabled,
         )
     }
 
@@ -6420,7 +6421,7 @@ open class CarPlayHostActivity : ComponentActivity() {
         root.addView(viewport, index, texture.layoutParams)
         appendLog(if (smoothVideo) {
             "Using SurfaceView video output: smooth video, frames shown at the iPhone's frame time + a delay " +
-                "starting at ${smoothVideoDelayMillis(fps)} ms; picture adjustments unavailable"
+                "starting at ${smoothVideoDelayMillis(fps, wiredTransport = !wirelessEnabled)} ms; picture adjustments unavailable"
         } else if (directVideoOutput) {
             "Using SurfaceView video output: direct video output, frames shown as soon as they are decoded; " +
                 "picture adjustments unavailable"

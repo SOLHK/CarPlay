@@ -9,6 +9,12 @@ changing the receiver's visible CarPlay branding.
 
 ## Checks
 
+Every app update must increment both `versionName` and `versionCode`. Use
+`python3 scripts/version.py bump` before delivering changed production code/resources,
+then `python3 scripts/version.py check --base origin/main`. A single unmerged update
+can contain multiple repair commits with the same new version. Preserve package IDs
+and the existing authorized signing identity so the delivered APK can update its predecessor.
+
 Run the CI command from `.github/workflows/android.yml` before you report a change as done:
 
 ```sh

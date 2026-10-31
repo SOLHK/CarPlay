@@ -685,13 +685,14 @@ object AirPlayPersistence {
     /** Music buffer for the session's transport. Wireless and wired USB have separate settings. */
     fun loadMediaBufferMillis(context: Context, wireless: Boolean): Int {
         val prefs = context.getSharedPreferences(PREFS, Context.MODE_PRIVATE)
-        val shared = prefs.getInt(KEY_MEDIA_BUFFER_MS, com.shilapi.xcertplay.media.MediaAudioBuffer.DEFAULT_MILLIS)
         return if (wireless) {
             com.shilapi.xcertplay.media.MediaAudioBuffer.sanitizeWireless(prefs.getInt(
                 KEY_MEDIA_BUFFER_MS, com.shilapi.xcertplay.media.MediaAudioBuffer.WIRELESS_DEFAULT_MILLIS))
         } else {
-            // Until wired has its own value, keep the delay saved when one setting covered both transports.
-            com.shilapi.xcertplay.media.MediaAudioBuffer.sanitizeWired(prefs.getInt(KEY_WIRED_MEDIA_BUFFER_MS, shared))
+            // Old shared values are now wireless preferences. USB must not inherit a radio-gap buffer;
+            // preserve an explicitly saved wired choice, otherwise use the low-latency USB default.
+            com.shilapi.xcertplay.media.MediaAudioBuffer.sanitizeWired(prefs.getInt(
+                KEY_WIRED_MEDIA_BUFFER_MS, com.shilapi.xcertplay.media.MediaAudioBuffer.WIRED_DEFAULT_MILLIS))
         }
     }
 
@@ -769,7 +770,7 @@ object AirPlayPersistence {
         if (wireless) {
             val wired = loadMediaBufferMillis(context, wireless = false)
             prefs.edit()
-                // Pin the wired delay first, so it no longer follows the wireless value.
+                // Keep an explicit wired choice independent of later wireless changes.
                 .putInt(KEY_WIRED_MEDIA_BUFFER_MS, wired)
                 .putInt(KEY_MEDIA_BUFFER_MS, com.shilapi.xcertplay.media.MediaAudioBuffer.sanitizeWireless(millis))
                 .apply()

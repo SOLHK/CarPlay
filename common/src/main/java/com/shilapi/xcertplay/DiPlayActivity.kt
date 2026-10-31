@@ -2231,6 +2231,9 @@ class DiPlayActivity : ComponentActivity(), AppAppearanceOwner {
             })
             musicBufferChoice(card, wireless = true)
             musicBufferChoice(card, wireless = false)
+            card.addView(label(getString(R.string.settings_music_buffer_description), 14, MUTED).apply {
+                setPadding(0, 0, 0, dp(SETTINGS_BLOCK_GAP_DP))
+            })
             toggle(card, getString(R.string.settings_call_speakerphone), getString(R.string.settings_call_speakerphone_description),
                 AirPlayPersistence.loadCallSpeakerphone(this)) { AirPlayPersistence.saveCallSpeakerphone(this, it) }
         }
@@ -6567,14 +6570,14 @@ class DiPlayActivity : ComponentActivity(), AppAppearanceOwner {
         dialog.show()
     }
 
-    /** Music buffer for one transport. A change reconnects only a running session of that transport. */
+    /** Save for the next connection without interrupting the current song. */
     private fun musicBufferChoice(card: LinearLayout, wireless: Boolean) {
         val buffer = com.shilapi.xcertplay.media.MediaAudioBuffer
         val presets = if (wireless) buffer.wirelessPresets else buffer.wiredPresets
+        val defaultMillis = if (wireless) buffer.WIRELESS_DEFAULT_MILLIS else buffer.WIRED_DEFAULT_MILLIS
         val labels = presets.map { millis ->
             when (millis) {
-                buffer.DEFAULT_MILLIS -> if (wireless) getString(R.string.settings_music_buffer_ms, millis)
-                    else getString(R.string.s_300_ms_default)
+                defaultMillis -> getString(R.string.settings_music_buffer_default_ms, millis)
                 buffer.MOST_STABLE_MILLIS -> getString(R.string.s_1000_ms_most_stable)
                 else -> getString(R.string.settings_music_buffer_ms, millis)
             }
@@ -6583,16 +6586,24 @@ class DiPlayActivity : ComponentActivity(), AppAppearanceOwner {
         val sessionTransport = AirPlayPersistence.loadWirelessEnabled(this) == wireless
         choice(card, title, labels,
             presets.indexOf(AirPlayPersistence.loadMediaBufferMillis(this, wireless)).coerceAtLeast(0),
-            reconnects = sessionTransport) {
+            reconnects = false, wrapLabel = true) {
             AirPlayPersistence.saveMediaBufferMillis(this, wireless, presets[it])
+            if (sessionTransport) markReconnectNeeded()
         }
     }
 
     // [announcesReconnect] labels a choice whose [save] reconnects by itself.
     private fun choice(parent: LinearLayout, title: String, options: List<String>, current: Int, reconnects: Boolean = true,
-        announcesReconnect: Boolean = reconnects, enabled: Boolean = true, save: (Int) -> Unit) {
+        announcesReconnect: Boolean = reconnects, enabled: Boolean = true, wrapLabel: Boolean = false, save: (Int) -> Unit) {
         var selection = current
-        val button = button("$title · ${options[selection]}", false) {}.apply { isEnabled = enabled }
+        val button = button("$title · ${options[selection]}", false) {}.apply {
+            isEnabled = enabled
+            wrapContentHeight = wrapLabel
+            if (wrapLabel) {
+                minHeight = dp(CONTROL_HEIGHT_DP)
+                setPadding(paddingLeft, dp(CONTROL_GAP_DP), paddingRight, dp(CONTROL_GAP_DP))
+            }
+        }
         button.setOnClickListener {
             var pendingSelection = selection
             appDialogBuilder().setTitle(title)
@@ -6777,6 +6788,7 @@ class DiPlayActivity : ComponentActivity(), AppAppearanceOwner {
         private val accent: Int,
     ) : Button(context) {
         var action = false
+        var wrapContentHeight = false
         var contentOffsetY = 0f
         var alignVisibleGlyphs = true
         private val glyphBounds = android.graphics.Rect()
@@ -6872,7 +6884,10 @@ class DiPlayActivity : ComponentActivity(), AppAppearanceOwner {
             val lp = child.layoutParams as? LinearLayout.LayoutParams ?: continue
             when {
                 child is Button -> {
-                    lp.height = dp(CONTROL_HEIGHT_DP); lp.topMargin = 0
+                    lp.height = if (child is SettingButton && child.wrapContentHeight) {
+                        ViewGroup.LayoutParams.WRAP_CONTENT
+                    } else dp(CONTROL_HEIGHT_DP)
+                    lp.topMargin = 0
                     lp.bottomMargin = dp(if (isNote(next)) NOTE_ATTACH_GAP_DP else CONTROL_GAP_DP)
                 }
                 // Toggle rows carried their own vertical padding, which doubled the gap after a button.

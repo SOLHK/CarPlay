@@ -8,6 +8,7 @@ import java.util.concurrent.CountDownLatch
 import java.util.concurrent.CopyOnWriteArrayList
 import java.util.concurrent.Executors
 import java.util.concurrent.TimeUnit
+import java.util.concurrent.atomic.AtomicLong
 import org.junit.Assert.assertArrayEquals
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
@@ -142,12 +143,160 @@ class BufferedAudioStreamTest {
                 }
                 out.flush()
                 stream.setRate(1000L, 1, BigInteger.ZERO)
-                waitFor { sink.rtp.size >= 47 }
+                waitFor { sink.rtp.size >= 9 }
                 val paused = stream.setRate(null, 0, BigInteger.ZERO)!!
                 assertEquals(1000L, paused["rtpTime"])
                 stream.setRate(paused["rtpTime"] as Long, 1, BigInteger.ZERO)
                 waitFor { sink.started.size == 2 }
-                assertEquals("Resume skipped the one-second renderer preload", 1000, sink.started.last())
+                assertEquals("Resume skipped the low-latency renderer preload", 1000, sink.started.last())
+            }
+        } finally { stream.close() }
+    }
+
+    @Test
+    fun aSlowHardwareStartDoesNotDiscardUnheardMusicWhenTheClockMovesOn() {
+        val base = 0xffff_fc00L
+        val now = AtomicLong()
+        val starts = CopyOnWriteArrayList<Int>()
+        val packets = CopyOnWriteArrayList<Int>()
+        val sink = object : MediaSink {
+            override fun audioPlaybackPosition(id: AudioStreamId) = base
+            override fun onAudioStarted(id: AudioStreamId, format: AudioFormat, firstSample: Int) { starts += firstSample }
+            override fun onAudioRtp(id: AudioStreamId, format: AudioFormat, rtp: ByteArray, sample: Int) { packets += sample }
+        }
+        val stream = BufferedAudioStream(key, format, sink, nanoTime = now::get)
+        try {
+            stream.start()
+            Socket(InetAddress.getLoopbackAddress(), stream.port).use { socket ->
+                val out = DataOutputStream(socket.getOutputStream())
+                repeat(100) { i ->
+                    val body = seal(i, (base + i * 1024L) and 0xffff_ffffL, byteArrayOf(0x21))
+                    out.writeShort(body.size + 2); out.write(body)
+                }
+                out.flush()
+                stream.setRate(base, 1, BigInteger.ZERO)
+                waitFor { packets.size >= 9 }
+                // Model a slow ROM that has still not advanced its playback head one second later.
+                now.set(1_000_000_000L)
+                waitFor { packets.size >= 47 }
+                assertTrue("A stopped device must backpressure the renderer rather than fill its packet queue", packets.size <= 48)
+                val paused = stream.setRate(null, 0, BigInteger.ZERO)!!
+                assertEquals(base, paused["rtpTime"])
+                stream.setRate(base, 1, BigInteger.ZERO)
+                waitFor { starts.size == 2 }
+                assertEquals(base.toInt(), starts.last())
+            }
+        } finally { stream.close() }
+    }
+
+    @Test
+    fun aLargerDeviceMinimumIsFedWithoutRestoringTheOldOneSecondPreload() {
+        val packets = CopyOnWriteArrayList<Int>()
+        val minimum = AtomicLong(100)
+        val sink = object : MediaSink {
+            override fun audioStartLatencyMillis(format: AudioFormat) = minimum.get().toInt()
+            override fun onAudioStarted(id: AudioStreamId, format: AudioFormat, firstSample: Int) { minimum.set(500) }
+            override fun onAudioRtp(id: AudioStreamId, format: AudioFormat, rtp: ByteArray, sample: Int) { packets += sample }
+        }
+        val stream = BufferedAudioStream(key, format, sink, nanoTime = { 0L })
+        try {
+            stream.start()
+            Socket(InetAddress.getLoopbackAddress(), stream.port).use { socket ->
+                val out = DataOutputStream(socket.getOutputStream())
+                repeat(100) { i ->
+                    val body = seal(i, i * 1024L, byteArrayOf(0x21))
+                    out.writeShort(body.size + 2); out.write(body)
+                }
+                out.flush()
+                stream.setRate(0L, 1, BigInteger.ZERO)
+                waitFor { packets.size >= 26 }
+                Thread.sleep(60)
+                assertEquals("Feed must cross the device minimum without an extra second of queue", 26, packets.size)
+            }
+        } finally { stream.close() }
+    }
+
+    @Test
+    fun aFlushedTrackCannotReenterThroughLateTcpFramesAcrossRtpWrap() {
+        val sink = RecordingSink()
+        val stream = BufferedAudioStream(key, format, sink, nanoTime = { 0L })
+        try {
+            stream.start()
+            Socket(InetAddress.getLoopbackAddress(), stream.port).use { socket ->
+                val out = DataOutputStream(socket.getOutputStream())
+                fun send(sequence: Int, timestamp: Long) {
+                    val body = seal(sequence, timestamp, byteArrayOf(0x21))
+                    out.writeShort(body.size + 2); out.write(body); out.flush()
+                }
+                send(0, 0xffff_fc00L)
+                stream.setRate(0xffff_fc00L, 1, BigInteger.ZERO)
+                waitFor { sink.rtp.size == 1 }
+                stream.setRate(null, 0, BigInteger.ZERO)
+                stream.flush(1024L)
+                sink.rtp.clear()
+                send(1, 0L) // In flight before FLUSHBUFFERED; it is older than the new track.
+                send(2, 1024L)
+                send(3, 2048L)
+                stream.setRate(1024L, 1, BigInteger.ZERO)
+                waitFor { sink.rtp.size == 2 }
+                assertEquals(listOf(1024, 2048), sink.rtp.toList())
+            }
+        } finally { stream.close() }
+    }
+
+    @Test
+    fun playbackHeadRolloverDoesNotPermanentlyBackpressureALongSession() {
+        val hardware = AtomicLong(1024L)
+        val sink = object : MediaSink {
+            override fun audioPlaybackPosition(id: AudioStreamId) = hardware.get()
+        }
+        val stream = BufferedAudioStream(key, format, sink)
+        val type = BufferedAudioStream::class.java
+        fun set(name: String, value: Any) = type.getDeclaredField(name).apply { isAccessible = true }.set(stream, value)
+        val stalled = type.getDeclaredMethod("rendererIsStalledLocked").apply { isAccessible = true }
+        try {
+            set("feedStartTimestamp", 0L)
+            set("fedSamples", 0x1_0000_0000L + 2048L)
+            assertFalse(stalled.invoke(stream) as Boolean)
+            set("fedSamples", 0x1_0000_0000L + 49_024L)
+            assertTrue(stalled.invoke(stream) as Boolean)
+            hardware.set(48_000L)
+            assertFalse(stalled.invoke(stream) as Boolean)
+        } finally { stream.close() }
+    }
+
+    @Test
+    fun aFullRendererRetriesTheSameFrameAndFlushStillDiscardsOnlyTheOldTrack() {
+        val accept = java.util.concurrent.atomic.AtomicBoolean(false)
+        val attempted = CountDownLatch(1)
+        val packets = CopyOnWriteArrayList<Int>()
+        val sink = object : MediaSink {
+            override fun onBufferedAudioRtp(id: AudioStreamId, format: AudioFormat, rtp: ByteArray, sample: Int): Boolean {
+                attempted.countDown()
+                if (!accept.get()) return false
+                packets += sample
+                return true
+            }
+        }
+        val stream = BufferedAudioStream(key, format, sink, nanoTime = { 0L })
+        try {
+            stream.start()
+            Socket(InetAddress.getLoopbackAddress(), stream.port).use { socket ->
+                val out = DataOutputStream(socket.getOutputStream())
+                for (i in 1..3) {
+                    val body = seal(i, i * 1024L, byteArrayOf(0x21))
+                    out.writeShort(body.size + 2); out.write(body)
+                }
+                out.flush()
+                stream.setRate(1024L, 1, BigInteger.ZERO)
+                assertTrue(attempted.await(3, TimeUnit.SECONDS))
+                assertTrue(packets.isEmpty())
+                waitFor { queuedFrames(stream) == 3 }
+                assertEquals(3, queuedFrames(stream))
+                stream.flush(2048L)
+                accept.set(true)
+                waitFor { packets.size == 2 }
+                assertEquals(listOf(2048, 3072), packets.toList())
             }
         } finally { stream.close() }
     }

@@ -18,6 +18,7 @@ import android.view.Surface
 import com.shilapi.xcertplay.airplay.AudioCodecKind
 import com.shilapi.xcertplay.airplay.AudioFormat
 import com.shilapi.xcertplay.airplay.AudioStreamId
+import com.shilapi.xcertplay.airplay.BufferedAudioStream
 import com.shilapi.xcertplay.airplay.MediaSink
 import com.shilapi.xcertplay.telecom.PhoneAudioRoute
 import com.shilapi.xcertplay.airplay.MicrophoneConfig
@@ -38,6 +39,23 @@ import java.util.concurrent.TimeUnit
 /** AudioTrack's attributes getter is only available from Android 10. */
 internal fun audioTrackAttributesForFocus(track: AudioTrack, configured: AudioAttributes): AudioAttributes =
     if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) track.audioAttributes else configured
+
+/** AudioTrack has its own startup gate; play() alone does not lower the default full-capacity gate. */
+internal fun audioTrackStartThresholdBytes(track: AudioTrack, requestedBytes: Int, frameBytes: Int): Int {
+    val capacityFrames = track.bufferSizeInFrames.coerceAtLeast(1)
+    val requestedFrames = ((requestedBytes + frameBytes - 1) / frameBytes).coerceIn(1, capacityFrames)
+    val actualFrames = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
+        runCatching {
+            val applied = track.setStartThresholdInFrames(requestedFrames)
+            if (applied > 0) applied else track.startThresholdInFrames
+        }.getOrNull()?.takeIf { it > 0 } ?: capacityFrames
+    } else {
+        // Before Android 12 the native gate cannot be queried or changed through this API.
+        // Feeding only the app's smaller threshold could leave a large platform buffer silent.
+        capacityFrames
+    }
+    return maxOf(requestedBytes, actualFrames * frameBytes)
+}
 
 /** Owns one focus request for all eligible tracks in a CarPlay sink. */
 internal class AudioFocusCoordinator(
@@ -221,6 +239,8 @@ class AndroidMediaSink(
     private val mtkDecoderTuningEnabled: Boolean = false,
     /** Opt-in (#946): navigation prompts request duckable focus while the iPhone ducks audio. Needs [audioFocusEnabled]. */
     navigationPromptAudioFocus: Boolean = false,
+    /** USB sessions use the short voice buffer independently of the wireless music setting. */
+    private val wiredTransport: Boolean = false,
 ) : MediaSink {
     // Each downlink publishes its own reference; a mic must match that stream and sample rate.
     private val callEchoReferences = ConcurrentHashMap<AudioStreamId, EchoReference>()
@@ -530,13 +550,16 @@ class AndroidMediaSink(
     }
 
     override fun onAudioStarted(id: AudioStreamId, format: AudioFormat, firstSample: Int) {
-        audioRenderer(id, format).start()
+        audioRenderer(id, format).start(firstSample)
         if (format.audioType == "media") updateMediaAudio(id, true)
     }
 
     override fun onAudioRtp(id: AudioStreamId, format: AudioFormat, rtp: ByteArray, sample: Int) {
         audioRenderer(id, format).submit(rtp, sample)
     }
+
+    override fun onBufferedAudioRtp(id: AudioStreamId, format: AudioFormat, rtp: ByteArray, sample: Int): Boolean =
+        audioRenderer(id, format).offerBuffered(rtp, sample)
 
     override fun onAudioStopped(id: AudioStreamId) {
         synchronized(this) {
@@ -545,6 +568,15 @@ class AndroidMediaSink(
         }
         updateMediaAudio(id, false)
     }
+
+    override fun audioStartLatencyMillis(format: AudioFormat): Int {
+        val configured = if (format.payloadType == BufferedAudioStream.STREAM_TYPE) MediaAudioBuffer.bufferedStartMillis(wiredTransport)
+            else mediaBufferMillis
+        val actual = audioRenderers[AudioStreamId(format.payloadType, format.audioType)]?.prebufferMillis() ?: 0
+        return maxOf(configured, actual)
+    }
+
+    override fun audioPlaybackPosition(id: AudioStreamId): Long? = audioRenderers[id]?.playbackPosition()
 
     private fun updateMediaAudio(id: AudioStreamId, active: Boolean) {
         val (before, after) = synchronized(mediaAudioTypes) {
@@ -719,6 +751,7 @@ class AndroidMediaSink(
         // Keep the experimental MTK mode on the main CarPlay picture only. Mirrors and the
         // cluster have separate timing and must retain their established decoder configuration.
         mtkDecoderTuningEnabled = mtkDecoderTuningEnabled && type == MAIN_SCREEN_TYPE && statsLabel == null,
+        wiredTransport = wiredTransport,
     ).also { if (startImmediately) it.start() }
 
     @Synchronized
@@ -743,7 +776,7 @@ class AndroidMediaSink(
             navigationChannel,
             audioFocusCoordinator,
             navigationStreamType,
-            mediaBufferMillis,
+            if (format.payloadType == BufferedAudioStream.STREAM_TYPE) MediaAudioBuffer.bufferedStartMillis(wiredTransport) else mediaBufferMillis,
             onAudioDiagnostic,
             ambientSinkToken,
             speakerphoneCall = format.audioType == "telephony" &&
@@ -751,6 +784,7 @@ class AndroidMediaSink(
             echoReference = echoReference,
             voiceFilter = callVoiceFilter && format.audioType == TELEPHONY_AUDIO_TYPE,
         ).also {
+            it.wiredTransport = wiredTransport
             it.setNavigationAttenuationDb(navigationAttenuationDb)
             if (format.audioType == TELEPHONY_AUDIO_TYPE) it.onRoutedToEarpiece = { moveCallToLoudspeaker(id) }
             audioRenderers[id] = it
@@ -919,13 +953,17 @@ private class VideoDecoder(
      */
     private val framesAtOnce: Boolean = false,
     private val mtkDecoderTuningEnabled: Boolean = false,
+    private val wiredTransport: Boolean = false,
 ) : Closeable {
     private val pacer = FramePacer()
-    private val pacingDelay = if (pacingDelayNanos > 0) PacingDelay(pacingDelayNanos) else null
+    private val pacingDelay = if (pacingDelayNanos > 0) {
+        PacingDelay(pacingDelayNanos, maxNanos = VideoPacing.maximumDelayNanos(wiredTransport))
+    } else null
     // Per queued presentation time (decode thread only): when it was queued, and whether it is a paced
     // frame's local time rather than the queue time.
     private val queuedPresentationUs = LongArray(64)
     private val queuedAtNanos = LongArray(64)
+    private val queuedArrivalNanos = LongArray(64)
     private val queuedPaced = BooleanArray(64)
     // Set on the paced frames queued just before a pause in the iPhone's frames: the decoder releases a
     // frame only once about two more are queued, so they waited for that pause, which no display delay
@@ -1073,7 +1111,8 @@ private class VideoDecoder(
                             )
                             if (overloaded) {
                                 recover("video backlog kept growing or exceeded hard limit")
-                            } else feed(job.nalus, job.receivedNs, localTimeOf(job))
+                            } else feed(job.nalus, job.receivedNs, localTimeOf(job),
+                                job.arrivalNanos.takeIf { it in 1..job.receivedNs } ?: job.receivedNs)
                         }
                         is VideoJob.SurfaceChanged -> changeSurface(job.surface)
                         is VideoJob.DetachSurface -> detach(job.request)
@@ -1485,7 +1524,7 @@ private class VideoDecoder(
         lastConfig?.let(::configureDecoder)
     }
 
-    private fun feed(nalus: ByteArray, receivedNs: Long, presentNs: Long = 0L) {
+    private fun feed(nalus: ByteArray, receivedNs: Long, presentNs: Long = 0L, arrivalNs: Long = receivedNs) {
         val annexB = MediaCodecSupport.toAnnexB(nalus)
         val config = lastConfig ?: return
         if (outputSurface == null) return
@@ -1535,6 +1574,7 @@ private class VideoDecoder(
                 lastQueuedNanos = queuedNow
                 queuedPresentationUs[queuedSlot] = presentationUs
                 queuedAtNanos[queuedSlot] = queuedNow
+                queuedArrivalNanos[queuedSlot] = arrivalNs
                 queuedPaced[queuedSlot] = presentNs > 0
                 queuedBeforePause[queuedSlot] = false
                 if (presentNs > 0) {
@@ -1611,7 +1651,7 @@ private class VideoDecoder(
                 val targetNs = if (paced && delay != null) {
                     if (!heldOverGap && !pauseHeld) delay.onFrame(now - localNs)
                     stats.onPacingDelay(delay.nanos)
-                    localNs + delay.nanos
+                    VideoPacing.presentationTimeNanos(localNs, delay.nanos, queuedArrivalNanos[slot], wiredTransport)
                 } else 0L
                 if (targetNs - now in 1..MAX_PACING_AHEAD_NS) {
                     codec.releaseOutputBuffer(index, targetNs)
@@ -1789,13 +1829,17 @@ private class AudioRenderer(
     @Volatile private var running = true
     @Volatile private var started = false
     private var codec: MediaCodec? = null
-    private var track: AudioTrack? = null
+    @Volatile private var track: AudioTrack? = null
+    private val trackStateLock = Any()
+    @Volatile private var firstRtpSample: Int? = null
+    var wiredTransport = false
     @Volatile private var navigationAttenuationDb = 0
     private var appliedNavigationAttenuationDb: Int? = null
     private var pcm = ByteArray(64 * 1024)
     private var playbackStarted = false
     private var prebufferBytes = 0
-    private var startThresholdBytes = 0
+    @Volatile private var startThresholdBytes = 0
+    @Volatile private var platformStartThresholdBytes = 0
     private var fadeApplied = false
     private var droppedPacketsLogged = false
     private var firstAacPayloadLogged = false
@@ -1828,7 +1872,7 @@ private class AudioRenderer(
     private var maxWriteMs = 0L
     private var statsWindowStartNs = 0L
     private var statsLastUnderruns = 0
-    private var bytesPerSecond = 0
+    @Volatile private var bytesPerSecond = 0
     private val bufferProgress = AudioBufferProgress(if (format.channels >= 2) 4 else 2)
     private var underrunsAtPlaybackStart = 0
     private var headAtPlaybackStart = 0
@@ -1847,13 +1891,28 @@ private class AudioRenderer(
     private var decoderOutputReports = 0
     private val thread = Thread(::run, "carplay-audio").apply { isDaemon = true }
 
-    fun start() {
+    fun start(firstSample: Int) {
         if (started) return
+        firstRtpSample = firstSample
         started = true
         thread.start()
     }
 
+    fun prebufferMillis(): Int {
+        val rate = bytesPerSecond
+        return if (rate > 0) ((maxOf(startThresholdBytes, platformStartThresholdBytes) * 1000L + rate - 1L) / rate).toInt() else 0
+    }
+
+    /** The hardware head stops during startup/underrun, so retained buffered music must stop too. */
+    fun playbackPosition(): Long? {
+        val first = firstRtpSample?.toLong()?.and(0xffff_ffffL) ?: return null
+        val current = track ?: return first
+        val played = runCatching { current.playbackHeadPosition.toLong() and 0xffff_ffffL }.getOrDefault(0L)
+        return (first + played * format.rtpClockRate / format.sampleRate.coerceAtLeast(1)) and 0xffff_ffffL
+    }
+
     fun submit(rtp: ByteArray, sample: Int) {
+        if (!running) return
         val now = System.nanoTime()
         if (started) {
             packetsReceived.incrementAndGet()
@@ -1889,11 +1948,32 @@ private class AudioRenderer(
         }
     }
 
+    /** TCP music can backpressure its sender; it must never use the live UDP stale-packet drops. */
+    fun offerBuffered(rtp: ByteArray, sample: Int): Boolean {
+        if (!running || !started) return false
+        val now = System.nanoTime()
+        if (!queue.offer(AudioPacket(rtp, sample, now))) return false
+        packetsReceived.incrementAndGet()
+        val previous = lastArrivalNs.getAndSet(now)
+        if (previous != 0L) maxArrivalGapMs.accumulateAndGet((now - previous) / 1_000_000L, ::maxOf)
+        newestRtpSample = sample
+        return true
+    }
+
     override fun close() {
         AmbientMusicController.closeRenderer(ambientRendererToken)
         running = false
+        queue.clear()
         NavigationPlayback.close(navigationPlaybackToken)
         thread.interrupt()
+        // Stop PCM before asynchronous codec teardown, so the previous song cannot drain into
+        // its successor. Nonblocking writes observe running again before retrying a full track.
+        synchronized(trackStateLock) {
+            track?.let {
+                runCatching { it.pause() }
+                runCatching { it.flush() }
+            }
+        }
     }
 
     private fun run() {
@@ -2006,7 +2086,7 @@ private class AudioRenderer(
         var attributes = audioAttributesFor(selection, streamOverride)
         trackAttributes = attributes
         val plan = MediaAudioBuffer.plan(selection.channel == AudioChannel.MEDIA,
-            format.sampleRate, format.channels, minBuffer, mediaBufferMillis)
+            format.sampleRate, format.channels, minBuffer, mediaBufferMillis, wired = wiredTransport)
         bytesPerSecond = format.sampleRate * frameBytes
         val built: AudioTrack
         var routeLabel: String
@@ -2045,7 +2125,13 @@ private class AudioRenderer(
                 },
             )
         }
-        track = built
+        synchronized(trackStateLock) {
+            if (!running) {
+                built.release()
+                return
+            }
+            track = built
+        }
         if (mappedChannel == AudioChannel.PHONE) {
             val listener = AudioRouting.OnRoutingChangedListener { routing -> checkCallRoute(routing.routedDevice) }
             if (runCatching { built.addOnRoutingChangedListener(listener, Handler(Looper.getMainLooper())) }.isSuccess) {
@@ -2063,9 +2149,12 @@ private class AudioRenderer(
         diagnosticStage = "track-capacity"
         val capacityBytes = built.bufferSizeInFrames * frameBytes
         startThresholdBytes = MediaAudioBuffer.startBytesFor(plan.startBytes, capacityBytes, PREBUFFER_WRITE_CHUNK_BYTES)
+        platformStartThresholdBytes = audioTrackStartThresholdBytes(built, startThresholdBytes, frameBytes)
         // Only music plays long enough for the clocks to drift apart; calls keep their echo reference exact.
         clockTrim = if (mappedChannel == AudioChannel.MEDIA) MediaClockTrim(format.sampleRate, (startThresholdBytes / frameBytes).toLong(),
-            measuresTarget = true) else null
+            measuresTarget = true,
+            measurementGapLimitNs = if (format.payloadType == BufferedAudioStream.STREAM_TYPE)
+                MediaClockTrim.BUFFERED_MEASUREMENT_GAP_NS else Long.MAX_VALUE) else null
         val trackMetadata = runCatching {
             "api=${Build.VERSION.SDK_INT} trackState=${built.state} trackRate=${built.sampleRate} " +
                 "usage=${trackAttributes?.usage} contentType=${trackAttributes?.contentType} " +
@@ -2074,7 +2163,9 @@ private class AudioRenderer(
         report("Audio: ready audioType=${format.audioType} codec=${format.codec} " +
             "rate=${format.sampleRate} channels=${format.channels} " +
             "route=$routeLabel " +
-            "bufferMs=${capacityBytes * 1000L / bytesPerSecond} startMs=${startThresholdBytes * 1000L / bytesPerSecond} " +
+            "requestedMs=$mediaBufferMillis bufferMs=${capacityBytes * 1000L / bytesPerSecond} " +
+            "startMs=${startThresholdBytes * 1000L / bytesPerSecond} " +
+            "platformStartMs=${platformStartThresholdBytes * 1000L / bytesPerSecond} " +
             trackMetadata)
         Log.i(
             TAG,
@@ -2396,6 +2487,13 @@ private class AudioRenderer(
 
     private fun writePcm(data: ByteArray, offset: Int = 0, length: Int = data.size) {
         val track = track ?: return
+        if (offset < 0 || length < 0 || offset > data.size || length > data.size - offset || length % frameBytes != 0) {
+            // AudioTrack cannot accept a trailing fraction of a PCM frame. Retrying its zero
+            // write forever would wedge this stream on a malformed LPCM packet.
+            writeErrorsThisWindow++
+            lastWriteErrorCode = AudioTrack.ERROR_BAD_VALUE
+            return
+        }
         diagnosticStage = "track-write"
         if (!firstPcmLogged && length > 0) {
             firstPcmLogged = true
@@ -2413,23 +2511,39 @@ private class AudioRenderer(
         }
         var written = 0
         while (written < length && running) {
+            if (!playbackStarted && startThresholdBytes > 0 && prebufferBytes >= startThresholdBytes) {
+                startPlayback(track)
+            }
             val writeLength = if (playbackStarted) {
                 length - written
             } else {
-                minOf(length - written, PREBUFFER_WRITE_CHUNK_BYTES)
+                // A mono 8 kHz USB track can be smaller than the old 2048-byte write chunk.
+                // Never ask a paused track to accept beyond the level that will call play().
+                minOf(length - written, PREBUFFER_WRITE_CHUNK_BYTES,
+                    if (startThresholdBytes > 0) (startThresholdBytes - prebufferBytes).coerceAtLeast(frameBytes)
+                    else PREBUFFER_WRITE_CHUNK_BYTES)
             }
             val writeStarted = System.nanoTime()
             diagnosticStage = "track-write"
-            val count = track.write(data, offset + written, writeLength, AudioTrack.WRITE_BLOCKING)
+            // A close may pause the track immediately after the loop's running check. A blocking
+            // write could then wait forever on a stopped track; nonblocking retries are cancellable.
+            val count = track.write(data, offset + written, writeLength, AudioTrack.WRITE_NON_BLOCKING)
+            if (!running) return
             maxWriteMs = maxOf(maxWriteMs, (System.nanoTime() - writeStarted) / 1_000_000L)
             if (count < 0) {
                 writeErrorsThisWindow++
                 lastWriteErrorCode = count
                 break
             }
+            if (count > writeLength || count % frameBytes != 0) {
+                writeErrorsThisWindow++
+                lastWriteErrorCode = AudioTrack.ERROR_BAD_VALUE
+                break
+            }
             if (count == 0) {
                 zeroWritesThisWindow++
-                break
+                Thread.sleep(AUDIO_WRITE_RETRY_MILLIS)
+                continue
             }
             if (count < writeLength) partialWritesThisWindow++
             val framesWritten = count / frameBytes
@@ -2464,7 +2578,8 @@ private class AudioRenderer(
         }
     }
 
-    private fun startPlayback(track: AudioTrack) {
+    private fun startPlayback(track: AudioTrack) = synchronized(trackStateLock) {
+        if (!running) return@synchronized
         diagnosticStage = "track-play"
         underrunsAtPlaybackStart = track.underrunCount
         headAtPlaybackStart = track.playbackHeadPosition
@@ -2653,25 +2768,15 @@ private class AudioRenderer(
 
     @Synchronized
     private fun release() {
+        running = false
         NavigationPlayback.close(navigationPlaybackToken)
         AmbientMusicController.closeRenderer(ambientRendererToken)
         abandonAudioFocus()
-        val codec = codec
-        this.codec = null
-        if (codec != null) {
-            try {
-                codec.stop()
-            } catch (_: Exception) {
-                // Best effort.
-            }
-            try {
-                codec.release()
-            } catch (_: Exception) {
-                // Best effort.
-            }
+        val track = synchronized(trackStateLock) {
+            val current = track
+            this.track = null
+            current
         }
-        val track = track
-        this.track = null
         if (track != null) {
             routingListener?.let { listener -> runCatching { track.removeOnRoutingChangedListener(listener) } }
             routingListener = null
@@ -2691,6 +2796,13 @@ private class AudioRenderer(
                 // Best effort.
             }
         }
+        // Some vendor codecs take a long time to stop. The audio output is already silent.
+        val codec = codec
+        this.codec = null
+        if (codec != null) {
+            runCatching { codec.stop() }
+            runCatching { codec.release() }
+        }
     }
 
     private companion object {
@@ -2702,6 +2814,7 @@ private class AudioRenderer(
         const val INPUT_TIMEOUT_US = 10_000L
         const val AUDIO_INPUT_WAIT_NS = 100_000_000L
         const val AUDIO_POLL_MILLIS = 10L
+        const val AUDIO_WRITE_RETRY_MILLIS = 2L
         // Holds a burst after a Wi-Fi gap (~4 s of AAC) instead of dropping it.
         const val MAX_QUEUED_PACKETS = 192
         const val PREBUFFER_WRITE_CHUNK_BYTES = 2 * 1024

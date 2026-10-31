@@ -86,6 +86,13 @@ class CarPlayVideoSurfaceTest {
         assertEquals(140, smoothVideoDelayMillis(0))
     }
 
+    @Test fun wiredSmoothVideoStartsWithin100MillisAt30And60Fps() {
+        assertEquals(100, smoothVideoDelayMillis(30, wiredTransport = true))
+        assertEquals(90, smoothVideoDelayMillis(60, wiredTransport = true))
+        assertEquals(100, smoothVideoDelayMillis(0, wiredTransport = true))
+        assertEquals(90, smoothVideoDelayMillis(120, wiredTransport = true))
+    }
+
     @Test fun replacingTextureDetachesBeforeReleaseAndDoesNotReleaseHolderSurface() {
         val texture = Any()
         val holder = Any()

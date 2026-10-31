@@ -4,22 +4,15 @@
     android:height="108dp"
     android:viewportWidth="108"
     android:viewportHeight="108">
-    <!-- Original dashboard and route mark; no Apple artwork or wordmark. -->
+    <!-- CarPlay circular play mark; kept inside the adaptive-icon safe area. -->
     <path
         android:fillColor="@android:color/transparent"
-        android:strokeColor="#E9F3FF"
-        android:strokeWidth="4"
+        android:strokeColor="#FFFFFF"
+        android:strokeWidth="3.4"
         android:strokeLineCap="round"
         android:strokeLineJoin="round"
-        android:pathData="M31,32 L77,32 Q82,32 82,37 L82,70 Q82,75 77,75 L31,75 Q26,75 26,70 L26,37 Q26,32 31,32 Z" />
+        android:pathData="M77.75,34.07 A31,31 0,1 0,77.75 73.93" />
     <path
-        android:fillColor="@android:color/transparent"
-        android:strokeColor="#49B4FF"
-        android:strokeWidth="5"
-        android:strokeLineCap="round"
-        android:strokeLineJoin="round"
-        android:pathData="M37,61 Q45,58 49,48 Q51,43 54,43 Q57,43 59,48 Q63,58 71,61" />
-    <path
-        android:fillColor="#E9F3FF"
-        android:pathData="M50,67 A4,4 0,1 1,58 67 A4,4 0,1 1,50 67" />
+        android:fillColor="#FFFFFF"
+        android:pathData="M47,41.5 Q47,40 48.3,40.8 L69.4,53 Q71,54 69.4,55 L48.3,67.2 Q47,68 47,66.5 Z" />
 </vector>

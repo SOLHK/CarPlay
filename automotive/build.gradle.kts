@@ -13,8 +13,8 @@ android {
         applicationId = "com.shilapi.xcertplay"
         minSdk = 28
         targetSdk = 37
-        versionCode = 1201
-        versionName = "1.2.1"
+        versionCode = 1202
+        versionName = "1.2.2"
 
     }
 

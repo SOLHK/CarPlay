@@ -48,6 +48,9 @@ class AudioStream(
     }
 
     private val closed = AtomicBoolean(false)
+    // Close is a delivery barrier: an old stream must finish its sink callbacks before
+    // its owner stops/replaces the renderer. Reentrant close from a callback is allowed.
+    private val deliveryLock = Any()
     private val receivedPackets = AtomicInteger()
     private val decryptedPackets = AtomicInteger()
     private val authenticationFailures = AtomicInteger()
@@ -81,11 +84,14 @@ class AudioStream(
     }
 
     override fun close() {
-        if (!closed.compareAndSet(false, true)) return
-        dataSocket?.close()
-        controlSocket?.close()
-        dataThread?.interrupt()
-        controlThread?.interrupt()
+        if (closed.compareAndSet(false, true)) {
+            dataSocket?.close()
+            controlSocket?.close()
+            dataThread?.interrupt()
+            controlThread?.interrupt()
+        }
+        // Every caller waits, including a second close racing the first one.
+        synchronized(deliveryLock) { }
     }
 
     private fun runData(socket: DatagramSocket, listener: Listener) {
@@ -118,12 +124,14 @@ class AudioStream(
                             "audio stream type=$streamType short packet bytes=${wire.size}",
                         )
                     }
-                    listener.onPacket(
-                        wire,
-                        null,
-                        null,
-                        IOException("audio packet shorter than RTP header plus tail"),
-                    )
+                    synchronized(deliveryLock) {
+                        if (!closed.get()) listener.onPacket(
+                            wire,
+                            null,
+                            null,
+                            IOException("audio packet shorter than RTP header plus tail"),
+                        )
+                    }
                     stats.processed()
                     continue
                 }
@@ -147,7 +155,9 @@ class AudioStream(
                             error,
                         )
                     }
-                    listener.onPacket(wire, null, sample, error)
+                    synchronized(deliveryLock) {
+                        if (!closed.get()) listener.onPacket(wire, null, sample, error)
+                    }
                     stats.processed()
                     continue
                 }
@@ -167,12 +177,18 @@ class AudioStream(
                             "authFailures=${authenticationFailures.get()}",
                     )
                 }
-                listener.onPacket(wire, rtp, sample, null)
-                if (!started) {
-                    started = true
-                    listener.onStarted(sample)
+                synchronized(deliveryLock) {
+                    if (closed.get()) return
+                    listener.onPacket(wire, rtp, sample, null)
+                    if (closed.get()) return
+                    if (!started) {
+                        started = true
+                        listener.onStarted(sample)
+                    }
+                    // onStarted can synchronously close this stream via its owner.
+                    if (closed.get()) return
+                    listener.onRtp(rtp, sample)
                 }
-                listener.onRtp(rtp, sample)
                 stats.processed()
             }
         } finally { stats.flush(ended = true) }

@@ -200,4 +200,19 @@ class MediaClockTrimTest {
         // song should not inherit a +1.5% learned pitch error caused by a temporary stall.
         assertEquals(0.0, MediaClockTrim.learnedTrim, 1e-8)
     }
+
+    @Test fun anEarlyGapInContinuouslyPacedMusicCannotTeachALowerStartupTarget() {
+        val trim = MediaClockTrim(48_000, 7_200, measuresTarget = true,
+            measurementGapLimitNs = MediaClockTrim.BUFFERED_MEASUREMENT_GAP_NS)
+        val inaccurateRates = mutableListOf<Int>()
+        for (millis in 0..20_000 step 10) {
+            if (millis in 1_000 until 1_200) continue
+            val now = millis * 1_000_000L
+            trim.sample(7_200, now)
+            trim.rateDue(now)
+            if (kotlin.math.abs(trim.rate - 48_000) > 48) inaccurateRates += trim.rate
+        }
+        assertEquals("A transport stall must not become a learned clock error", emptyList<Int>(), inaccurateRates)
+        assertEquals(0.0, MediaClockTrim.learnedTrim, 1e-8)
+    }
 }

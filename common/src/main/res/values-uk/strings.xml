@@ -342,6 +342,8 @@
     <string name="s_3_connect">3 · Підключіться</string>
     <string name="s_3_tap_check_and_enable_below_this_enables_the_cluster_ma">3. Натисніть «Перевірити й увімкнути» нижче. Це ввімкне карту на панелі приладів та автоматичне стеження за темою. Активний сеанс CarPlay перепідключиться один раз. Після цього комп’ютер можна відключити.</string>
     <string name="settings_music_buffer_ms">%1$d мс</string>
+    <string name="settings_music_buffer_default_ms">%1$d мс · типово</string>
+    <string name="settings_music_buffer_description">Менший буфер музики прискорює відгук. Збільште його, якщо звук переривається. Це цільовий розмір буфера, а не виміряна загальна затримка. Застосовується під час наступного підключення.</string>
     <string name="settings_music_buffer_wireless">Буфер музики (бездротовий CarPlay)</string>
     <string name="settings_music_buffer_wired">Буфер музики (USB-кабель)</string>
     <string name="s_5_ghz">5 ГГц</string>

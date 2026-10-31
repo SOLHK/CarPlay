@@ -15,6 +15,27 @@ import kotlin.concurrent.thread
 class AndroidMediaSinkDetachTest {
     private val predicted = byteArrayOf(0, 0, 0, 1, 0x41, 1)
 
+    @Test fun videoDecoderUsesItsSessionsPacingBudget() {
+        for (wired in listOf(true, false)) {
+            // Exercise the actual sink-to-decoder factory, including a legacy 30 fps initial delay.
+            val sink = AndroidMediaSink(videoPacingDelayMillis = 140, wiredTransport = wired)
+            try {
+                sink.onVideoFrame(110, predicted)
+                val decoders = AndroidMediaSink::class.java.getDeclaredField("videoDecoders")
+                    .apply { isAccessible = true }.get(sink) as Map<*, *>
+                val decoder = checkNotNull(decoders[110])
+                val delay = decoder.javaClass.getDeclaredField("pacingDelay")
+                    .apply { isAccessible = true }.get(decoder) as PacingDelay
+                assertEquals((if (wired) 100 else 140) * 1_000_000L, delay.nanos)
+                repeat(1_000) { delay.onFrame(400_000_000L) }
+                assertEquals((if (wired) 100 else 200) * 1_000_000L, delay.nanos)
+            } finally {
+                sink.close()
+                assertTrue(sink.awaitVideoReleased(5_000))
+            }
+        }
+    }
+
     @Test fun aDetachIsConfirmedWhileFramesAreQueued() {
         val surface = Surface(SurfaceTexture(0))
         val sink = AndroidMediaSink(surface = surface, videoPacingDelayMillis = 90)
