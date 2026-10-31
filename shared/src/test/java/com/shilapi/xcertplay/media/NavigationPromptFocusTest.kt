@@ -123,6 +123,58 @@ class NavigationPromptFocusTest {
         assertEquals("Audio: navigation prompt focus change=-2", reports.last())
     }
 
+    @Test fun permanentLossRetiresTheRequestAndTheNextPromptRequestsAgain() {
+        val focus = focus()
+        focus.onDuck()
+        val lost = shadowOf(manager).lastAudioFocusRequest
+        lost.listener.onAudioFocusChange(AudioManager.AUDIOFOCUS_LOSS)
+        idle(0)
+        assertTrue(abandoned(lost))
+        assertTrue(reports.last().contains("released reason=focus lost"))
+        // No automatic attempt to compete with the new focus owner.
+        assertSame(lost, shadowOf(manager).lastAudioFocusRequest)
+
+        focus.onDuck()
+        val next = shadowOf(manager).lastAudioFocusRequest
+        assertNotSame(lost, next)
+        assertFalse(abandoned(next))
+        focus.onUnduck()
+        idle(NavigationPromptFocus.RELEASE_DELAY_MILLIS)
+        assertTrue(abandoned(next))
+    }
+
+    @Test fun callbackFromAnAbandonedPromptCannotReleaseTheNextPrompt() {
+        val focus = focus()
+        focus.onDuck()
+        val first = shadowOf(manager).lastAudioFocusRequest
+        focus.onUnduck()
+        idle(NavigationPromptFocus.RELEASE_DELAY_MILLIS)
+        focus.onDuck()
+        val next = shadowOf(manager).lastAudioFocusRequest
+        val reportCount = reports.size
+
+        first.listener.onAudioFocusChange(AudioManager.AUDIOFOCUS_LOSS)
+        idle(0)
+        assertEquals(reportCount, reports.size)
+        assertFalse(abandoned(next))
+        focus.onDuck()
+        assertSame(next, shadowOf(manager).lastAudioFocusRequest)
+    }
+
+    @Test fun transientLossKeepsTheRequestForItsLaterGain() {
+        val focus = focus()
+        focus.onDuck()
+        val sent = shadowOf(manager).lastAudioFocusRequest
+        sent.listener.onAudioFocusChange(AudioManager.AUDIOFOCUS_LOSS_TRANSIENT)
+        idle(0)
+        focus.onDuck()
+        assertSame(sent, shadowOf(manager).lastAudioFocusRequest)
+        assertFalse(abandoned(sent))
+        sent.listener.onAudioFocusChange(AudioManager.AUDIOFOCUS_GAIN)
+        idle(0)
+        assertEquals("Audio: navigation prompt focus change=1", reports.last())
+    }
+
     @Test fun routeAttributesFollowTheNavigationAudioStreamSetting() {
         val automatic = navigationRouteAttributes(0)
         assertEquals(AudioAttributes.USAGE_ASSISTANCE_NAVIGATION_GUIDANCE, automatic.usage)

@@ -20,6 +20,67 @@ import org.robolectric.annotation.Config
 class AudioStreamCloseTest {
     private val key = ByteArray(32) { (it + 1).toByte() }
 
+    @Test fun aClosedStreamCannotAllocateNewUdpPorts() {
+        val stream = AudioStream(key, 100)
+        stream.close()
+        assertThrows(IllegalStateException::class.java) { stream.listen(object : AudioStream.Listener {}) }
+        for (field in listOf("dataSocket", "controlSocket")) {
+            assertNull(AudioStream::class.java.getDeclaredField(field).apply { isAccessible = true }.get(stream))
+        }
+    }
+
+    @Test fun aDuplicateListenCannotReplaceAndLeakTheOriginalReceiver() {
+        val stream = AudioStream(key, 100)
+        val delivered = CountDownLatch(1)
+        try {
+            val (port) = stream.listen(object : AudioStream.Listener {
+                override fun onRtp(rtp: ByteArray, sample: Int) { delivered.countDown() }
+            })
+            assertThrows(IllegalStateException::class.java) { stream.listen(object : AudioStream.Listener {}) }
+            send(port)
+            assertTrue("Rejected duplicate setup broke the original receiver", delivered.await(3, TimeUnit.SECONDS))
+        } finally { stream.close() }
+    }
+
+    @Test fun closingFromTheStartupDiagnosticCannotPublishNewSockets() {
+        lateinit var stream: AudioStream
+        stream = AudioStream(key, 100) { stream.close() }
+        assertThrows(IllegalStateException::class.java) { stream.listen(object : AudioStream.Listener {}) }
+        for (field in listOf("dataSocket", "controlSocket")) {
+            assertNull(AudioStream::class.java.getDeclaredField(field).apply { isAccessible = true }.get(stream))
+        }
+    }
+
+    @Test fun closingDuringSocketSetupWaitsForTheAllocationToBeRetired() {
+        val entered = CountDownLatch(1)
+        val release = CountDownLatch(1)
+        val closeStarted = CountDownLatch(1)
+        val stream = AudioStream(key, 100) {
+            entered.countDown()
+            assertTrue(release.await(3, TimeUnit.SECONDS))
+        }
+        val workers = Executors.newFixedThreadPool(2)
+        try {
+            val listening = workers.submit {
+                assertThrows(IllegalStateException::class.java) { stream.listen(object : AudioStream.Listener {}) }
+            }
+            assertTrue(entered.await(3, TimeUnit.SECONDS))
+            val closing = workers.submit { closeStarted.countDown(); stream.close() }
+            assertTrue(closeStarted.await(3, TimeUnit.SECONDS))
+            assertThrows(TimeoutException::class.java) { closing.get(100, TimeUnit.MILLISECONDS) }
+            release.countDown()
+            listening.get(3, TimeUnit.SECONDS)
+            closing.get(3, TimeUnit.SECONDS)
+            for (field in listOf("dataSocket", "controlSocket")) {
+                assertNull(AudioStream::class.java.getDeclaredField(field).apply { isAccessible = true }.get(stream))
+            }
+        } finally {
+            release.countDown()
+            stream.close()
+            workers.shutdownNow()
+        }
+    }
+
     @Test fun everyCloseWaitsForTheInFlightDelivery() {
         val stream = AudioStream(key, 100)
         val entered = CountDownLatch(1)

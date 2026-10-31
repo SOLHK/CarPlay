@@ -63,10 +63,19 @@ class BufferedMusicClockTrimTest {
         assertEquals("${phase.name}: seconds off 48000 ± 0.1 %", emptyList<String>(), phase.secondsOffTheIphonesRate)
     }
 
-    @Test fun afterStalePacketsAreDroppedTheTrimSteersToTheLevelLeft() {
+    @Test fun aLongTcpOutageRetainsMusicWithoutCatchUpBacklogOrClockAcceleration() {
         val phase = playFromStartAndAfterASkip(HeadUnit(300), 125, iphoneStalls(sentMs = 20_000, untilMs = 30_000)).first()
-        assertTrue("${phase.name}: packets dropped", phase.reports.any { it.startsWith("Audio: stale media packet") })
+        assertEquals("${phase.name}: rebuffers", 1, phase.reports.count { it.startsWith("Audio: rebuffer paused") })
+        assertEquals("${phase.name}: TCP music must not use live UDP stale-packet recovery", 0,
+            phase.reports.count { it.startsWith("Audio: stale media packet") })
+        assertEquals("${phase.name}: submitted samples must remain queued or be written exactly once", 0L, phase.unaccountedSamples)
         assertEquals("${phase.name}: seconds off 48000 ± 0.1 %", emptyList<String>(), phase.secondsOffTheIphonesRate)
+        assertTrue("Music never audibly resumed after the ten-second outage", phase.playedSamples >= 110 * 48_000L)
+        val beforeOutage = phase.seconds[SETTLED_SECONDS - 1].levelMs
+        val recovered = phase.seconds.drop(35)
+        assertTrue("Recovered buffer fell below its 300 ms startup budget", recovered.all { it.levelMs >= 300 })
+        assertTrue("Recovery inflated the renderer backlog: before=$beforeOutage max=${recovered.maxOf { it.levelMs }}",
+            recovered.all { it.levelMs <= beforeOutage + 50 })
     }
 
     @Test fun aStallWhileTheTrimMeasuresDoesNotSetItsTarget() {
@@ -91,6 +100,8 @@ class BufferedMusicClockTrimTest {
             val settled = phase.seconds[SETTLED_SECONDS - 1].levelMs
             assertTrue("${phase.name}: the level fell to ${phase.lowestLevelMs} ms from $settled ms", phase.lowestLevelMs >= settled - 20)
             assertEquals("${phase.name}: underruns", 0, phase.underruns)
+            assertTrue("${phase.name}: rate alone is not proof that the playback head moved",
+                phase.playedSamples >= 123 * 48_000L)
         }
     }
 
@@ -107,7 +118,8 @@ class BufferedMusicClockTrimTest {
 
     private class Second(val rate: Int, val levelMs: Long)
 
-    private class Phase(val name: String, val seconds: List<Second>, val underruns: Int, val reports: List<String>) {
+    private class Phase(val name: String, val seconds: List<Second>, val underruns: Int, val reports: List<String>,
+                        val unaccountedSamples: Long, val playedSamples: Long) {
         val finalRate get() = seconds.last().rate
         val lowestLevelMs get() = seconds.drop(SETTLED_SECONDS - 1).minOf { it.levelMs }
         val secondsOffTheIphonesRate get() =
@@ -124,6 +136,10 @@ class BufferedMusicClockTrimTest {
         private val track: AudioTrack
         val output: HeadUnitTrack
         private var decodeCredit = 0.0
+        private val buffered = format.payloadType == BufferedAudioStream.STREAM_TYPE
+        private var submittedSamples = 0L
+        private var lastBufferedSample: Int? = null
+        private var decodedPendingFrames = 0L
 
         init {
             field("started").set(renderer, true)
@@ -134,10 +150,24 @@ class BufferedMusicClockTrimTest {
             output.drift = drift
         }
 
-        val levelMs: Long get() = (output.queuedFrames + packets.size * FRAME) / 48
+        val levelMs: Long get() = (output.queuedFrames + packets.size * FRAME + decodedPendingFrames) / 48
+        val unaccountedSamples: Long get() =
+            submittedSamples - packets.size * FRAME - decodedPendingFrames - output.totalWrittenFrames
 
         fun submit(rtp: ByteArray, sample: Int) {
-            method("submit", ByteArray::class.java, Int::class.javaPrimitiveType!!).invoke(renderer, rtp, sample)
+            if (buffered) {
+                // Production type 103 uses offerBuffered, never the live UDP lag/drop policy.
+                lastBufferedSample?.let { previous ->
+                    assertEquals("Buffered music skipped or repeated a packet", FRAME,
+                        (sample.toLong() - previous.toLong()) and 0xffff_ffffL)
+                }
+                assertEquals("The paced preload exceeded the bounded decoder queue", true,
+                    method("offerBuffered", ByteArray::class.java, Int::class.javaPrimitiveType!!).invoke(renderer, rtp, sample))
+                lastBufferedSample = sample
+            } else {
+                method("submit", ByteArray::class.java, Int::class.javaPrimitiveType!!).invoke(renderer, rtp, sample)
+            }
+            submittedSamples += FRAME
         }
 
         fun tick(nowMs: Long) {
@@ -145,10 +175,21 @@ class BufferedMusicClockTrimTest {
             if (nowMs >= createdMs + SETUP_MS) {
                 decodeCredit += DECODE_TIMES_REALTIME * 48.0 * STEP_MS
                 val write = method("writePcm", ByteArray::class.java, Int::class.javaPrimitiveType!!, Int::class.javaPrimitiveType!!)
-                while (decodeCredit >= FRAME && packets.isNotEmpty() && output.queuedFrames + FRAME <= HeadUnitTrack.capacityFrames) {
-                    packets.poll()
-                    decodeCredit -= FRAME
-                    write.invoke(renderer, ByteArray(FRAME.toInt() * 4), 0, FRAME.toInt() * 4)
+                while (decodedPendingFrames > 0 || (decodeCredit >= FRAME && packets.isNotEmpty())) {
+                    if (decodedPendingFrames == 0L) {
+                        packets.poll()
+                        decodeCredit -= FRAME
+                        decodedPendingFrames = FRAME
+                    }
+                    val availableFrames = (HeadUnitTrack.capacityFrames - output.queuedFrames).coerceAtLeast(0L)
+                    if (availableFrames == 0L) break
+                    // AudioTrack accepts a partial PCM write before play(). Requiring a full
+                    // AAC frame here falsely deadlocks the 150 ms preset at 7168/7200 frames:
+                    // it has room for the 32 frames that start playback, but not a whole 1024.
+                    val frames = minOf(decodedPendingFrames, availableFrames)
+                    val bytes = (frames * 4).toInt()
+                    write.invoke(renderer, ByteArray(bytes), 0, bytes)
+                    decodedPendingFrames -= frames
                 }
                 decodeCredit = minOf(decodeCredit, FRAME.toDouble())
             }
@@ -175,6 +216,8 @@ class BufferedMusicClockTrimTest {
         var underruns = 0
             private set
         val queuedFrames: Long get() = writtenFrames - playedFrames.toLong()
+        val totalWrittenFrames: Long get() = writtenFrames
+        val totalPlayedFrames: Long get() = playedFrames.toLong()
 
         @Implementation fun play() { movesAtMs = SystemClock.uptimeMillis() + PLAY_LATENCY_MS }
         @Implementation fun pause() { movesAtMs = null }
@@ -301,7 +344,8 @@ class BufferedMusicClockTrimTest {
                     val current = renderer!!
                     Second(current.output.rate, current.levelMs)
                 }
-                phases += Phase(name, perSecond, underruns - underrunsBefore + renderer!!.output.underruns, reports.toList())
+                phases += Phase(name, perSecond, underruns - underrunsBefore + renderer!!.output.underruns,
+                    reports.toList(), renderer!!.unaccountedSamples, renderer!!.output.totalPlayedFrames)
             }
 
             send(0)

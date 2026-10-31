@@ -34,10 +34,8 @@ internal class NavigationPromptFocus(
 ) {
     private val manager = context?.getSystemService(Context.AUDIO_SERVICE) as? AudioManager
     private val handler by lazy { Handler(Looper.getMainLooper()) }
-    private val listener = AudioManager.OnAudioFocusChangeListener { change ->
-        runCatching { report("Audio: navigation prompt focus change=$change") }
-    }
     private var request: AudioFocusRequestCompat? = null
+    private var focusGeneration = 0L
     private var pendingRelease: Runnable? = null
     private var skipReported = false
     private var closed = false
@@ -74,12 +72,30 @@ internal class NavigationPromptFocus(
 
     private fun requestFocus(manager: AudioManager): Boolean {
         val routeAttributes = attributes()
+        val generation = ++focusGeneration
+        val listener = AudioManager.OnAudioFocusChangeListener { change ->
+            synchronized(this) {
+                // Android can deliver an already-queued callback after abandon/replacement.
+                if (closed || generation != focusGeneration || request == null) return@synchronized
+                runCatching { report("Audio: navigation prompt focus change=$change") }
+                // Permanent loss will not be followed by a gain. Retire the stale request so the
+                // next prompt can ask again; do not steal focus back in the loss callback itself.
+                if (change == AudioManager.AUDIOFOCUS_LOSS) release("focus lost")
+            }
+        }
         val next = AudioFocusRequestCompat(
             AudioManager.AUDIOFOCUS_GAIN_TRANSIENT_MAY_DUCK, routeAttributes, listener, handler,
         )
+        request = next
         val result = runCatching { next.request(manager) }.getOrDefault(AudioManager.AUDIOFOCUS_REQUEST_FAILED)
-        val granted = result == AudioManager.AUDIOFOCUS_REQUEST_GRANTED
-        if (granted) request = next else runCatching { next.abandon(manager) }
+        val granted = result == AudioManager.AUDIOFOCUS_REQUEST_GRANTED && request === next
+        if (!granted) {
+            if (request === next) {
+                request = null
+                focusGeneration++
+            }
+            runCatching { next.abandon(manager) }
+        }
         val line = "Audio: navigation prompt focus requested gain=${AudioManager.AUDIOFOCUS_GAIN_TRANSIENT_MAY_DUCK} " +
             "usage=${routeAttributes.usage} contentType=${routeAttributes.contentType} granted=$result"
         Log.i(TAG, line)
@@ -109,6 +125,7 @@ internal class NavigationPromptFocus(
         cancelRelease()
         val held = request ?: return
         request = null
+        focusGeneration++
         val result = manager?.let { runCatching { held.abandon(it) }.getOrNull() }
         val line = "Audio: navigation prompt focus released reason=$reason result=$result"
         Log.i(TAG, line)
