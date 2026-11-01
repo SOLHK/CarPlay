@@ -4,6 +4,7 @@ import java.io.BufferedWriter
 import java.io.Closeable
 import java.io.File
 import java.io.FileOutputStream
+import java.io.OutputStreamWriter
 
 /** Bounded private diagnostics. Redact before storage; age out archives without blocking producers. */
 internal class SessionLogFile(val file: File, private val nowMillis: () -> Long = System::currentTimeMillis) : Closeable {
@@ -33,7 +34,8 @@ internal class SessionLogFile(val file: File, private val nowMillis: () -> Long 
                 rotate()
                 file.writeText("")
             }
-            val output = writer ?: FileOutputStream(file, true).bufferedWriter(Charsets.UTF_8, 8192).also { writer = it }
+            val output = writer ?: BufferedWriter(OutputStreamWriter(FileOutputStream(file, true), Charsets.UTF_8), 8192)
+                .also { writer = it }
             output.write(safe)
             output.newLine()
             // Readers and crash diagnostics see every completed append; no open/close per line.

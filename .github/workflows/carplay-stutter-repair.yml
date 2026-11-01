@@ -2,7 +2,7 @@ name: Validate CarPlay stutter repair
 on:
   push:
     branches: [work/carplay-stutter-3h-20261101]
-    paths: [scripts/apply_carplay_stutter_fix.py, .github/workflows/carplay-stutter-repair.yml]
+    paths: [scripts/apply_carplay_stutter_fix.py, .github/workflows/carplay-stutter-repair.yml, 'common/**', 'shared/**']
   workflow_dispatch:
 permissions:
   contents: read
