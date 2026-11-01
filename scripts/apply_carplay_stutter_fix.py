@@ -70,7 +70,25 @@ change(TEST, anchor, '''    @Test(timeout = 5_000)
     }
 
 ''' + anchor)
+HOST = 'common/src/main/java/com/shilapi/xcertplay/CarPlayHostActivity.kt'
+change(HOST, '''    private fun appendLog(message: String) {
+        val safe = DiagnosticRedactor.redact(message) ?: return
+        sessionLog?.append(formattedLogLine(safe, System.currentTimeMillis()))
+    }
+
+    private fun appendFileLog(message: String) {
+        sessionLog?.append(formattedLogLine(message, System.currentTimeMillis()))
+    }''', '''    private fun appendLog(message: String) {
+        AsyncDiagnosticLog.append(sessionLog, message)
+    }
+
+    private fun appendFileLog(message: String) {
+        AsyncDiagnosticLog.append(sessionLog, message)
+    }''', 'e0de1574ee57456d7afb1e6642342cd7e585c7c3')
+change(HOST, '        const val LOG_RETENTION_MILLIS = 5 * 60_000L',
+       '        const val LOG_RETENTION_MILLIS = RecentDiagnosticWindow.WINDOW_MILLIS')
+
 subprocess.run(['python3', 'scripts/version.py', 'bump'], cwd=ROOT, check=True)
 subprocess.run(['git', 'diff', '--exit-code', 'ffe3ceca9bbcd634a7f7bc4225752228dc1f1da7', '--',
                 'shared/src/main/java/com/shilapi/xcertplay/media/MediaAudioBuffer.kt'], cwd=ROOT, check=True)
-print('Integrated bounded audio retry and three-hour export. MediaAudioBuffer is byte-for-byte unchanged.')
+print('Integrated bounded audio retry, async host logging and three-hour export. MediaAudioBuffer is byte-for-byte unchanged.')

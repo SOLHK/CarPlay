@@ -8,7 +8,7 @@ permissions:
   contents: read
 concurrency:
   group: carplay-stutter-repair
-  cancel-in-progress: false
+  cancel-in-progress: true
 jobs:
   validate:
     if: github.repository == 'SOLHK/CarPlay' && github.ref == 'refs/heads/work/carplay-stutter-3h-20261101'
@@ -41,7 +41,7 @@ jobs:
         run: |
           git config user.name 'github-actions[bot]'
           git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
-          git add shared/src/main/java/com/shilapi/xcertplay/media/AndroidMediaSink.kt shared/src/test/java/com/shilapi/xcertplay/media/AudioRendererLatencyTest.kt common/src/main/java/com/shilapi/xcertplay/DiagnosticExportStore.kt mobile/build.gradle.kts automotive/build.gradle.kts
+          git add common/src/main/java/com/shilapi/xcertplay/CarPlayHostActivity.kt shared/src/main/java/com/shilapi/xcertplay/media/AndroidMediaSink.kt shared/src/test/java/com/shilapi/xcertplay/media/AudioRendererLatencyTest.kt common/src/main/java/com/shilapi/xcertplay/DiagnosticExportStore.kt mobile/build.gradle.kts automotive/build.gradle.kts
           git rm scripts/apply_carplay_stutter_fix.py
           git commit -m 'Integrate tested CarPlay 0.2.38 stutter and three-hour diagnostics repair'
           git push origin HEAD:refs/heads/work/carplay-stutter-3h-20261101
