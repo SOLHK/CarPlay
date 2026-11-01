@@ -1,0 +1,66 @@
+name: Validate CarPlay stutter repair
+on:
+  push:
+    branches: [work/carplay-stutter-3h-20261101]
+    paths: [scripts/apply_carplay_stutter_fix.py, .github/workflows/carplay-stutter-repair.yml]
+  workflow_dispatch:
+permissions:
+  contents: read
+concurrency:
+  group: carplay-stutter-repair
+  cancel-in-progress: false
+jobs:
+  validate:
+    if: github.repository == 'SOLHK/CarPlay' && github.ref == 'refs/heads/work/carplay-stutter-3h-20261101'
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.sha }}
+          fetch-depth: 0
+      - name: Apply reviewed exact-source patch
+        run: |
+          python3 scripts/apply_carplay_stutter_fix.py
+          git diff --check
+          python3 scripts/check_public_tree.py
+          python3 scripts/version.py check --base ffe3ceca9bbcd634a7f7bc4225752228dc1f1da7
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '25'
+      - uses: android-actions/setup-android@9fc6c4e9069bf8d3d10b2204b1fb8f6ef7065407
+        with:
+          packages: platform-tools platforms;android-37.0 build-tools;36.0.0 ndk;28.2.13676358
+      - uses: gradle/actions/setup-gradle@ed408507eac070d1f99cc633dbcf757c94c7933a
+      - name: Complete tests, lint and source-only APKs
+        run: ./gradlew :shared:testDebugUnitTest :common:testDebugUnitTest :home:testDebugUnitTest :mobile:lintDebug :home:lintDebug :maphost:lintDebug :mobile:assembleDebug :home:assembleDebug :maphost:assembleDebug --stacktrace
+      - name: Publish only validated source to the same branch
+        run: |
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add shared/src/main/java/com/shilapi/xcertplay/media/AndroidMediaSink.kt shared/src/test/java/com/shilapi/xcertplay/media/AudioRendererLatencyTest.kt common/src/main/java/com/shilapi/xcertplay/DiagnosticExportStore.kt mobile/build.gradle.kts automotive/build.gradle.kts
+          git rm scripts/apply_carplay_stutter_fix.py
+          git commit -m 'Integrate tested CarPlay 0.2.38 stutter and three-hour diagnostics repair'
+          git push origin HEAD:refs/heads/work/carplay-stutter-3h-20261101
+          echo "Validated source commit: $(git rev-parse HEAD)" | tee -a "$GITHUB_STEP_SUMMARY"
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: CarPlay-stutter-test-reports
+          path: |
+            shared/build/test-results/
+            common/build/test-results/
+            samples/home/build/test-results/
+            shared/build/reports/tests/
+            common/build/reports/tests/
+            mobile/build/reports/lint-results-debug.html
+            samples/home/build/reports/lint-results-debug.html
+            samples/maphost/build/reports/lint-results-debug.html
+      - uses: actions/upload-artifact@v4
+        with:
+          name: CarPlay-0.2.38-source-only-debug
+          path: mobile/build/outputs/apk/debug/*.apk
+          if-no-files-found: error
