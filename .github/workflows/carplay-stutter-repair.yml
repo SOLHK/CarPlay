@@ -5,6 +5,7 @@ on:
     paths:
       - scripts/apply_carplay_stutter_fix.py
       - scripts/apply_carplay_stutter_review.py
+      - scripts/finalize_carplay_report.py
       - .github/workflows/carplay-stutter-repair.yml
       - 'common/**'
       - 'shared/**'
@@ -35,10 +36,11 @@ jobs:
           if test -f scripts/apply_carplay_stutter_fix.py; then
             python3 scripts/apply_carplay_stutter_fix.py
             python3 scripts/apply_carplay_stutter_review.py
+            python3 scripts/finalize_carplay_report.py
             git diff --check
             python3 scripts/check_public_tree.py
             git add common/src/main/java/com/shilapi/xcertplay common/src/test/java/com/shilapi/xcertplay shared/src/main/java/com/shilapi/xcertplay/media/AndroidMediaSink.kt shared/src/test/java/com/shilapi/xcertplay/media/AudioRendererLatencyTest.kt mobile/build.gradle.kts automotive/build.gradle.kts
-            git rm scripts/apply_carplay_stutter_fix.py scripts/apply_carplay_stutter_review.py
+            git rm scripts/apply_carplay_stutter_fix.py scripts/apply_carplay_stutter_review.py scripts/finalize_carplay_report.py
             git commit -m 'Fix audio diagnostic stalls, moving-tail refill pauses and complete three-hour reports'
           fi
           python3 scripts/version.py check --base ffe3ceca9bbcd634a7f7bc4225752228dc1f1da7
@@ -74,7 +76,7 @@ jobs:
                   root = ET.parse(report).getroot()
                   for key in totals:
                       totals[key] += int(root.get(key, 0))
-          assert totals['tests'] >= 3532, totals
+          assert totals['tests'] >= 3541, totals
           assert totals['failures'] == totals['errors'] == totals['skipped'] == 0, totals
           apk = Path('mobile/build/outputs/apk/debug/mobile-debug.apk')
           with ZipFile(apk) as archive:
