@@ -6093,7 +6093,13 @@ class DiPlayActivity : ComponentActivity(), AppAppearanceOwner {
     }
 
     /** The text of a diagnostic report. It reads the session logs, so call it off the main thread. */
-    private fun diagnosticReportText(appContext: Context): String = buildString {
+    private fun diagnosticReportText(appContext: Context): String {
+        // Called only by the export/backup worker, never by transport or UI producers.
+        val drained = AsyncDiagnosticLog.awaitIdle(1_000L)
+        return RecentDiagnosticWindow.filter(buildDiagnosticReportText(appContext, drained))
+    }
+
+    private fun buildDiagnosticReportText(appContext: Context, drained: Boolean): String = buildString {
         appendLine("CarPlay ${version()} · diagnostic report")
         appendLine(LastConnectionProblem.report(appContext))
         appendLine("Android ${Build.VERSION.RELEASE} / API ${Build.VERSION.SDK_INT}")
@@ -6113,6 +6119,7 @@ class DiPlayActivity : ComponentActivity(), AppAppearanceOwner {
         appendLine("CarPlay screen: ${CarPlayScreen.report(appContext)}")
         appendLine(PhoneWakeDiagnostics.report(appContext))
         appendLine("Head-unit board: ${Build.BOARD}; hardware: ${Build.HARDWARE}; build: ${Build.DISPLAY}")
+        appendLine("Diagnostic pipeline: async-audio-v2; logWindowHours=3; pendingWriterDrained=$drained")
         appendLine()
         appendLine(BluetoothDiagnosticSnapshot.report(appContext))
         appendLine()

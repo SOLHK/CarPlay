@@ -13,6 +13,73 @@ class RecentDiagnosticWindowTest {
     private fun filtered(log: String, now: String = "2026-11-01 14:00:00.000") =
         RecentDiagnosticWindow.filter(log.trimIndent(), at(now), utc)
 
+    @Test fun windowSummaryPreservesTheFirstThreeReportLines() {
+        val header = "CarPlay 0.2.38 · diagnostic report\nLast problem: none recorded\nAndroid 12 / API 32"
+        val result = filtered(header + "\n--- diplay.log ---\n2026-11-01 13:00:00.000 retained")
+        assertEquals(header.lines(), result.lines().take(3))
+        assertTrue(result.indexOf("Log window:") > result.indexOf("Android 12"))
+        assertTrue(result.indexOf("Log window:") < result.indexOf("--- diplay.log ---"))
+        val twice = RecentDiagnosticWindow.filter(result, at("2026-11-01 14:00:00.000"), utc)
+        assertEquals(header.lines(), twice.lines().take(3))
+        assertEquals(1, twice.lineSequence().count { it.startsWith("Log window:") })
+    }
+
+    @Test fun anEmptyWindowStillPreservesTheReportHeader() {
+        val header = "CarPlay 0.2.38 · diagnostic report\nLast problem: none recorded\nAndroid 12 / API 32"
+        val result = filtered(header + "\n--- diplay.log ---\n2026-10-01 13:00:00.000 old")
+        assertEquals(header.lines(), result.lines().take(3))
+        assertTrue(result.contains("available=none"))
+        assertFalse(result.contains("--- diplay.log ---"))
+    }
+
+    @Test fun chronologicalRotationCarriesTheSessionDateIntoHeaderlessSegments() {
+        val result = filtered("""
+            --- previous-3.log ---
+            DiPlay log started 2026-11-01 12:05:41.101
+            12:10:47.194 first-segment
+            --- previous-2.log ---
+            12:30:00.000 second-segment
+            --- previous.log ---
+            13:00:00.000 third-segment
+            --- diplay.log ---
+            13:59:59.000 newest-segment
+        """)
+        for (event in listOf("first-segment", "second-segment", "third-segment", "newest-segment")) {
+            assertTrue("Missing size-rotated evidence: $event", result.contains(event))
+        }
+        assertTrue(result.contains("2026-11-01 13:59:59.000 newest-segment"))
+        assertTrue(result.contains("undatedOmitted=0"))
+    }
+
+    @Test fun midnightRotationAndExplicitRestartsDoNotMixSessionDates() {
+        val result = filtered("""
+            --- previous-2.log ---
+            DiPlay log started 2026-10-31 23:58:00.000
+            23:59:59.000 before
+            --- previous.log ---
+            00:00:01.000 after
+            --- diplay.log ---
+            DiPlay log started 2026-11-01 00:30:00.000
+            00:30:01.000 restarted
+        """, "2026-11-01 01:00:00.000")
+        assertTrue(result.contains("2026-10-31 23:59:59.000 before"))
+        assertTrue(result.contains("2026-11-01 00:00:01.000 after"))
+        assertTrue(result.contains("2026-11-01 00:30:01.000 restarted"))
+    }
+
+    @Test fun malformedExplicitRestartDoesNotBorrowAnEarlierDate() {
+        val result = filtered("""
+            --- previous.log ---
+            DiPlay log started 2026-11-01 12:00:00.000
+            12:01:00.000 known
+            --- diplay.log ---
+            DiPlay log started invalid
+            12:30:00.000 ambiguous
+        """)
+        assertTrue(result.contains("known"))
+        assertFalse(result.contains("ambiguous"))
+    }
+
     @Test fun excludesPriorDaysAndKeepsExactThreeHourBoundary() {
         val result = filtered("""
             Device snapshot

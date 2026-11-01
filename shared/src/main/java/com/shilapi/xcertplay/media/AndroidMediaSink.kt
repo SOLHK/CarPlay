@@ -2521,6 +2521,7 @@ private class AudioRenderer(
             fadeApplied = true
         }
         var written = 0
+        var consecutiveZeroWrites = 0
         while (written < length && running) {
             if (!playbackStarted && startThresholdBytes > 0 && prebufferBytes >= startThresholdBytes) {
                 startPlayback(track)
@@ -2553,9 +2554,15 @@ private class AudioRenderer(
             }
             if (count == 0) {
                 zeroWritesThisWindow++
-                Thread.sleep(AUDIO_WRITE_RETRY_MILLIS)
+                consecutiveZeroWrites = (consecutiveZeroWrites + 1).coerceAtMost(3)
+                val queuedBytes = bufferProgress.queuedBytes(track.playbackHeadPosition)
+                // A full device queue needs time to drain, not another 500 Hz JNI poll.
+                // This is bounded by audible reserve; startup, PCM and buffer presets are unchanged.
+                Thread.sleep(AudioWriteBackoff.delayMillis(consecutiveZeroWrites,
+                    queuedBytes, bytesPerSecond, playbackStarted))
                 continue
             }
+            consecutiveZeroWrites = 0
             if (count < writeLength) partialWritesThisWindow++
             val framesWritten = count / frameBytes
             if (ambientMedia && AmbientMusicController.wantsPcm(ambientRendererToken)) {
@@ -2720,7 +2727,13 @@ private class AudioRenderer(
         val nowNs = System.nanoTime()
         observePlaybackProgress(track, nowNs)
         restoreStartThresholdAfterPlayback(track)
-        if (bufferProgress.shouldRebuffer(usesMusicBuffer(), playbackStarted,
+        // underrunCount is cumulative: a previous, already recovered underrun is not
+        // permission to pause a currently draining tail (the field log retained 73 ms).
+        // No extra audio is buffered: empty hardware still recovers immediately. For
+        // retained PCM, allow four existing poll ticks for the platform head to advance.
+        val retainedAudioIsAdvancing = bufferProgress.queuedBytes(track.playbackHeadPosition) > 0L &&
+            nowNs - lastPlaybackProgressNs < AUDIO_POLL_MILLIS * 4_000_000L
+        if (!retainedAudioIsAdvancing && bufferProgress.shouldRebuffer(usesMusicBuffer(), playbackStarted,
                 track.underrunCount > underrunsAtPlaybackStart, queue.isEmpty(), track.playbackHeadPosition,
                 startThresholdBytes / 2L)) {
             // The hardware buffer has starved below the recovery floor. Pause without flushing
@@ -2888,7 +2901,6 @@ private class AudioRenderer(
         const val INPUT_TIMEOUT_US = 10_000L
         const val AUDIO_INPUT_WAIT_NS = 100_000_000L
         const val AUDIO_POLL_MILLIS = 10L
-        const val AUDIO_WRITE_RETRY_MILLIS = 2L
         // Holds a burst after a Wi-Fi gap (~4 s of AAC) instead of dropping it.
         const val MAX_QUEUED_PACKETS = 192
         const val PREBUFFER_WRITE_CHUNK_BYTES = 2 * 1024

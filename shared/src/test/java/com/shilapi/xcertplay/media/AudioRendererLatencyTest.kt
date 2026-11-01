@@ -40,6 +40,31 @@ class AudioRendererLatencyTest {
         BoundedTrack.underruns = 0
     }
 
+    @Test fun recoveredUnderrunCannotPauseSeventyThreeMillisecondsOfMovingMusic() {
+        BoundedTrack.capacity = 32_640
+        withRenderer(48_000, 2, 28_800) { renderer ->
+            set(renderer, "mappedChannel", AudioChannel.MEDIA)
+            set(renderer, "playbackStarted", true)
+            BoundedTrack.playing = true
+            BoundedTrack.underruns = 1
+            BoundedTrack.head = 1_000
+            val progress = field("bufferProgress").get(renderer) as AudioBufferProgress
+            progress.written(4_000 + 14_016) // 73 ms remains at 48 kHz stereo.
+            method("maintainPlaybackBuffer").invoke(renderer)
+            assertEquals(0, BoundedTrack.pauses)
+            assertTrue(BoundedTrack.playing)
+            assertEquals(14_016L, progress.queuedBytes(BoundedTrack.head))
+
+            // Real starvation is still handled immediately; no larger start buffer or PCM loss.
+            BoundedTrack.head = 4_504
+            method("maintainPlaybackBuffer").invoke(renderer)
+            assertEquals(1, BoundedTrack.pauses)
+            assertFalse(BoundedTrack.playing)
+            assertEquals(0, BoundedTrack.flushes)
+            assertEquals(28_800, field("startThresholdBytes").get(renderer))
+        }
+    }
+
     @Test(timeout = 10_000)
     fun smallMonoUsbTracksStartBeforeAPausedTrackRunsOutOfSpace() {
         for (rate in listOf(8_000, 16_000, 24_000, 44_100, 48_000)) {
@@ -234,6 +259,24 @@ class AudioRendererLatencyTest {
                 assertEquals(512, BoundedTrack.nativeThreshold)
                 assertEquals(0, BoundedTrack.thresholdCalls)
             }
+        }
+    }
+
+    @Test(timeout = 5_000)
+    fun repeatedFullTrackRetriesPreserveEveryByteAndNeverRestartPlayback() {
+        withRenderer(48_000, 2, 2048) { renderer ->
+            set(renderer, "playbackStarted", true)
+            set(renderer, "fadeApplied", true)
+            BoundedTrack.playing = true
+            (field("bufferProgress").get(renderer) as AudioBufferProgress).written(4096)
+            BoundedTrack.onWrite = { call, size -> if (call <= 12) 0 else size }
+            val pcm = ByteArray(96) { it.toByte() }
+            write(renderer, pcm)
+            assertArrayEquals(pcm, BoundedTrack.accepted.toByteArray())
+            assertEquals(13, BoundedTrack.calls)
+            assertEquals(12, field("zeroWritesThisWindow").get(renderer))
+            assertEquals(0, BoundedTrack.plays)
+            assertEquals(0, BoundedTrack.flushes)
         }
     }
 

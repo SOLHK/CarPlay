@@ -5304,13 +5304,9 @@ open class CarPlayHostActivity : ComponentActivity() {
                 onScreenStreamStateChanged(controllerGeneration, type, active)
             },
             mediaBufferMillis = AirPlayPersistence.loadMediaBufferMillis(this, wireless = wirelessEnabled),
-            onAudioDiagnostic = { message ->
-                if (message.startsWith("Microphone: ")) {
-                    AsyncDiagnosticLog.append(diagnosticLog, message)
-                } else {
-                    diagnosticLog?.append(formattedLogLine(message, System.currentTimeMillis()))
-                }
-            },
+            // Every audio diagnostic uses the captured session target. Ordinary music/voice
+            // statistics used to perform synchronous disk I/O directly on the audio worker.
+            onAudioDiagnostic = { message -> AsyncDiagnosticLog.append(diagnosticLog, message) },
             onMediaAudioChanged = CarPlayMediaKeys::onMediaAudioChanged,
             callEchoCancellation = AirPlayPersistence.loadCallEchoCancellation(this),
             callVoiceFilter = AirPlayPersistence.loadCallVoiceFilter(this),
@@ -6791,12 +6787,11 @@ open class CarPlayHostActivity : ComponentActivity() {
     }
 
     private fun appendLog(message: String) {
-        val safe = DiagnosticRedactor.redact(message) ?: return
-        sessionLog?.append(formattedLogLine(safe, System.currentTimeMillis()))
+        AsyncDiagnosticLog.append(sessionLog, message)
     }
 
     private fun appendFileLog(message: String) {
-        sessionLog?.append(formattedLogLine(message, System.currentTimeMillis()))
+        AsyncDiagnosticLog.append(sessionLog, message)
     }
 
     private fun formattedLogLine(message: String, nowMillis: Long): String =
@@ -6951,7 +6946,7 @@ open class CarPlayHostActivity : ComponentActivity() {
         // The first frame normally comes within a second of the screen stream opening.
         private const val NO_PICTURE_MILLIS = 10_000L
         private const val NO_PICTURE_RECHECK_MILLIS = 250L
-        const val LOG_RETENTION_MILLIS = 5 * 60_000L
+        const val LOG_RETENTION_MILLIS = RecentDiagnosticWindow.WINDOW_MILLIS
         const val DISPLAY_CHANGE_DEBOUNCE_MILLIS = 500L
         const val CONFIGURATION_POLL_INTERVAL_MILLIS = 2_000L
         const val RECONNECT_DELAY_MILLIS = 2_000L

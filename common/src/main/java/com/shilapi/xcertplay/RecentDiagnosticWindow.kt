@@ -32,6 +32,7 @@ internal object RecentDiagnosticWindow {
         val output = StringBuilder()
         var section: String? = null
         var emitted = false
+        var firstLogOffset: Int? = null
         var day: Calendar? = null
         var lastTod: Long? = null
         var includeContinuation = false
@@ -50,17 +51,21 @@ internal object RecentDiagnosticWindow {
             val line = raw.trimEnd('\r')
             if (line.startsWith(SUMMARY)) continue
             if (logSection.matches(line)) {
-                section = line; emitted = false; day = null; lastTod = null
+                // REPORT_NAMES is chronological. Size rotation has no new session header;
+                // carry an already established date into the next segment, never invent one.
+                section = line; emitted = false
                 includeContinuation = false
                 continue
             }
             if (line.startsWith("--- ") && line.endsWith(" ---")) {
-                section = null; includeContinuation = false
+                section = null; includeContinuation = false; day = null; lastTod = null
             }
             if (section == null) {
                 output.append(line).append('\n')
                 continue
             }
+            // A malformed explicit restart cannot inherit the previous session's day.
+            if (line.startsWith(START)) { day = null; lastTod = null }
             val source = if (line.startsWith(START)) line.removePrefix(START) else line
             val full = fullTime.find(source)?.value
             val short = if (full == null) shortTime.find(line) else null
@@ -97,7 +102,10 @@ internal object RecentDiagnosticWindow {
                 if (epoch == null) unknown++ else excluded++
                 continue
             }
-            if (!emitted) { output.append(section).append('\n'); emitted = true }
+            if (!emitted) {
+                if (firstLogOffset == null) firstLogOffset = output.length
+                output.append(section).append('\n'); emitted = true
+            }
             output.append(normalized).append('\n')
             val stamp = epoch!!
             first = minOf(first ?: stamp, stamp); last = maxOf(last ?: stamp, stamp)
@@ -106,6 +114,10 @@ internal object RecentDiagnosticWindow {
         val summary = "${SUMMARY}last 3 hours; from=${local.format(Date(cutoff))}; " +
             "to=${local.format(Date(nowMillis))}; timezone=${zone.id}; available=$available; " +
             "excluded=$excluded; undatedOmitted=$unknown; history may be shorter due to the storage size cap.\n"
-        return summary + output.toString().trimEnd() + "\n"
+        val body = output.toString().trimEnd() + "\n"
+        // Version, last problem and Android version retain their established first three
+        // lines. Put window metadata beside the log, not ahead of the report header.
+        val insertion = firstLogOffset ?: body.length
+        return body.substring(0, insertion) + summary + body.substring(insertion)
     }
 }
