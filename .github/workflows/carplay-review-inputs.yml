@@ -1,0 +1,36 @@
+name: CarPlay repair review inputs
+on:
+  push:
+    branches: [work/carplay-stutter-3h-20261101]
+    paths: [.github/workflows/carplay-review-inputs.yml]
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  inputs:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+          persist-credentials: false
+      - name: Collect pinned source and verification tools without credentials
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p review/tools
+          git archive --format=zip -o review/source-stutter.zip 88f9e970d080a29b5103d2880fd0e7fe619b868f
+          git archive --format=zip -o review/source-installed-base.zip 2e9e178a794942ebbe2b8d3f20bcb5ad4fab0627
+          cp "$ANDROID_HOME/build-tools/36.0.0/lib/apksigner.jar" review/tools/
+          cp "$ANDROID_HOME/build-tools/36.0.0/aapt" review/tools/
+          cp "$ANDROID_HOME/build-tools/36.0.0/zipalign" review/tools/
+          cp -r "$ANDROID_HOME/build-tools/36.0.0/lib64" review/tools/ || true
+          git rev-parse HEAD > review/review-commit.txt
+          sha256sum review/*.zip review/tools/*.* > review/SHA256SUMS.txt
+      - uses: actions/upload-artifact@v4
+        with:
+          name: CarPlay-repair-review-inputs
+          path: review/
+          if-no-files-found: error
+          retention-days: 7
