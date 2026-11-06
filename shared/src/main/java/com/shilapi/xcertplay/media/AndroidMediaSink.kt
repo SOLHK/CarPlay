@@ -1104,13 +1104,15 @@ private class VideoDecoder(
                     when (job) {
                         is VideoJob.Config -> configureDecoder(job)
                         is VideoJob.Frame -> {
+                            val nowNs = System.nanoTime()
+                            stats.onQueueLatency(nowNs - job.receivedNs)
                             val backlog = queue.backlogAfterCurrent()
                             val overloaded = !referenceChain.needsKeyFrame && backlogRecovery.observe(
-                                System.nanoTime(), job.receivedNs,
+                                nowNs, job.receivedNs,
                                 backlog.pendingFrames, backlog.newestPendingReceivedNs,
                             )
                             if (overloaded) {
-                                recover("video backlog kept growing or exceeded hard limit")
+                                recover("video backlog grew, stayed stale or exceeded hard limit")
                             } else feed(job.nalus, job.receivedNs, localTimeOf(job),
                                 job.arrivalNanos.takeIf { it in 1..job.receivedNs } ?: job.receivedNs)
                         }
@@ -1829,6 +1831,7 @@ private class AudioRenderer(
     private val mediaLagGuard = if (format.audioType == "media") MediaPacketLagGuard(format.rtpClockRate) else null
     @Volatile private var newestRtpSample = 0
     private var lagRecoveryReports = 0
+    private var pendingRecoveryReports = 0
     @Volatile private var running = true
     @Volatile private var started = false
     private var codec: MediaCodec? = null
@@ -1854,6 +1857,7 @@ private class AudioRenderer(
     private var firstInputQueuedLogged = false
     private var inputQueued = 0
     private var inputDropped = 0
+    private var inputRetries = 0
     private var shortOpusPackets = 0
     private var decoderUnavailablePackets = 0
     private var outputBuffers = 0
@@ -2000,11 +2004,34 @@ private class AudioRenderer(
             createTrack()
             diagnosticStage = "focus"
             requestAudioFocus()
+            var pending: AudioPacket? = null
+            var pendingRecoveryBoundary: MediaPacketLagGuard.RecoveryBoundary? = null
             while (running) {
                 // Report Settings changes from this worker, never from the UI thread, also between prompts.
                 applyNavigationAttenuation()
                 diagnosticStage = "packet"
-                queue.poll(AUDIO_POLL_MILLIS, TimeUnit.MILLISECONDS)?.let(::handle)
+                val boundary = mediaLagGuard?.recoveryBoundary
+                val waiting = pending
+                if (waiting != null && boundary !== pendingRecoveryBoundary && boundary?.excludes(waiting.sample) == true) {
+                    // Only the existing sustained live-UDP recovery may obsolete this packet.
+                    // Otherwise a stalled decoder could replay an old in-flight packet after
+                    // the receive thread has already trimmed the rest of that old live queue.
+                    // Buffered TCP never publishes a boundary and retains its complete music.
+                    pending = null
+                    packetsDropped.incrementAndGet()
+                    packetsDroppedTotal.incrementAndGet()
+                    if (pendingRecoveryReports < MAX_REBUFFER_REPORTS) {
+                        pendingRecoveryReports++
+                        report("Audio: stale pending media packet recovered audioType=${format.audioType} remaining=${queue.size}")
+                    }
+                }
+                pendingRecoveryBoundary = boundary
+                // INFO_TRY_AGAIN_LATER is backpressure, not a corrupt audio packet. Retain the
+                // one in-flight packet across bounded input waits so a short decoder stall
+                // cannot cut a frame out of USB/Wi-Fi music or out of the buffered TCP stream.
+                // The existing bounded queue and TCP backpressure still bound the reserve.
+                val packet = pending ?: queue.poll(AUDIO_POLL_MILLIS, TimeUnit.MILLISECONDS)
+                pending = if (packet != null && !handle(packet)) packet else null
                 // Output becomes ready asynchronously, including after the last packet of a burst.
                 // Waiting for the next UDP packet can strand decoded sound for hundreds of ms.
                 diagnosticStage = "decoder-output"
@@ -2013,6 +2040,9 @@ private class AudioRenderer(
                 maintainPlaybackBuffer()
                 diagnosticStage = "stats"
                 logStatsIfDue()
+                // A vendor may return TRY_AGAIN immediately instead of waiting the requested
+                // timeout. Yield between retry windows; close interrupts both waits promptly.
+                if (pending != null && running) Thread.sleep(AUDIO_INPUT_RETRY_MILLIS)
             }
         } catch (_: InterruptedException) {
             // Worker shut down.
@@ -2347,7 +2377,8 @@ private class AudioRenderer(
             .putLong(OPUS_SEEK_PRE_ROLL_NANOS)
             .array()
 
-    private fun handle(packet: AudioPacket) {
+    /** True once consumed (or rejected as malformed), false for temporary decoder backpressure. */
+    private fun handle(packet: AudioPacket): Boolean {
         if (queue.isEmpty()) {
             droppedPacketsLogged = false
         }
@@ -2365,7 +2396,7 @@ private class AudioRenderer(
                             "audio AAC access unit bytes=${accessUnit.size}",
                         )
                     }
-                    feedCodec(
+                    return feedCodec(
                         MediaCodecSupport.adtsFrame(accessUnit, format.sampleRate, format.channels),
                         timestampUs,
                     )
@@ -2382,43 +2413,42 @@ private class AudioRenderer(
                             "audio Opus skipping short packet bytes=${accessUnit.size}",
                         )
                     }
-                    return
+                    return true
                 }
-                feedCodec(accessUnit, timestampUs)
+                return feedCodec(accessUnit, timestampUs)
             }
         }
+        return true
     }
 
     private fun sampleTimestampUs(sample: Int): Long =
         (sample.toLong() and 0xffff_ffffL) * 1_000_000L / format.sampleRate
 
-    private fun feedCodec(payload: ByteArray, presentationTimeUs: Long) {
-        val codec = codec ?: run { decoderUnavailablePackets++; return }
+    private fun feedCodec(payload: ByteArray, presentationTimeUs: Long): Boolean {
+        val codec = codec ?: run { decoderUnavailablePackets++; return true }
         diagnosticStage = "decoder-input"
-        // While a blocking track write holds this thread, decoded output fills up and the decoder
-        // stops taking input. Dropping the packet after one 10 ms wait cut ~21 ms of music every
-        // 10-20 s on DiLink 3.0 (#381); drain the output and wait again instead. One drain and
-        // retry is enough for that, and the pump always makes it. Waiting the video's 500 ms
-        // for every packet let a slowed decoder fall ever further behind instead: with the
-        // CarPlay screen in the background, the queue grew to 190 packets and the track
-        // underran every few seconds (#649).
+        // Output backpressure can temporarily exhaust the decoder's input slots. Drain output
+        // while waiting, then give maintenance, diagnostics and cancellation a turn at least
+        // every 100 ms input-wait window. Expiry retains this already decrypted packet for the
+        // next window; only successful queueInputBuffer consumes it, so retry cannot submit it
+        // twice. The live queue's existing sustained-lag guard still bounds obsolete music.
         val index = DecoderInputPump.acquire(
             running = { running }, drain = { drainCodec(codec) },
             dequeue = { codec.dequeueInputBuffer(INPUT_TIMEOUT_US) },
             timeoutNs = AUDIO_INPUT_WAIT_NS,
         )
         if (index < 0) {
-            inputDropped++
-            if (inputDropped == 1) {
-                Log.w(
-                    TAG,
-                    "audio decoder input unavailable codec=${format.codec} " +
-                        "queued=$inputQueued dropped=$inputDropped",
-                )
+            if (!running) return true
+            inputRetries++
+            if (inputRetries == 1) {
+                report("Audio: decoder input backpressure audioType=${format.audioType} " +
+                    "codec=${format.codec} queued=$inputQueued retainingPacket=true")
             }
-            return
+            return false
         }
-        val input = codec.getInputBuffer(index) ?: return
+        // A dequeued input slot belongs to us until it is queued. Silently abandoning an
+        // unexpectedly absent buffer leaks that slot and eventually starves the decoder.
+        val input = checkNotNull(codec.getInputBuffer(index)) { "Audio decoder returned no input buffer" }
         input.clear()
         if (payload.size <= input.remaining()) {
             input.put(payload)
@@ -2436,6 +2466,7 @@ private class AudioRenderer(
             inputDropped++
         }
         drainCodec(codec)
+        return true
     }
 
     private fun drainCodec(codec: MediaCodec) {
@@ -2811,6 +2842,7 @@ private class AudioRenderer(
             // Keep this separate: the exported diagnostic recorder caps each line at 700 characters.
             val decoderLine = "Audio: decoder stats audioType=${format.audioType} codec=${format.codec} " +
                 "inputQueuedTotal=$inputQueued inputDroppedTotal=$inputDropped " +
+                "inputRetriesTotal=$inputRetries " +
                 "shortOpusPacketsTotal=$shortOpusPackets decoderUnavailablePacketsTotal=$decoderUnavailablePackets " +
                 "outputBuffersTotal=$outputBuffers ended=$force"
             Log.i(STATS_TAG, decoderLine)
@@ -2900,6 +2932,7 @@ private class AudioRenderer(
         const val OPUS_SEEK_PRE_ROLL_NANOS = 80_000_000L
         const val INPUT_TIMEOUT_US = 10_000L
         const val AUDIO_INPUT_WAIT_NS = 100_000_000L
+        const val AUDIO_INPUT_RETRY_MILLIS = 2L
         const val AUDIO_POLL_MILLIS = 10L
         // Holds a burst after a Wi-Fi gap (~4 s of AAC) instead of dropping it.
         const val MAX_QUEUED_PACKETS = 192

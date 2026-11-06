@@ -14,6 +14,51 @@ class VideoBacklogRecoveryTest {
         }
     }
 
+    @Test fun aLargeConstantLiveBacklogCannotLeaveNavigationPermanentlyBehind() {
+        val recovery = VideoBacklogRecovery()
+        assertFalse(recovery.sample(1_000, age = 650, span = 500, frames = 15))
+        assertFalse(recovery.sample(2_499, age = 650, span = 500, frames = 15))
+        assertTrue(recovery.sample(2_500, age = 650, span = 500, frames = 15))
+        assertFalse("recovery starts a new observation", recovery.sample(2_501, 650, 500, 15))
+    }
+
+    @Test fun delayedBurstsThatKeepCatchingUpDoNotResetTheDecoder() {
+        val recovery = VideoBacklogRecovery()
+        assertFalse(recovery.sample(1_000, age = 900, span = 800, frames = 24))
+        assertFalse(recovery.sample(2_000, age = 800, span = 700, frames = 21))
+        assertFalse(recovery.sample(3_000, age = 700, span = 600, frames = 18))
+        assertFalse(recovery.sample(4_000, age = 600, span = 500, frames = 15))
+        assertFalse(recovery.sample(5_000, age = 400, span = 300, frames = 9))
+        assertFalse(recovery.sample(6_000, age = 100, span = 50, frames = 1))
+    }
+
+    @Test fun aFreshFrameOrStaticTailClearsPersistentLagObservation() {
+        for (staticTail in listOf(false, true)) {
+            val recovery = VideoBacklogRecovery()
+            assertFalse(recovery.sample(1_000, 600, 400, 12))
+            if (staticTail) {
+                assertFalse(recovery.observe(2_000 * MS, 1_400 * MS, 0, null))
+            } else {
+                assertFalse(recovery.sample(2_000, 200, 100, 3))
+            }
+            assertFalse(recovery.sample(2_100, 600, 400, 12))
+            assertFalse(recovery.sample(3_599, 600, 400, 12))
+            assertTrue(recovery.sample(3_600, 600, 400, 12))
+        }
+    }
+
+    @Test fun persistentRecoveryRequiresSubstantialAgeAndNewerFrameSpan() {
+        for ((age, span) in listOf(499L to 300L, 600L to 249L)) {
+            val recovery = VideoBacklogRecovery()
+            assertFalse(recovery.sample(1_000, age, span))
+            assertFalse(recovery.sample(3_000, age, span))
+        }
+        val recovery = VideoBacklogRecovery()
+        assertFalse(recovery.sample(1_000, 500, 250))
+        assertFalse(recovery.sample(2_499, 500, 250))
+        assertTrue(recovery.sample(2_500, 500, 250))
+    }
+
     @Test fun spanGrowthRequiresTheWholeGraceAndClearsTheEpisode() {
         val recovery = VideoBacklogRecovery()
         assertFalse(recovery.sample(0, age = 400, span = 200))

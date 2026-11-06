@@ -71,11 +71,37 @@ class VideoPacingTest {
         assertEquals(200 * ms, delay.nanos)
         val arrival = clockOffset
         val local = arrival + 80 * ms
-        assertEquals(local + 200 * ms,
+        assertEquals(arrival + 200 * ms,
             VideoPacing.presentationTimeNanos(local, delay.nanos, arrival, false))
     }
 
     @Test fun missingWiredArrivalDoesNotScheduleAnUnboundedFutureFrame() {
         assertEquals(0L, VideoPacing.presentationTimeNanos(clockOffset, 100 * ms, 0L, true))
+    }
+
+    @Test fun wirelessClockCorrectionAndSmoothingShareThe200MillisBudget() {
+        for (fps in listOf(30, 60)) {
+            val interval = 1_000_000_000L / fps
+            val pacer = FramePacer()
+            val delay = PacingDelay(VideoPacing.initialDelayMillis(fps, false) * ms)
+            var exercisedClockCorrection = false
+            repeat(700) { index ->
+                val sender = index * interval + if (index >= 200) 80 * ms else 0L
+                val arrival = index * interval + clockOffset
+                val local = pacer.localTime(sender, arrival)
+                delay.onFrame(250 * ms)
+                if (local > 0L) {
+                    if (local + delay.nanos - arrival > 200 * ms) exercisedClockCorrection = true
+                    val target = VideoPacing.presentationTimeNanos(local, delay.nanos, arrival, false)
+                    assertTrue("wireless frame $index at $fps fps", target - arrival <= 200 * ms)
+                    assertTrue("late decoding cannot add a second wait", target <= arrival + 250 * ms)
+                }
+            }
+            assertTrue("exercise the former double budget", exercisedClockCorrection)
+        }
+    }
+
+    @Test fun missingWirelessArrivalDoesNotScheduleAnUnboundedFutureFrame() {
+        assertEquals(0L, VideoPacing.presentationTimeNanos(clockOffset, 200 * ms, 0L, false))
     }
 }

@@ -1,17 +1,21 @@
 package com.shilapi.xcertplay.media
 
-/** Recover a growing input backlog, while allowing delayed bursts and static tail frames to finish. */
+/** Recover growing or persistently old live input, while allowing bursts and static tails to finish. */
 internal class VideoBacklogRecovery {
     private var episodeStartNs: Long? = null
     private var initialSpanNs = 0L
     private var initialPendingFrames = 0
     private var lastObservedNs: Long? = null
+    private var persistentStartNs: Long? = null
+    private var persistentSpanNs = 0L
 
     fun reset() {
         episodeStartNs = null
         initialSpanNs = 0L
         initialPendingFrames = 0
         lastObservedNs = null
+        persistentStartNs = null
+        persistentSpanNs = 0L
     }
 
     fun observe(nowNs: Long, currentReceivedNs: Long, pendingFrames: Int,
@@ -33,6 +37,23 @@ internal class VideoBacklogRecovery {
         if (ageNs >= HARD_AGE_NS && spanNs >= SOFT_SPAN_NS) {
             reset()
             return true
+        }
+        // After a stall, decoding at exactly the arrival rate leaves a fixed queue forever: it is
+        // not growing, but navigation still displays old pictures. Give a substantial live backlog
+        // time to drain, restarting that grace whenever it makes meaningful catch-up progress.
+        // A final/static frame and a short burst must never request an unnecessary new keyframe.
+        if (ageNs >= PERSISTENT_AGE_NS && spanNs >= PERSISTENT_SPAN_NS) {
+            val persistentStart = persistentStartNs
+            if (persistentStart == null || persistentSpanNs - spanNs >= CATCH_UP_PROGRESS_NS) {
+                persistentStartNs = nowNs
+                persistentSpanNs = spanNs
+            } else if (nowNs - persistentStart >= PERSISTENT_GRACE_NS) {
+                reset()
+                return true
+            }
+        } else {
+            persistentStartNs = null
+            persistentSpanNs = 0L
         }
         if (ageNs <= SOFT_AGE_NS || spanNs < SOFT_SPAN_NS) return false
         val start = episodeStartNs
@@ -60,5 +81,9 @@ internal class VideoBacklogRecovery {
         const val GRACE_NS = 750_000_000L
         const val SPAN_GROWTH_NS = 100_000_000L
         const val FRAME_GROWTH = 4
+        const val PERSISTENT_AGE_NS = 500_000_000L
+        const val PERSISTENT_SPAN_NS = 250_000_000L
+        const val PERSISTENT_GRACE_NS = 1_500_000_000L
+        const val CATCH_UP_PROGRESS_NS = 50_000_000L
     }
 }
