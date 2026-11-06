@@ -8,6 +8,7 @@ CarPlay **0.2.35** adds a 150 ms wireless music preset, 100 ms USB defaults, fas
 
 ## Current development status
 
+- CarPlay **0.2.39** restores fresh, ordered vehicle location reporting and fixes temporary audio decoder input loss and persistent video backlog. It retains the 0.2.37/0.2.38 session and audio repairs. See [repair details and device acceptance](docs/CARPLAY-0.2.39.md) and [PR #8 validation](https://github.com/SOLHK/CarPlay/pull/8). Wired/wireless startup settings remain 100/150 ms; no end-to-end device latency is claimed.
 - Visible app name: CarPlay. Android application ID: `com.solhk.carplay`; debug builds use `com.solhk.carplay.hudtest`. Installing this package does not update an existing DiPlay or earlier SOLHK test app, and saved settings do not migrate automatically.
 - Receiver home, settings, and music pages use shared light and dark tokens. The music page reads the active iPhone session's metadata and sends media commands through the existing controller; without a session, it shows no invented track and disables playback controls.
 - [Android CI at `40d14f5e`](https://github.com/SOLHK/CarPlay/actions/runs/39570837683) passed unit tests, Lint, and source-only Debug APK builds. This does not establish head-unit or iPhone compatibility.

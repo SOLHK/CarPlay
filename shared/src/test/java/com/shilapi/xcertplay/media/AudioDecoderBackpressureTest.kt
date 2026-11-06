@@ -9,6 +9,7 @@ import java.util.ArrayDeque
 import java.util.concurrent.CopyOnWriteArrayList
 import java.util.concurrent.CountDownLatch
 import java.util.concurrent.TimeUnit
+import java.util.concurrent.atomic.AtomicInteger
 import org.junit.Assert.*
 import org.junit.Before
 import org.junit.Test
@@ -30,6 +31,10 @@ class AudioDecoderBackpressureTest {
     @Before fun reset() {
         BackpressureCodec.firstWaitMillis = 125
         BackpressureCodec.neverReady = false
+        BackpressureCodec.immediateTryAgain = false
+        BackpressureCodec.attempts.set(0)
+        BackpressureCodec.firstAttemptNanos = 0L
+        BackpressureCodec.lastAttemptNanos = 0L
         BackpressureCodec.entered = CountDownLatch(1)
         BackpressureCodec.inputs.clear()
         BackpressureCodec.timestamps.clear()
@@ -91,11 +96,41 @@ class AudioDecoderBackpressureTest {
         } finally { close(renderer) }
     }
 
-    private fun renderer(wired: Boolean, buffered: Boolean, reports: MutableList<String>): Any =
+    @Test(timeout = 10_000)
+    fun immediateTryAgainIsBackedOffInsideTheInputWaitWindowAndStillCancels() {
+        BackpressureCodec.firstWaitMillis = 0
+        BackpressureCodec.neverReady = true
+        BackpressureCodec.immediateTryAgain = true
+        val retried = CountDownLatch(1)
+        val reports = CopyOnWriteArrayList<String>()
+        val renderer = renderer(wired = true, buffered = false, reports) { message ->
+            if (message.contains("decoder input backpressure")) retried.countDown()
+        }
+        try {
+            invoke(renderer, "start", 0)
+            invoke(renderer, "submit", ByteArray(16), 0)
+            assertTrue("Worker did not finish its bounded input-wait window: $reports",
+                retried.await(3, TimeUnit.SECONDS))
+            close(renderer)
+            val attempts = BackpressureCodec.attempts.get()
+            val elapsedNanos = BackpressureCodec.lastAttemptNanos - BackpressureCodec.firstAttemptNanos
+            // Allow first-call instrumentation and clock/scheduling rounding, but not an
+            // unbounded hot loop. The old outer-window-only sleep made thousands of calls.
+            val maximumAttempts = elapsedNanos / 2_000_000L + 5L
+            assertTrue("Busy-looped $attempts times in ${elapsedNanos / 1_000_000L} ms",
+                attempts > 1 && attempts <= maximumAttempts)
+            assertTrue(BackpressureCodec.inputs.isEmpty())
+            assertTrue(RecordingTrack.pcm.isEmpty())
+            assertEquals(0, field("inputDropped").get(renderer))
+        } finally { close(renderer) }
+    }
+
+    private fun renderer(wired: Boolean, buffered: Boolean, reports: MutableList<String>,
+        onReport: (String) -> Unit = {}): Any =
         type.declaredConstructors.single { !it.isSynthetic }.apply { isAccessible = true }.newInstance(
             AudioFormat(AudioCodecKind.AAC_LC, 48_000, 2, if (buffered) 103 else 100, "media"),
             false, false, 0, 0, AudioFocusCoordinator(null, false, false),
-            0, if (wired) 100 else 150, { message: String -> reports.add(message); Unit }, 0L, false, null, false,
+            0, if (wired) 100 else 150, { message: String -> reports.add(message); onReport(message) }, 0L, false, null, false,
         ).also {
             field("wiredTransport").set(it, wired)
             field("fadeApplied").set(it, true)
@@ -122,6 +157,9 @@ class AudioDecoderBackpressureTest {
         private var firstInput = true
 
         @Implementation override fun native_dequeueInputBuffer(timeoutUs: Long): Int {
+            val now = System.nanoTime()
+            if (attempts.incrementAndGet() == 1) firstAttemptNanos = now
+            lastAttemptNanos = now
             entered.countDown()
             if (firstInput && firstWaitMillis > 0) {
                 firstInput = false
@@ -131,7 +169,7 @@ class AudioDecoderBackpressureTest {
                 return MediaCodec.INFO_TRY_AGAIN_LATER
             }
             if (neverReady) {
-                Thread.sleep((timeoutUs / 1000).coerceAtLeast(1))
+                if (!immediateTryAgain) Thread.sleep((timeoutUs / 1000).coerceAtLeast(1))
                 return MediaCodec.INFO_TRY_AGAIN_LATER
             }
             return 0
@@ -161,6 +199,10 @@ class AudioDecoderBackpressureTest {
         companion object {
             var firstWaitMillis = 125L
             var neverReady = false
+            var immediateTryAgain = false
+            val attempts = AtomicInteger()
+            var firstAttemptNanos = 0L
+            var lastAttemptNanos = 0L
             lateinit var entered: CountDownLatch
             val inputs = CopyOnWriteArrayList<ByteArray>()
             val timestamps = CopyOnWriteArrayList<Long>()

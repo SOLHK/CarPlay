@@ -2040,9 +2040,6 @@ private class AudioRenderer(
                 maintainPlaybackBuffer()
                 diagnosticStage = "stats"
                 logStatsIfDue()
-                // A vendor may return TRY_AGAIN immediately instead of waiting the requested
-                // timeout. Yield between retry windows; close interrupts both waits promptly.
-                if (pending != null && running) Thread.sleep(AUDIO_INPUT_RETRY_MILLIS)
             }
         } catch (_: InterruptedException) {
             // Worker shut down.
@@ -2434,7 +2431,19 @@ private class AudioRenderer(
         // twice. The live queue's existing sustained-lag guard still bounds obsolete music.
         val index = DecoderInputPump.acquire(
             running = { running }, drain = { drainCodec(codec) },
-            dequeue = { codec.dequeueInputBuffer(INPUT_TIMEOUT_US) },
+            dequeue = {
+                val before = System.nanoTime()
+                val slot = codec.dequeueInputBuffer(INPUT_TIMEOUT_US)
+                if (slot < 0 && running) {
+                    // Some vendor codecs return TRY_AGAIN immediately despite a positive
+                    // timeout. Back off *inside* the retry window, otherwise one pending
+                    // packet can spin for every 100 ms window. A normal 10 ms wait adds no
+                    // sleep; a quick negative return only waits the remainder of 2 ms.
+                    val remainder = AUDIO_INPUT_RETRY_NANOS - (System.nanoTime() - before)
+                    if (remainder > 0) TimeUnit.NANOSECONDS.sleep(remainder)
+                }
+                slot
+            },
             timeoutNs = AUDIO_INPUT_WAIT_NS,
         )
         if (index < 0) {
@@ -2932,7 +2941,7 @@ private class AudioRenderer(
         const val OPUS_SEEK_PRE_ROLL_NANOS = 80_000_000L
         const val INPUT_TIMEOUT_US = 10_000L
         const val AUDIO_INPUT_WAIT_NS = 100_000_000L
-        const val AUDIO_INPUT_RETRY_MILLIS = 2L
+        const val AUDIO_INPUT_RETRY_NANOS = 2_000_000L
         const val AUDIO_POLL_MILLIS = 10L
         // Holds a burst after a Wi-Fi gap (~4 s of AAC) instead of dropping it.
         const val MAX_QUEUED_PACKETS = 192

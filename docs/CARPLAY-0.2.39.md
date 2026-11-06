@@ -36,6 +36,11 @@ therefore create a missing audible frame even when transport delivered the data.
 Retain the pending input across bounded pump intervals and keep output draining,
 playback maintenance, and shutdown responsive. Do not add silence, change playback
 rate to hide loss, or increase the selected music startup buffer.
+For vendor decoders that return immediately despite a positive timeout, each
+unsuccessful input attempt waits only the remainder of a 2 ms minimum interval.
+Ordinary blocking dequeues gain no additional wait. This keeps retries from
+spinning at full CPU while a packet is retained. A permanently failed codec is
+still a distinct platform failure; retry cancellation is not proof of self-repair.
 
 ### Video latency
 
