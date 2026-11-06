@@ -62,6 +62,8 @@ class CarPlayVpnConsentTest {
 
     @After fun tearDown() {
         awaitAdbConsent()
+        assertTrue(AsyncDiagnosticLog.awaitIdle(2_000L))
+        ReflectionHelpers.getField<SessionLogFile?>(activity, "sessionLog")?.close()
         ReflectionHelpers.getField<AtomicBoolean>(activity, "shuttingDown").set(true)
         ReflectionHelpers.getField<Handler>(activity, "mainHandler").removeCallbacksAndMessages(null)
         ReflectionHelpers.getField<ExecutorService>(activity, "teardownExecutor").shutdownNow()
@@ -236,7 +238,10 @@ class CarPlayVpnConsentTest {
     }
 
     private fun field(name: String): Boolean = ReflectionHelpers.getField(activity, name)
-    private fun log() = File(activity.filesDir, "logs/diplay.log").readText()
+    private fun log(): String {
+        assertTrue("Diagnostic writer must finish before saved evidence is read", AsyncDiagnosticLog.awaitIdle(2_000L))
+        return File(activity.filesDir, "logs/diplay.log").readText()
+    }
     private fun invoke(name: String) {
         try { activity.javaClass.getDeclaredMethod(name).apply { isAccessible = true }.invoke(activity) }
         catch (error: InvocationTargetException) { throw error.targetException }

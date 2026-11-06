@@ -7,21 +7,19 @@ import android.location.LocationListener
 import android.location.LocationManager
 import android.os.Build
 import android.os.Bundle
-import android.os.Looper
+import android.os.HandlerThread
 import android.util.Log
-import com.shilapi.xcertplay.transport.CarPlayLocationFix
 import com.shilapi.xcertplay.transport.Iap2LocationProvider
-import com.shilapi.xcertplay.transport.NmeaLocationEncoder
-import java.util.concurrent.ConcurrentHashMap
 
 /**
  * Foreground Android location source for iAP2 LocationInformation.
  *
- * The freshest usable fix from GPS, fused, or network location is sent.
+ * The freshest usable fix from GPS, fused, or network location is sent once.
+ * Location callbacks must not wait behind rendering or settings work on the main looper.
  */
 class AndroidCarPlayLocationProvider(
     context: Context,
-    private val preferredLocationAgeMillis: Long = DEFAULT_PREFERRED_LOCATION_AGE_MILLIS,
+    preferredLocationAgeMillis: Long = DEFAULT_PREFERRED_LOCATION_AGE_MILLIS,
 ) : Iap2LocationProvider {
     private val locationManager =
         context.applicationContext.getSystemService(LocationManager::class.java)
@@ -33,27 +31,47 @@ class AndroidCarPlayLocationProvider(
         }
         add(LocationManager.NETWORK_PROVIDER)
     }.filter { it in locationManager.allProviders }
-    private val latestFixes = ConcurrentHashMap<String, Location>()
-    private val listener = object : LocationListener {
+    // All subscription and fix state is guarded by stateLock. Each subscription gets a distinct
+    // listener so a late callback/removal from a stopped session cannot affect its replacement.
+    private val fixes = FreshLocationState(preferredLocationAgeMillis)
+    private val disabledProviders = mutableSetOf<String>()
+    private var subscription: Subscription? = null
+
+    private fun createListener() = object : LocationListener {
         override fun onLocationChanged(location: Location) {
             val provider = location.provider ?: return
-            if (provider in preferredProviders) {
-                latestFixes[provider] = location
+            synchronized(stateLock) {
+                if (subscription?.listener !== this || provider !in preferredProviders ||
+                    provider in disabledProviders) return
+                fixes.update(location)
             }
         }
 
-        override fun onProviderEnabled(provider: String) = Unit
-        override fun onProviderDisabled(provider: String) = Unit
+        override fun onProviderEnabled(provider: String) {
+            synchronized(stateLock) {
+                if (subscription?.listener === this) disabledProviders.remove(provider)
+            }
+        }
+
+        override fun onProviderDisabled(provider: String) {
+            synchronized(stateLock) {
+                if (subscription?.listener !== this) return
+                disabledProviders.add(provider)
+                fixes.remove(provider)
+            }
+        }
+
         override fun onStatusChanged(provider: String, status: Int, extras: Bundle?) = Unit
     }
 
-    private var started = false
-
     @SuppressLint("MissingPermission")
     override fun start(): Boolean = synchronized(stateLock) {
-        if (started) {
+        if (subscription != null) {
             true
         } else {
+            val thread = HandlerThread("CarPlayLocation").apply { start() }
+            val next = Subscription(createListener(), thread)
+            subscription = next
             seedLastKnownLocations()
             var subscribedProviders = 0
             for (provider in preferredProviders) {
@@ -62,19 +80,23 @@ class AndroidCarPlayLocationProvider(
                         provider,
                         UPDATE_INTERVAL_MILLIS,
                         MIN_DISTANCE_METERS,
-                        listener,
-                        Looper.getMainLooper(),
+                        next.listener,
+                        thread.looper,
                     )
                     subscribedProviders++
                 } catch (error: Exception) {
+                    fixes.remove(provider)
                     Log.w(TAG, "Could not subscribe to Android location provider $provider", error)
                 }
             }
-            started = subscribedProviders > 0
-            if (!started) {
+            if (subscribedProviders == 0) {
+                subscription = null
+                fixes.clear()
+                disabledProviders.clear()
+                release(next)
                 Log.w(TAG, "No Android location provider could be started")
             }
-            started
+            subscribedProviders > 0
         }
     }
 
@@ -82,65 +104,59 @@ class AndroidCarPlayLocationProvider(
     private fun seedLastKnownLocations() {
         for (provider in preferredProviders) {
             val location = try {
+                // This is only a snapshot for seeding. The provider may be enabled before the
+                // listener is registered, so only live callbacks may latch the disabled state.
+                if (!locationManager.isProviderEnabled(provider)) continue
                 locationManager.getLastKnownLocation(provider)
             } catch (error: Exception) {
                 Log.w(TAG, "Could not read last known location from $provider", error)
                 null
             } ?: continue
-            latestFixes[provider] = location
-            Log.i(
-                TAG,
-                "Seeded $provider location ageMs=${(System.currentTimeMillis() - location.time).coerceAtLeast(0)}",
-            )
+            fixes.update(location)
         }
     }
 
     override fun stop() {
-        val shouldUnregister = synchronized(stateLock) {
-            val wasStarted = started
-            started = false
-            wasStarted
+        val previous = synchronized(stateLock) {
+            val previous = subscription ?: return
+            subscription = null
+            fixes.clear()
+            disabledProviders.clear()
+            previous
         }
-        if (!shouldUnregister) return
+        release(previous)
+    }
+
+    private fun release(previous: Subscription) {
         try {
-            locationManager.removeUpdates(listener)
+            locationManager.removeUpdates(previous.listener)
         } catch (_: Exception) {
             // Already unregistered.
+        } finally {
+            // Late queued callbacks see a different subscription and do nothing. Do not join the
+            // callback thread while holding stateLock or block the iAP2 close path on its exit.
+            previous.thread.quitSafely()
         }
     }
 
-    override fun latestNmea(): String? {
-        val fix = latestFix() ?: return null
-        return try {
-            NmeaLocationEncoder.encode(
-                CarPlayLocationFix(
-                    latitudeDegrees = fix.latitude,
-                    longitudeDegrees = fix.longitude,
-                    altitudeMeters = fix.altitude.takeIf { fix.hasAltitude() }?.toDouble(),
-                    bearingDegrees = fix.bearing.takeIf { fix.hasBearing() }?.toDouble(),
-                    speedMetersPerSecond = fix.speed.takeIf { fix.hasSpeed() }?.toDouble(),
-                    accuracyMeters = fix.accuracy.takeIf { fix.hasAccuracy() }?.toDouble(),
-                    timestampMillis = fix.time,
-                ),
-            )
-        } catch (error: Throwable) {
+    override fun latestNmea(): String? = synchronized(stateLock) {
+        if (subscription == null) return@synchronized null
+        try {
+            fixes.latestNmea()
+        } catch (error: Exception) {
             Log.w(TAG, "Could not encode Android location as NMEA", error)
             null
         }
     }
 
-    private fun latestFix(): Location? {
-        val now = System.currentTimeMillis()
-        return preferredProviders.asSequence()
-            .mapNotNull(latestFixes::get)
-            .filter { now - it.time <= preferredLocationAgeMillis }
-            .maxByOrNull { it.time }
-    }
+    private class Subscription(val listener: LocationListener, val thread: HandlerThread)
 
     companion object {
         private const val TAG = "CarPlayLocation"
-        private const val UPDATE_INTERVAL_MILLIS = 1_000L
+        private const val UPDATE_INTERVAL_MILLIS = 500L
         private const val MIN_DISTANCE_METERS = 0f
-        private const val DEFAULT_PREFERRED_LOCATION_AGE_MILLIS = 30_000L
+        // Allow a normal 1 Hz receiver two missed updates without repeatedly toggling validity.
+        // After three seconds notify the phone of fix loss, rather than replaying an old road position.
+        private const val DEFAULT_PREFERRED_LOCATION_AGE_MILLIS = 3_000L
     }
 }

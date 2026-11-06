@@ -31,9 +31,29 @@ class MediaPacketLagGuardTest {
         repeat(150) { queue.offer(Packet(it * 1024)) }
         // 3.2 seconds' worth of arriving packets after a Wi-Fi outage, delivered instantly.
         assertEquals(0, guard.recover(queue, 149 * 1024, Packet::sample, 1_000_000_000L))
+        assertNull("A short burst must not obsolete an in-flight decoder packet", guard.recoveryBoundary)
         repeat(110) { queue.poll() } // Healthy consumer immediately catches up
         assertEquals(0, guard.recover(queue, 149 * 1024, Packet::sample, 2_000_000_000L))
         assertEquals(40, queue.size)
+        assertNull(guard.recoveryBoundary)
+    }
+
+    @Test fun sustainedLiveRecoveryAlsoMarksAnAlreadyPolledPacketObsoleteAcrossRtpWrap() {
+        for (firstSample in listOf(0, -100_000)) {
+            val queue = LinkedBlockingQueue<Packet>(192)
+            val guard = MediaPacketLagGuard(48_000)
+            // The consumer already polled firstSample and is waiting for a codec input slot.
+            repeat(191) { queue.offer(Packet(firstSample + (it + 1) * 1024)) }
+            val newest = firstSample + 192 * 1024
+            assertEquals(0, guard.recover(queue, newest, Packet::sample, 1_000_000_000L))
+            assertNull(guard.recoveryBoundary)
+            assertTrue(guard.recover(queue, newest, Packet::sample, 2_500_000_000L) > 0)
+            val boundary = requireNotNull(guard.recoveryBoundary)
+            assertTrue(boundary.excludes(firstSample))
+            assertFalse("The first retained frame is still current", boundary.excludes(queue.peek().sample))
+            assertFalse(boundary.excludes(newest))
+            assertFalse("An unrelated RTP clock reset is not sustained lag", boundary.excludes(Int.MAX_VALUE))
+        }
     }
 
     @Test fun rtpWrapDoesNotPretendPacketsAreFourBillionSamplesOld() {

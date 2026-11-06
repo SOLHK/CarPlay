@@ -10,6 +10,17 @@ internal class MediaPacketLagGuard(private val clockRate: Int) {
     private var congestionSinceNs = 0L
     private var recovering = false
 
+    /** Also invalidates a live packet already held outside the queue during decoder backpressure. */
+    internal class RecoveryBoundary(private val firstSample: Int, private val clockRate: Int) {
+        fun excludes(sample: Int): Boolean {
+            val behind = (firstSample.toLong() - sample.toLong()) and 0xffff_ffffL
+            return clockRate > 0 && behind in 1..clockRate * MAX_VALID_SPAN_SECONDS.toLong()
+        }
+    }
+
+    @Volatile var recoveryBoundary: RecoveryBoundary? = null
+        private set
+
     /** Time between first undelivered RTP packet and the latest packet, respecting 32-bit wrap. */
     fun <T> pendingFrames(queue: LinkedBlockingQueue<T>, newestSample: Int, timestampOf: (T) -> Int): Long {
         if (clockRate <= 0) return 0
@@ -51,6 +62,9 @@ internal class MediaPacketLagGuard(private val clockRate: Int) {
             clockRate.coerceAtLeast(1) > RECOVERY_TARGET_NS) {
             if (queue.poll() == null) break
             removed++
+        }
+        if (removed > 0) {
+            recoveryBoundary = RecoveryBoundary(queue.peek()?.let(timestampOf) ?: newestSample, clockRate)
         }
         return removed
     }

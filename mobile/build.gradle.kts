@@ -17,8 +17,8 @@ android {
         applicationId = "com.solhk.carplay"
         minSdk = 24
         targetSdk = 37
-        versionCode = 43
-        versionName = "0.2.36"
+        versionCode = 46
+        versionName = "0.2.39"
 
     }
 

@@ -36,7 +36,10 @@ internal object DiagnosticExportStore {
      *  3. App-specific external storage (Android/data/<package>, hidden on many head units).
      *  4. Internal app storage, shared through the report viewer.
      */
-    fun saveWithoutPicker(context: Context, fileName: String, report: String): SavedReport {
+    fun saveWithoutPicker(context: Context, fileName: String, report: String): SavedReport =
+        saveRecentWithoutPicker(context, fileName, RecentDiagnosticWindow.filter(report))
+
+    private fun saveRecentWithoutPicker(context: Context, fileName: String, report: String): SavedReport {
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
             try {
                 return SavedReport(saveToDownloads(context.contentResolver, fileName, report))
@@ -168,6 +171,6 @@ internal object DiagnosticExportStore {
     fun write(resolver: ContentResolver, uri: Uri, report: String) {
         val stream = resolver.openOutputStream(uri, "wt")
             ?: throw IOException("Report destination is unavailable")
-        stream.bufferedWriter(Charsets.UTF_8).use { it.write(report) }
+        stream.bufferedWriter(Charsets.UTF_8).use { it.write(RecentDiagnosticWindow.filter(report)) }
     }
 }

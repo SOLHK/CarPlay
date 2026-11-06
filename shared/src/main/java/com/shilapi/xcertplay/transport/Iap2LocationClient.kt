@@ -55,7 +55,7 @@ object NmeaLocationEncoder {
             ?.takeIf { it > 0 }
             ?.let(::ofEpochMilli)
             ?: ofEpochMilli(System.currentTimeMillis())
-        val time = format("%02d%02d%02d.00", timestamp.hour, timestamp.minute, timestamp.second)
+        val time = format("%02d%02d%02d.%03d", timestamp.hour, timestamp.minute, timestamp.second, timestamp.millisecond)
         val date = format(
             "%02d%02d%02d",
             timestamp.day,
@@ -89,8 +89,13 @@ object NmeaLocationEncoder {
         val rmcBody = "GPRMC,$time,A,${latitude.value},${latitude.hemisphere}," +
             "${longitude.value},${longitude.hemisphere},$speedKnots,$course,$date,,"
 
-        return "$${ggaBody}*${checksum(ggaBody)}\r\n$${rmcBody}*${checksum(rmcBody)}\r\n"
+        return sentence(ggaBody) + sentence(rmcBody)
     }
+
+    /** One explicit fix-loss indication; empty coordinates must never be interpreted as a new fix. */
+    fun unavailable(): String = sentence("GPGGA,,,,,,0,,,,,,,,") + sentence("GPRMC,,V,,,,,,,,,")
+
+    private fun sentence(body: String): String = "$$body*${checksum(body)}\r\n"
 
     private fun degreesToNmea(value: Double, latitude: Boolean): NmeaCoordinate {
         val absolute = abs(value)
@@ -132,6 +137,7 @@ object NmeaLocationEncoder {
         val hour: Int = fields.get(Calendar.HOUR_OF_DAY)
         val minute: Int = fields.get(Calendar.MINUTE)
         val second: Int = fields.get(Calendar.SECOND)
+        val millisecond: Int = fields.get(Calendar.MILLISECOND)
         val day: Int = fields.get(Calendar.DAY_OF_MONTH)
         val month: Int = fields.get(Calendar.MONTH) + 1
         val year: Int = fields.get(Calendar.YEAR)

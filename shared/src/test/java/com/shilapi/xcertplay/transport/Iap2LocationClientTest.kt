@@ -37,12 +37,27 @@ class Iap2LocationClientTest {
 
         val sentences = encoded.split("\r\n").filter { it.isNotBlank() }
         assertEquals(2, sentences.size)
-        assertTrue(sentences[0].startsWith("\$GPGGA,123519.00,4807.0380,N,01131.0000,E"))
-        assertTrue(sentences[1].startsWith("\$GPRMC,123519.00,A,4807.0380,N,01131.0000,E"))
+        assertTrue(sentences[0].startsWith("\$GPGGA,123519.000,4807.0380,N,01131.0000,E"))
+        assertTrue(sentences[1].startsWith("\$GPRMC,123519.000,A,4807.0380,N,01131.0000,E"))
         sentences.forEach { sentence ->
             val star = sentence.lastIndexOf('*')
             assertTrue(star > 0)
             assertEquals(checksum(sentence.substring(1, star)), sentence.substring(star + 1))
+        }
+    }
+
+    @Test
+    fun lossPairHasInvalidStatusNoCoordinatesAndValidChecksums() {
+        val sentences = NmeaLocationEncoder.unavailable().split("\r\n").filter(String::isNotEmpty)
+        assertEquals(2, sentences.size)
+        val gga = sentences[0].substringBefore('*').split(',')
+        val rmc = sentences[1].substringBefore('*').split(',')
+        assertEquals("0", gga[6])
+        assertEquals("V", rmc[2])
+        assertTrue(gga.slice(2..5).all(String::isEmpty))
+        assertTrue(rmc.slice(3..8).all(String::isEmpty))
+        sentences.forEach { sentence ->
+            assertEquals(checksum(sentence.substring(1).substringBefore('*')), sentence.substringAfter('*'))
         }
     }
 
